@@ -197,7 +197,7 @@
 <div class="dashboard">
     <div class="header-row">
         <div class="top-stat left">
-            <span class="label">Tid</span>
+            <span class="label">Tid (Cykel)</span>
             <span class="value-time" id="time">00:00</span>
         </div>
         <div class="top-stat center">
@@ -244,6 +244,10 @@
 
     <div class="controls">
         <button id="connectBtn">ANSLUT CYKEL</button>
+        <div style="display:flex; gap:10px; width:100%">
+            <button id="resetBtn" class="btn-secondary" style="background:#ff9800" disabled>RESET</button>
+            <button id="startCmdBtn" class="btn-secondary" style="background:#4caf50" disabled>START</button>
+        </div>
         <button id="simBtn" class="btn-secondary">SIMULERA DATA (DEMO)</button>
         <button id="toggleAnalysisBtn" class="btn-secondary">VISA HISTORIK & ANALYS</button>
         <div id="status" class="status">Klar att ansluta...</div>
@@ -319,6 +323,8 @@
     const endSessionBtn = document.getElementById('endSessionBtn');
     const exportJsonBtn = document.getElementById('exportJsonBtn');
     const importJsonInput = document.getElementById('importJsonInput');
+    const resetBtn = document.getElementById('resetBtn');
+    const startCmdBtn = document.getElementById('startCmdBtn');
 
     const ui = {
         time: document.getElementById('time'),
@@ -358,6 +364,23 @@
 
     // Uppdatera UI vid start
     updateGlobalStats();
+
+    // --- MANUELLA KOMMANDON ---
+    resetBtn.addEventListener('click', async () => {
+        if(!controlPointChar) return;
+        try {
+            statusEl.textContent = "Skickar Reset...";
+            await controlPointChar.writeValue(new Uint8Array([0x01])); // Reset OpCode
+        } catch(e) { console.error(e); }
+    });
+
+    startCmdBtn.addEventListener('click', async () => {
+        if(!controlPointChar) return;
+        try {
+            statusEl.textContent = "Skickar Start...";
+            await controlPointChar.writeValue(new Uint8Array([0x07])); // Start OpCode
+        } catch(e) { console.error(e); }
+    });
 
     // --- FUNKTIONER FÖR SESSION & HISTORIK ---
 
@@ -550,39 +573,58 @@
             device.addEventListener('gattserverdisconnected', onDisconnected);
 
             const service = await server.getPrimaryService('fitness_machine');
-            const dataChar = await service.getCharacteristic('00002ad2-0000-1000-8000-00805f9b34fb');
             
-            await dataChar.startNotifications();
+            // Hämta Data Channel och sätt igång notiser FÖRST
+            const dataChar = await service.getCharacteristic('00002ad2-0000-1000-8000-00805f9b34fb');
+            // Lägg till lyssnaren INNAN vi startar notifications för att inte missa något
             dataChar.addEventListener('characteristicvaluechanged', handleBikeData);
+            await dataChar.startNotifications();
+            
+            statusEl.textContent = "Datakanal öppnad. Väntar på data...";
 
-            // Försök starta sessionen (viktigt för Gymstick!)
+            // Försök ta kontroll (Starta passet)
             try {
                 controlPointChar = await service.getCharacteristic('00002ad9-0000-1000-8000-00805f9b34fb');
+                // Viktigt: Starta notifications på control point för att få "Response Codes"
                 await controlPointChar.startNotifications();
-                statusEl.textContent = "Startar...";
+                
+                statusEl.textContent = "Initierar kontroll...";
+                resetBtn.disabled = false;
+                startCmdBtn.disabled = false;
+
+                // Sekvens: Reset -> Wait -> Start
+                // Vissa cyklar kräver Reset först för att vakna ur "Stop state"
                 await controlPointChar.writeValue(new Uint8Array([0x00])); // Request Control
+                
+                // Vi skickar Start manuellt eller automatiskt
                 setTimeout(async () => {
-                    await controlPointChar.writeValue(new Uint8Array([0x07])); // Start Session
-                    statusEl.textContent = "Klar! Börja trampa.";
-                }, 500);
+                    // Start or Resume (0x07)
+                    statusEl.textContent = "Skickar START...";
+                    await controlPointChar.writeValue(new Uint8Array([0x07])); 
+                }, 1000);
+
             } catch (err) {
                 console.log("Control Point Error:", err);
-                statusEl.textContent = "Ansluten (Läsläge).";
+                statusEl.textContent = "Ansluten (Endast läsläge / Kontroll misslyckades).";
             }
 
-            // UI Reset
+            // Puls
+            try {
+                const hrService = await server.getPrimaryService('heart_rate');
+                const hrChar = await hrService.getCharacteristic('heart_rate_measurement');
+                hrChar.addEventListener('characteristicvaluechanged', handleHeartRate);
+                await hrChar.startNotifications();
+            } catch (e) { }
+
             connectBtn.textContent = "ANSLUTEN";
             connectBtn.disabled = true;
             connectBtn.style.background = "#28a745";
             simBtn.style.display = 'none';
             
+            // Starta inte timern förrän vi får data eller bekräftelse (men vi förbereder objektet)
             if (!startTime) {
-                startTime = Date.now();
-                currentSession.startTime = startTime;
-                timerInterval = setInterval(() => {
-                    const diff = Math.floor((Date.now() - startTime) / 1000);
-                    ui.time.textContent = formatTime(diff);
-                }, 1000);
+                currentSession.startTime = Date.now();
+                startTime = currentSession.startTime;
             }
 
         } catch (error) {
@@ -597,7 +639,9 @@
         connectBtn.textContent = "ANSLUT IGEN";
         connectBtn.style.background = "#e94560";
         simBtn.style.display = "block";
-        clearInterval(timerInterval);
+        resetBtn.disabled = true;
+        startCmdBtn.disabled = true;
+        controlPointChar = null;
     }
 
     // --- DEN VIKTIGA BITEN: DATA PARSING & DEBUG ---
@@ -607,28 +651,33 @@
         const value = event.target.value;
         const rawBytes = new Uint8Array(value.buffer);
         
-        // 1. Skriv ut exakt vad cykeln skickar i den svarta rutan
-        // Detta är nyckeln för att lösa "0"-problemet
+        // LOGGA RAW DATA
         let hexString = "";
         for(let i=0; i<rawBytes.length; i++) {
             hexString += rawBytes[i].toString(16).padStart(2,'0').toUpperCase() + " ";
         }
-        rawLog.textContent = hexString + "\n" + rawLog.textContent.slice(0, 200); // Behåll historik
+        rawLog.textContent = hexString + "\n" + rawLog.textContent.slice(0, 200);
 
-        // 2. Tolka data (Standard FTMS)
-        // Byte 0 & 1 är FLAGS
+        // Tolka data (Standard FTMS 0x2AD2)
         const flags = value.getUint16(0, true);
-        let offset = 2; // Vi börjar läsa efter flaggorna
+        let offset = 2; 
 
-        // Bit 0: More Data. Vanligtvis 0 för "Instant Speed present" i Indoor Bike.
-        // HASTIGHET (Standard: Alltid först om inte "More Data" säger annat)
-        // OBS: Om bit 0 är 0, betyder det ATT hastighet är med i 0x2AD2.
-        const speedRaw = value.getUint16(offset, true);
-        const speed = (speedRaw / 100).toFixed(1);
-        ui.speed.textContent = speed;
-        offset += 2;
+        // 1. Hastighet (Om Bit 0 är 0, är hastighet med. Om bit 0 är 1, är det "More Data"?
+        // Nej, FTMS säger: Bit 0 = 0 -> Instantaneous Speed present.
+        if ((flags & 0x01) === 0) {
+            const speedRaw = value.getUint16(offset, true);
+            const speed = (speedRaw / 100).toFixed(1);
+            ui.speed.textContent = speed;
+            offset += 2;
+        } else {
+            // Om bit 0 är 1, betyder det "More Data" i vissa kontexter, men här hoppar vi över
+            // Men oftast är hastighet alltid med. Vi loggar för säkerhets skull.
+        }
 
-        // KADENS (Bit 2)
+        // 2. Average Speed (Bit 1)
+        if (flags & (1 << 1)) offset += 2;
+
+        // 3. Instantaneous Cadence (Bit 2)
         let cadence = 0;
         if (flags & (1 << 2)) {
             cadence = Math.round(value.getUint16(offset, true) * 0.5);
@@ -636,7 +685,10 @@
             offset += 2;
         }
 
-        // STRÄCKA (Bit 4)
+        // 4. Average Cadence (Bit 3)
+        if (flags & (1 << 3)) offset += 2;
+
+        // 5. Total Distance (Bit 4)
         let distanceKm = 0;
         if (flags & (1 << 4)) {
             const low = value.getUint16(offset, true);
@@ -647,14 +699,14 @@
             offset += 3;
         }
 
-        // MOTSTÅND (Bit 5)
+        // 6. Resistance Level (Bit 5)
         if (flags & (1 << 5)) {
             currentResistance = value.getInt16(offset, true);
             ui.resistance.textContent = currentResistance;
             offset += 2;
         }
 
-        // EFFEKT (Bit 6)
+        // 7. Instantaneous Power (Bit 6)
         let power = 0;
         if (flags & (1 << 6)) {
             power = value.getInt16(offset, true);
@@ -662,15 +714,18 @@
             offset += 2;
         }
 
-        // KALORIER (Bit 8)
+        // 8. Average Power (Bit 7)
+        if (flags & (1 << 7)) offset += 2;
+
+        // 9. Expended Energy (Bit 8)
         let cals = 0;
         if (flags & (1 << 8)) {
             cals = value.getUint16(offset, true);
             ui.calories.textContent = cals;
-            offset += 5; // Hoppa över "per hour" etc
+            offset += 5; 
         }
         
-        // PULS (Bit 9)
+        // 10. Heart Rate (Bit 9)
         let hr = 0;
         if (flags & (1 << 9)) {
             hr = value.getUint8(offset);
@@ -678,15 +733,31 @@
             offset += 1;
         }
 
-        // Räkna distans-diff
+        // 11. Metabolic Equivalent (Bit 10)
+        if (flags & (1 << 10)) offset += 1;
+
+        // 12. Elapsed Time (Bit 11) - HÄR ÄR FIXEN FÖR TIDEN
+        if (flags & (1 << 11)) {
+            const timeSec = value.getUint16(offset, true);
+            ui.time.textContent = formatTime(timeSec);
+            offset += 2;
+            
+            // Uppdatera starttiden så att loggningen blir rätt synkad med cykelns tid
+            // Vi använder cykelns tid istället för "Date.now" diffen om den finns
+        }
+
+        // 13. Remaining Time (Bit 12)
+        if (flags & (1 << 12)) offset += 2;
+
+
+        // Logga!
         let distDiff = 0;
         if (distanceKm > lastDistanceKm && lastDistanceKm > 0) {
             distDiff = distanceKm - lastDistanceKm;
         }
         if (distanceKm > 0) lastDistanceKm = distanceKm;
 
-        // Logga!
-        logDataPoint(speed, power, hr, cadence, distDiff);
+        logDataPoint(ui.speed.textContent, power, hr, cadence, distDiff);
     }
 
     // --- SIMULERING ---
@@ -699,10 +770,15 @@
         }
         isSimulating = true;
         simBtn.textContent = "STOPPA";
-        if(!startTime) { startTime = Date.now(); currentSession.startTime = startTime; timerInterval = setInterval(()=>{ ui.time.textContent = formatTime((Date.now()-startTime)/1000); },1000); }
+        if(!startTime) { startTime = Date.now(); currentSession.startTime = startTime; }
         
         let simDist = 0;
+        let simSecs = 0;
         simulationInterval = setInterval(() => {
+            simSecs++;
+            // Visa tid från simulatorn
+            ui.time.textContent = formatTime(simSecs);
+
             const s = (20 + Math.random()*5).toFixed(1);
             const p = Math.floor(150 + Math.random()*20);
             const c = Math.floor(80 + Math.random()*5);
