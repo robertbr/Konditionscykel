@@ -3,289 +3,364 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gymstick Manual Probe</title>
+    <title>Gymstick Explorer v10</title>
     <style>
         :root {
-            --bg-color: #000000;
-            --card-bg: #1a1a1a;
-            --text-main: #00ff00;
-            --border-color: #333;
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --text-main: #c9d1d9;
+            --border-color: #30363d;
+            --accent: #58a6ff;
+            --accent-green: #238636;
+            --accent-red: #da3633;
         }
 
         body { 
-            font-family: 'Courier New', monospace; 
+            font-family: 'Segoe UI', monospace; 
             background: var(--bg-color); 
             color: var(--text-main);
-            padding: 20px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            margin: 0;
         }
 
         .dashboard { 
             background: var(--card-bg); 
-            border: 1px solid var(--text-main);
-            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
             width: 100%;
-            max-width: 800px;
-            margin-bottom: 20px;
+            max-width: 600px;
+            margin-bottom: 15px;
+            box-sizing: border-box;
         }
 
-        .header-row { display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px;}
-        .big-val { font-size: 2rem; font-weight: bold; }
-        .label { font-size: 0.8rem; opacity: 0.7; }
-
-        button { 
-            background: #004400; 
-            color: #00ff00; 
-            border: 1px solid #00ff00; 
-            padding: 15px; 
-            width: 100%; 
-            font-family: inherit; 
-            font-weight: bold; 
-            cursor: pointer; 
-            margin-top: 10px;
-        }
-        button:hover { background: #006600; }
-        button:disabled { border-color: #555; color: #555; background: #111; cursor: not-allowed; }
-
-        /* TESTPANEL */
-        .test-panel {
+        /* DATA GRID */
+        .data-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
-            margin-top: 20px;
-            border-top: 1px solid #333;
-            padding-top: 10px;
+            margin-bottom: 20px;
         }
-        .btn-cmd {
+        .data-box {
+            background: #0d1117;
+            border: 1px solid var(--border-color);
             padding: 10px;
-            font-size: 0.8rem;
-            background: #002244;
-            border-color: #004488;
-            color: #00aaff;
+            text-align: center;
+            border-radius: 4px;
         }
-        .btn-cmd:hover { background: #003366; }
+        .data-val { font-size: 1.5rem; font-weight: bold; color: var(--text-main); }
+        .data-lbl { font-size: 0.7rem; color: #8b949e; text-transform: uppercase; }
 
-        /* LOGG FÖNSTER */
+        /* COMMAND SECTION */
+        .cmd-section {
+            background: #21262d;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        .cmd-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        select, input {
+            background: #0d1117;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            flex-grow: 1;
+        }
+        select { flex-grow: 2; }
+        
+        button { 
+            background: var(--accent-green); 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 4px;
+            font-weight: bold; 
+            cursor: pointer; 
+        }
+        button:hover { opacity: 0.9; }
+        button:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; }
+
+        #connectBtn { width: 100%; font-size: 1.1rem; padding: 15px; margin-bottom: 20px; background: var(--accent); }
+
+        /* LOG */
         .log-window {
             width: 100%;
-            max-width: 800px;
-            height: 400px;
-            background: #111;
-            border: 1px solid #555;
+            max-width: 600px;
+            height: 300px;
+            background: #0d1117;
+            border: 1px solid var(--border-color);
             overflow-y: scroll;
+            font-family: monospace;
             font-size: 11px;
             padding: 10px;
             white-space: pre-wrap;
-            margin-top: 20px;
-            color: #ccc;
+            box-sizing: border-box;
         }
         
-        .log-data { color: #00ffff; font-weight: bold; }
-        .log-info { color: #888; }
-        .log-err { color: #ff5555; }
-        .log-succ { color: #00ff00; font-weight: bold; }
+        .l-data { color: #58a6ff; }
+        .l-err { color: #f85149; }
+        .l-succ { color: #3fb950; }
+        .l-info { color: #8b949e; }
 
-        .action-row { display: flex; gap: 10px; width: 100%; max-width: 800px; }
     </style>
 </head>
 <body>
 
 <div class="dashboard">
-    <div class="header-row">
-        <div>Gymstick / iConsole Manual Probe</div>
-        <div id="status">Väntar...</div>
-    </div>
-    
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-        <div>Hastighet: <span id="speed" style="color:white; font-size:1.2em">0.0</span></div>
-        <div>Raw Data: <span id="lastRaw" style="color:#aaa; font-size:0.8em">--</span></div>
+    <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:5px;">
+        <strong>Gymstick Explorer v10</strong>
+        <span id="status">Ej ansluten</span>
     </div>
 
-    <button id="connectBtn">1. ANSLUT (Endast Lyssna)</button>
+    <button id="connectBtn">ANSLUT TILL ALLT</button>
 
-    <div class="test-panel">
-        <button class="btn-cmd" id="btnA0">2. iConsole: Skicka A0</button>
-        <button class="btn-cmd" id="btnB0">3. iConsole: Skicka B0</button>
-        <button class="btn-cmd" id="btnStart">4. FTMS: Start (0x07)</button>
-        <button class="btn-cmd" id="btnReset">5. FTMS: Reset (0x00)</button>
+    <!-- Realtidsdata -->
+    <div class="data-grid">
+        <div class="data-box">
+            <div class="data-lbl">Hastighet (km/h)</div>
+            <div class="data-val" id="valSpeed">0.0</div>
+        </div>
+        <div class="data-box">
+            <div class="data-lbl">Effekt (Watt)</div>
+            <div class="data-val" id="valWatt">0</div>
+        </div>
+        <div class="data-box">
+            <div class="data-lbl">Kadens (rpm)</div>
+            <div class="data-val" id="valCadence">0</div>
+        </div>
+        <div class="data-box">
+            <div class="data-lbl">Puls (bpm)</div>
+            <div class="data-val" id="valHr">0</div>
+        </div>
     </div>
-    <div style="font-size:0.7rem; color:#666; text-align:center; margin-top:5px;">
-        Tryck på knapparna en i taget och vänta 5s för att se om data kommer.
+
+    <!-- Kommando Sändare -->
+    <div class="cmd-section">
+        <div class="data-lbl">Skicka Kommando (Hex)</div>
+        <div class="cmd-row">
+            <select id="charSelect">
+                <option value="none">Välj kanal...</option>
+                <!-- Fylls på dynamiskt -->
+            </select>
+        </div>
+        <div class="cmd-row">
+            <input type="text" id="hexInput" placeholder="T.ex: A0 eller 07" maxlength="20">
+            <button id="sendBtn" disabled>SÄND</button>
+        </div>
+        <div style="font-size:0.75rem; color:#8b949e; margin-top:5px;">
+            Testa: <strong>A0</strong> (iConsole), <strong>07</strong> (FTMS Start)
+        </div>
     </div>
 </div>
 
-<div class="action-row">
-    <button id="dlLogBtn">SPARA LOGG-FIL</button>
-    <button id="resetBtn" style="background:#330000; border-color:red; color:red">LADDA OM</button>
+<div style="width:100%; max-width:600px; display:flex; gap:10px; margin-bottom:5px;">
+    <button id="dlLogBtn" style="background:#21262d; flex:1;">Spara Logg</button>
+    <button id="clearLogBtn" style="background:#21262d; flex:1;">Rensa</button>
 </div>
 
-<div class="log-window" id="logOutput">Loggen visas här...</div>
+<div class="log-window" id="logOutput">Logg startad...</div>
 
 <script>
-    const connectBtn = document.getElementById('connectBtn');
-    const dlLogBtn = document.getElementById('dlLogBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    const statusEl = document.getElementById('status');
-    const logOut = document.getElementById('logOutput');
+    // --- UI ---
     const ui = {
-        speed: document.getElementById('speed'),
-        lastRaw: document.getElementById('lastRaw')
+        status: document.getElementById('status'),
+        log: document.getElementById('logOutput'),
+        speed: document.getElementById('valSpeed'),
+        watt: document.getElementById('valWatt'),
+        cadence: document.getElementById('valCadence'),
+        hr: document.getElementById('valHr'),
+        charSelect: document.getElementById('charSelect'),
+        hexInput: document.getElementById('hexInput'),
+        sendBtn: document.getElementById('sendBtn')
     };
 
-    // Bluetooth object cache
-    let gattServer = null;
-    let iconsoleWriteChar = null;
-    let ftmsControlChar = null;
+    let fullLog = [];
+    let writeCharacteristics = {}; // Map: UUID -> Characteristic Object
 
-    let fullLog = []; 
-
+    // --- LOGGNING ---
     function log(msg, type = 'info') {
-        const time = new Date().toLocaleTimeString();
+        const time = new Date().toLocaleTimeString().split(' ')[0];
         const line = `[${time}] ${msg}`;
         fullLog.push(line);
         
-        const span = document.createElement('div');
-        span.textContent = line;
-        if(type === 'data') span.className = 'log-data';
-        if(type === 'err') span.className = 'log-err';
-        if(type === 'succ') span.className = 'log-succ';
-        if(type === 'info') span.className = 'log-info';
-        
-        logOut.appendChild(span);
-        logOut.scrollTop = logOut.scrollHeight;
+        const div = document.createElement('div');
+        div.textContent = line;
+        div.className = 'l-' + type;
+        ui.log.appendChild(div);
+        ui.log.scrollTop = ui.log.scrollHeight;
     }
 
-    resetBtn.addEventListener('click', () => location.reload());
-
-    dlLogBtn.addEventListener('click', () => {
+    document.getElementById('clearLogBtn').onclick = () => { ui.log.innerHTML = ''; fullLog = []; };
+    document.getElementById('dlLogBtn').onclick = () => {
         const blob = new Blob([fullLog.join('\n')], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url;
-        a.download = "gymstick_probe_log.txt";
+        a.href = URL.createObjectURL(blob);
+        a.download = "gymstick_v10_log.txt";
         a.click();
-    });
+    };
 
-    // --- KNAPPAR FÖR MANUELL TESTNING ---
-    document.getElementById('btnA0').addEventListener('click', () => sendIConsole([0xA0]));
-    document.getElementById('btnB0').addEventListener('click', () => sendIConsole([0xB0]));
-    document.getElementById('btnStart').addEventListener('click', () => sendFTMS([0x07]));
-    document.getElementById('btnReset').addEventListener('click', () => sendFTMS([0x00]));
-
-    async function sendIConsole(bytes) {
-        if (!iconsoleWriteChar) { log("Ingen iConsole-kanal (FFF2) tillgänglig.", 'err'); return; }
+    // --- ANSLUTNING ---
+    document.getElementById('connectBtn').onclick = async () => {
         try {
-            const hex = bytes.map(b => b.toString(16).toUpperCase()).join(' ');
-            log(`Skickar till FFF2: ${hex}`, 'info');
-            await iconsoleWriteChar.writeValue(new Uint8Array(bytes));
-        } catch (e) { log("Fel vid skrivning till FFF2: " + e, 'err'); }
-    }
+            ui.status.textContent = "Söker...";
+            log("Startar sökning efter tjänster...", 'info');
 
-    async function sendFTMS(bytes) {
-        if (!ftmsControlChar) { log("Ingen FTMS Control Point (2AD9) tillgänglig.", 'err'); return; }
-        try {
-            const hex = bytes.map(b => b.toString(16).toUpperCase()).join(' ');
-            log(`Skickar till 2AD9: ${hex}`, 'info');
-            await ftmsControlChar.writeValue(new Uint8Array(bytes));
-        } catch (e) { log("Fel vid skrivning till FTMS: " + e, 'err'); }
-    }
-
-    // --- HUVUDANSLUTNING ---
-    connectBtn.addEventListener('click', async () => {
-        try {
-            statusEl.textContent = "Söker...";
-            log("--- STARTAR ANSLUTNING (PASSIV) ---");
-            
             const device = await navigator.bluetooth.requestDevice({
-                filters: [{ services: ['fitness_machine'] }],
+                acceptAllDevices: true,
                 optionalServices: [
-                    'fitness_machine', 
+                    'fitness_machine', // 0x1826
+                    'cycling_power',   // 0x1818
+                    'cycling_speed_and_cadence', // 0x1816
+                    'heart_rate',      // 0x180D
                     '0000fff0-0000-1000-8000-00805f9b34fb' // iConsole
                 ]
             });
 
             device.addEventListener('gattserverdisconnected', () => {
-                log("!!! FRÅNKOPPLAD !!!", 'err');
-                statusEl.textContent = "Frånkopplad";
-                connectBtn.disabled = false;
+                ui.status.textContent = "Frånkopplad";
+                log("Enhet frånkopplad!", 'err');
+                document.getElementById('connectBtn').disabled = false;
+                ui.sendBtn.disabled = true;
             });
 
-            log(`Vald: ${device.name}`);
-            gattServer = await device.gatt.connect();
-            log("GATT Ansluten!", 'succ');
+            log(`Vald enhet: ${device.name}`, 'succ');
+            const server = await device.gatt.connect();
+            log("GATT Ansluten. Hämtar tjänster...", 'succ');
+            
+            ui.status.textContent = "Ansluten";
+            document.getElementById('connectBtn').disabled = true;
 
-            // 1. FTMS Setup
-            try {
-                const ftms = await gattServer.getPrimaryService('fitness_machine');
+            const services = await server.getPrimaryServices();
+            
+            // Loopa igenom allt vi hittar
+            for (const service of services) {
+                log(`Service hittad: ${shortUUID(service.uuid)}`, 'info');
                 
-                // Lyssna på Data
-                const dataChar = await ftms.getCharacteristic('00002ad2-0000-1000-8000-00805f9b34fb');
-                await dataChar.startNotifications();
-                dataChar.addEventListener('characteristicvaluechanged', (e) => handleData(e, 'FTMS'));
-                log("Lyssnar på FTMS (2AD2)", 'info');
-                
-                // Spara kontrollpunkt men SKRIV INTE än
-                ftmsControlChar = await ftms.getCharacteristic('00002ad9-0000-1000-8000-00805f9b34fb');
-                await ftmsControlChar.startNotifications(); // För svar
-                log("FTMS Control Point (2AD9) redo.", 'info');
-                
-            } catch (e) { log("FTMS Setup Error: " + e, 'err'); }
+                try {
+                    const chars = await service.getCharacteristics();
+                    for (const char of chars) {
+                        const uuid = shortUUID(char.uuid);
+                        const props = getProps(char);
+                        
+                        log(`  -> Char: ${uuid} [${props}]`, 'info');
 
-            // 2. iConsole Setup
-            try {
-                const iconsole = await gattServer.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
-                
-                // Lyssna på Data (FFF1)
-                const notifyChar = await iconsole.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
-                await notifyChar.startNotifications();
-                notifyChar.addEventListener('characteristicvaluechanged', (e) => handleData(e, 'ICONSOLE'));
-                log("Lyssnar på iConsole (FFF1)", 'info');
+                        // Om den går att SKRIVA till, lägg till i dropdown
+                        if (char.properties.write || char.properties.writeWithoutResponse) {
+                            writeCharacteristics[char.uuid] = char;
+                            const opt = document.createElement('option');
+                            opt.value = char.uuid;
+                            // Ge användarvänliga namn
+                            let name = uuid;
+                            if (uuid.includes('2ad9')) name = "FTMS Control (2AD9)";
+                            if (uuid.includes('fff2')) name = "iConsole Write (FFF2)";
+                            opt.textContent = name;
+                            ui.charSelect.appendChild(opt);
+                        }
 
-                // Spara skrivkanal (FFF2)
-                iconsoleWriteChar = await iconsole.getCharacteristic('0000fff2-0000-1000-8000-00805f9b34fb');
-                log("iConsole Write (FFF2) redo.", 'info');
-
-            } catch (e) { log("iConsole Setup Error: " + e, 'err'); }
-
-            statusEl.textContent = "Ansluten. Prova knapparna.";
-            connectBtn.disabled = true;
+                        // Om den går att LYSSNA på, starta notiser
+                        if (char.properties.notify || char.properties.indicate) {
+                            try {
+                                await char.startNotifications();
+                                char.addEventListener('characteristicvaluechanged', (e) => handleData(e, uuid));
+                                log(`     Notiser startade på ${uuid}`, 'succ');
+                            } catch (e) {
+                                log(`     Kunde inte starta notis: ${e}`, 'err');
+                            }
+                        }
+                    }
+                } catch (e) { log(`  Kunde inte läsa chars: ${e}`, 'err'); }
+            }
+            
+            // Aktivera sänd-knappen
+            ui.sendBtn.disabled = false;
+            log("Redo för kommandon.", 'succ');
 
         } catch (err) {
-            log("CRITICAL ERROR: " + err, 'err');
-            statusEl.textContent = "Fel!";
+            log("Fel: " + err, 'err');
+            ui.status.textContent = "Fel";
         }
-    });
+    };
 
-    function handleData(event, type) {
-        const value = event.target.value;
-        const raw = new Uint8Array(value.buffer);
+    // --- DATA HANTERING ---
+    function handleData(event, uuid) {
+        const data = new Uint8Array(event.target.value.buffer);
+        const hex = Array.from(data).map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
         
-        // HEX string
-        let hex = [];
-        for(let b of raw) hex.push(b.toString(16).padStart(2,'0').toUpperCase());
-        const hexStr = hex.join(" ");
-        
-        log(`DATA [${type}]: ${hexStr}`, 'data');
-        ui.lastRaw.textContent = hexStr;
+        // Logga bara unika värden eller sällan för att inte dränka loggen? Nej, vi vill se allt nu.
+        log(`DATA [${uuid}]: ${hex}`, 'data');
 
-        // --- TOLKNING ---
+        // Enkel parsing för display (om vi har tur och det är standardformat)
         
-        // iConsole (FFF1) - Ofta F2 <len> <data> ...
-        // Eller A0 <len> <data> ...
-        if (type === 'ICONSOLE') {
-            log("iConsole data mottagen!", 'succ');
-            // Försök hitta hastighet. iConsole varierar, men ofta byte 4-5 eller 5-6
-            // Vi loggar bara för analys nu
+        // FTMS Indoor Bike Data (2AD2)
+        if (uuid.includes('2ad2') && data.length > 3) {
+            // Speed brukar vara uint16 i byte 2-3
+            const speed = new DataView(data.buffer).getUint16(2, true);
+            ui.speed.textContent = (speed / 100).toFixed(1);
+            
+            // Watt brukar vara byte 6-7
+            if (data.length > 7) {
+                const watt = new DataView(data.buffer).getInt16(6, true);
+                ui.watt.textContent = watt;
+            }
         }
         
-        // FTMS (2AD2)
-        if (type === 'FTMS' && raw.length > 2) {
-             const speedRaw = new DataView(value.buffer).getUint16(2, true);
-             ui.speed.textContent = (speedRaw / 100).toFixed(1);
-             log("FTMS Data tolkad!", 'succ');
+        // Cycling Speed & Cadence (2A5B)
+        if (uuid.includes('2a5b') && data.length > 1) {
+            // Mycket förenklad parsing, beror på flags
+            log("CSC Data mottagen (ej parsad)", 'succ');
         }
+        
+        // Cycling Power (2A63)
+        if (uuid.includes('2a63') && data.length > 3) {
+            const watt = new DataView(data.buffer).getInt16(2, true);
+            ui.watt.textContent = watt;
+        }
+    }
+
+    // --- SÄND KOMMANDO ---
+    ui.sendBtn.onclick = async () => {
+        const uuid = ui.charSelect.value;
+        const hexStr = ui.hexInput.value.replace(/\s+/g, '');
+        
+        if (uuid === 'none') { alert("Välj en kanal först!"); return; }
+        if (!hexStr) { alert("Skriv hex-kod!"); return; }
+
+        // Konvertera hex string till Uint8Array
+        const bytes = [];
+        for (let i = 0; i < hexStr.length; i += 2) {
+            bytes.push(parseInt(hexStr.substr(i, 2), 16));
+        }
+
+        try {
+            const char = writeCharacteristics[uuid];
+            log(`Skickar ${hexStr} till ${shortUUID(uuid)}...`, 'info');
+            await char.writeValue(new Uint8Array(bytes));
+            log("Skickat OK!", 'succ');
+        } catch (e) {
+            log("Sändningsfel: " + e, 'err');
+        }
+    };
+
+    // Hjälpfunktioner
+    function shortUUID(uuid) {
+        if (uuid.startsWith("0000")) return uuid.substring(4, 8).toUpperCase();
+        return uuid.substring(0, 8);
+    }
+    function getProps(char) {
+        let p = [];
+        if (char.properties.read) p.push("R");
+        if (char.properties.write) p.push("W");
+        if (char.properties.notify) p.push("N");
+        if (char.properties.indicate) p.push("I");
+        return p.join('');
     }
 
 </script>
