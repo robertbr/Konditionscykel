@@ -3,29 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gymstick Pro Monitor v2.3</title>
+    <title>Gymstick Pro Monitor v3.4</title>
     <style>
         :root {
-            --bg-color: #1a1a2e;
-            --panel-bg: #16213e;
-            --border-color: #0f3460;
-            --text-main: #fff;
-            --text-dim: #8d99ae;
-            --accent-primary: #e94560;
-            --accent-secondary: #4cc9f0;
-            --accent-speed: #23d5ab;
-            --accent-cadence: #7209b7;
-            --accent-watt: #f72585;
-            --accent-cal: #fca311;
-            --accent-res: #ffd166;
+            --bg-color: #121212;
+            --panel-bg: #1b1b1b;
+            --border-color: #2d2d2d;
+            --text-main: #e0e0e0;
+            --text-dim: #888;
+            
+            /* Färger */
+            --c-speed: #00e676;  /* Grön */
+            --c-watt: #f50057;   /* Rosa */
+            --c-cad: #d500f9;    /* Lila */
+            --c-hr: #ff3d00;     /* Röd */
+            --c-dist: #2979ff;   /* Blå */
+            --c-cal: #ff9100;    /* Orange */
+            --c-res: #ffd600;    /* Gul */
         }
+
+        html { font-size: 13px; }
 
         body { 
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
             background: var(--bg-color); 
             color: var(--text-main);
             margin: 0; 
-            padding: 20px;
+            padding: 10px;
             height: 100vh;
             box-sizing: border-box;
             display: flex;
@@ -36,324 +40,431 @@
         /* --- LAYOUT --- */
         .main-container {
             display: grid;
-            gap: 20px;
+            gap: 15px;
             flex: 1;
             overflow: hidden;
-            grid-template-columns: 1fr;
-            grid-template-rows: auto 1fr;
+            grid-template-columns: 300px 1fr;
+            grid-template-rows: 1fr;
         }
 
-        @media (min-width: 950px) {
+        @media (max-width: 900px) {
             .main-container {
-                grid-template-columns: 400px 1fr;
-                grid-template-rows: 1fr;
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+                overflow-y: auto;
             }
+            body { overflow-y: auto; height: auto; }
         }
 
-        .scrollable-panel {
-            overflow-y: auto;
-            height: 100%;
-            padding-right: 5px;
-        }
-
-        /* --- VÄNSTER PANEL --- */
-        .control-panel {
+        .panel {
             background: var(--panel-bg);
-            border-radius: 20px;
-            padding: 25px;
+            border-radius: 12px;
             border: 1px solid var(--border-color);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            padding: 15px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 15px;
+            overflow-y: auto;
         }
 
+        /* --- VÄNSTER PANEL (LIVE) --- */
         .header-grid {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             text-align: center;
-            border-bottom: 2px solid var(--border-color);
-            padding-bottom: 15px;
-            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
         }
+        .h-item h3 { margin: 0; font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; }
+        .val-big { font-size: 1.4rem; font-weight: 700; font-variant-numeric: tabular-nums; }
         
-        .header-item h3 { margin: 0 0 5px 0; font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
-        .val-time { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-        .val-hr { font-size: 1.5rem; font-weight: 700; color: var(--accent-primary); }
-        
-        .res-wrapper { display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .val-res { font-size: 1.8rem; font-weight: 800; color: var(--accent-res); line-height: 1; min-width: 40px; }
-        .btn-res {
-            width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--text-dim);
-            background: transparent; color: #fff; cursor: pointer; font-weight: bold;
-            display: flex; align-items: center; justify-content: center; transition: 0.2s;
+        .res-ctrl { display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .btn-round {
+            width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--text-dim);
+            background: transparent; color: #fff; cursor: pointer; display:grid; place-items:center; font-size: 1.2rem; line-height: 1;
         }
-        .btn-res:hover { background: var(--border-color); border-color: #fff; }
+        .btn-round:hover { background: #333; }
 
-        .watt-display { text-align: center; margin: 10px 0; }
-        .watt-val { font-size: 5rem; font-weight: 800; line-height: 0.9; color: var(--accent-watt); text-shadow: 0 0 25px rgba(247, 37, 133, 0.4); }
-        .watt-unit { font-size: 1.2rem; font-weight: 700; color: var(--accent-watt); opacity: 0.8; margin-top: 5px; display: block; letter-spacing: 2px; }
+        .watt-display { text-align: center; margin: 5px 0; }
+        .watt-num { font-size: 4.5rem; font-weight: 800; line-height: 0.9; color: var(--c-watt); text-shadow: 0 0 20px rgba(245, 0, 87, 0.3); }
+        .watt-lbl { font-size: 1rem; font-weight: 700; color: var(--c-watt); opacity: 0.8; letter-spacing: 2px; }
 
-        .stats-grid {
+        .live-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .live-card { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; text-align: center; display: flex; flex-direction: column; justify-content: center; min-height: 80px; }
+        .live-lbl { font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 2px; }
+        /* Ökad textstorlek här */
+        .live-val { font-size: 2.8rem; font-weight: 800; line-height: 1; }
+
+        .btn-action {
+            background: var(--c-dist); color: #000; border: none; padding: 12px; border-radius: 6px;
+            font-weight: 700; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 0.9rem;
+            margin-top: auto;
+        }
+        .btn-stop { background: var(--c-watt); color: #fff; display: none; }
+
+        .progress-box { height: 4px; background: #000; margin-top: 10px; display: none; }
+        .progress-fill { height: 100%; background: var(--c-speed); width: 0%; transition: width 0.2s; }
+
+        /* --- HÖGER PANEL (ANALYS) --- */
+        
+        .config-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 10px;
         }
-        .stat-card {
-            background: rgba(15, 52, 96, 0.4);
-            padding: 15px;
-            border-radius: 15px;
-            text-align: center;
+        .config-card {
+            background: rgba(0,0,0,0.2);
             border: 1px solid var(--border-color);
-        }
-        .stat-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 2px; font-weight: 600; }
-        .stat-val { font-size: 1.8rem; font-weight: 700; line-height: 1.1; }
-        .stat-unit { font-size: 0.8rem; color: var(--text-dim); font-weight: 600; }
-
-        .btn-main {
-            background: var(--accent-secondary); color: #000; border: none; padding: 15px; border-radius: 50px;
-            font-weight: 800; font-size: 1rem; cursor: pointer; width: 100%; text-transform: uppercase;
-            box-shadow: 0 4px 15px rgba(76, 201, 240, 0.3); transition: transform 0.2s; margin-top: auto;
-        }
-        .btn-main:hover { transform: translateY(-2px); filter: brightness(1.1); }
-        .btn-stop { background: var(--accent-primary); color: #fff; box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4); display: none; }
-
-        .progress-container { width: 100%; background: #0f182b; height: 6px; border-radius: 3px; margin-top: 15px; display: none; overflow: hidden; }
-        .progress-bar { height: 100%; background: var(--accent-speed); width: 0%; transition: width 0.3s ease-out; }
-        .status-text { font-size: 0.8rem; color: var(--text-dim); text-align: center; margin-top: 8px; min-height: 1.2em; }
-
-        /* --- HÖGER PANEL --- */
-        .analysis-panel {
-            background: var(--panel-bg);
-            border-radius: 20px;
-            padding: 25px;
-            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 5px;
+            transition: all 0.2s;
         }
+        .config-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 4px; margin-bottom: 2px; }
+        .config-title { font-weight: bold; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; text-transform: uppercase; }
+        .config-opts { display: flex; gap: 5px; font-size: 0.7rem; color: #666; }
+        .chk { cursor: pointer; }
+        
+        /* Rader för medelvärden */
+        .avg-container { display: flex; flex-direction: column; gap: 2px; }
+        .avg-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; min-height: 20px;}
+        .avg-val { font-weight: bold; font-family: monospace; font-size: 0.9rem; }
+        select.tiny-select {
+            background: #222; color: #aaa; border: none; font-size: 0.7rem; padding: 0; width: 60px; text-align: left; cursor: pointer;
+        }
+        
+        /* Single Stat Mode */
+        .single-mode .avg-row:first-child .avg-val { font-size: 2rem; line-height: 1; }
+        .single-mode .avg-row:first-child { height: auto; margin-top: 5px; }
+        .single-mode select.tiny-select { font-size: 0.8rem; width: auto; }
 
-        .analysis-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
-        .analysis-title { font-size: 1.2rem; font-weight: bold; color: #fff; }
-        select { background: var(--bg-color); color: white; border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 8px; outline: none; cursor: pointer; }
-
-        .chart-container {
-            flex: 1; min-height: 350px;
-            background: rgba(0,0,0,0.2);
-            border-radius: 15px;
+        /* Grafen */
+        .graph-wrapper {
+            flex: 1;
+            min-height: 300px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
             border: 1px solid var(--border-color);
-            padding: 15px;
             position: relative;
+            padding: 10px 40px 25px 40px; 
         }
-        svg { width: 100%; height: 100%; }
-        polyline { fill: none; stroke-width: 2.5; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-linejoin: round; }
+        svg { width: 100%; height: 100%; overflow: visible; }
+        
+        /* Axlar */
+        .axis-text { font-size: 10px; font-family: monospace; font-weight: bold; text-shadow: 0 0 2px #000; }
+        .grid-line { stroke: #333; stroke-width: 1; stroke-dasharray: 2; }
 
-        .totals-row { display: flex; gap: 15px; flex-wrap: wrap; }
-        .total-item { flex: 1; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); text-align: center; min-width: 100px; }
-        .total-val { font-size: 1.2rem; font-weight: bold; display: block; margin-top: 4px; }
-        .total-lbl { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; }
+        .graph-controls { display: flex; justify-content: flex-end; gap: 10px; align-items: center; }
+        select.main-select { background: #333; color: #fff; border: 1px solid #555; padding: 5px; border-radius: 4px; }
 
-        .history-list {
-            max-height: 150px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 10px; background: rgba(0,0,0,0.1);
-        }
-        .session-item {
-            display: flex; justify-content: space-between; padding: 10px 15px;
-            border-bottom: 1px solid var(--border-color); font-size: 0.85rem; cursor: pointer; transition: background 0.2s;
-        }
-        .session-item:hover { background: rgba(255,255,255,0.05); }
-        .session-item:last-child { border-bottom: none; }
+        .history-controls { display: flex; gap: 5px; margin-top: 10px; }
+        .btn-tiny { flex: 1; background: #222; border: 1px solid #444; color: #888; padding: 5px; cursor: pointer; font-size: 0.75rem; }
+        .btn-tiny:hover { background: #333; color: #fff; }
 
-        .file-controls { display: flex; gap: 10px; margin-top: 5px; }
-        .btn-sec { flex: 1; padding: 10px; background: transparent; border: 1px solid var(--border-color); color: var(--text-dim); border-radius: 8px; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
-        .btn-sec:hover { background: var(--border-color); color: #fff; }
-
-        .c-watt { color: var(--accent-watt); }
-        .c-speed { color: var(--accent-speed); }
-        .c-dist { color: var(--accent-secondary); }
-        .c-cal { color: var(--accent-cal); }
-        .c-rpm { color: var(--accent-cadence); }
+        /* Textfärger */
+        .c-watt { color: var(--c-watt); }
+        .c-speed { color: var(--c-speed); }
+        .c-cad { color: var(--c-cad); }
+        .c-hr { color: var(--c-hr); }
+        .c-dist { color: var(--c-dist); }
+        .c-cal { color: var(--c-cal); }
+        .c-res { color: var(--c-res); }
 
     </style>
 </head>
 <body>
 
 <div class="main-container">
-    
-    <!-- VÄNSTER: DASHBOARD -->
-    <div class="control-panel scrollable-panel">
+
+    <!-- VÄNSTER: LIVE -->
+    <div class="panel">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <strong style="letter-spacing:1px; color:var(--text-dim);">GYMSTICK PRO</strong>
-            <span id="connStatus" style="font-size:0.75rem; padding: 4px 8px; background: rgba(0,255,0,0.1); border-radius: 4px; color: var(--accent-speed); display:none;">ANSLUTEN</span>
+            <strong style="color:var(--text-dim); letter-spacing:1px;">GYMSTICK GB 8.0</strong>
+            <span id="connStatus" style="font-size:0.7rem; color:#555;">EJ ANSLUTEN</span>
         </div>
 
         <div class="header-grid">
-            <div class="header-item">
+            <div class="h-item">
                 <h3>Tid</h3>
-                <div class="val-time" id="valTime">00:00</div>
+                <div class="val-big" id="valTime">00:00</div>
             </div>
-            <div class="header-item">
+            <div class="h-item">
                 <h3>Motstånd</h3>
-                <div class="res-wrapper">
-                    <button class="btn-res" id="btnResDown">-</button>
-                    <div class="val-res" id="valRes">--</div>
-                    <button class="btn-res" id="btnResUp">+</button>
+                <div class="res-ctrl">
+                    <button class="btn-round" id="btnResDown">-</button>
+                    <div class="val-big c-res" id="valRes">--</div>
+                    <button class="btn-round" id="btnResUp">+</button>
                 </div>
             </div>
-            <div class="header-item">
+            <div class="h-item">
                 <h3>Puls</h3>
-                <div class="val-hr" id="valHr">--</div>
+                <div class="val-big c-hr" id="valHr">--</div>
             </div>
         </div>
 
         <div class="watt-display">
-            <div class="watt-val" id="valWatt">0</div>
-            <span class="watt-unit">WATT</span>
+            <div class="watt-num" id="valWatt">0</div>
+            <div class="watt-lbl">EFFEKT</div>
         </div>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-label">Hastighet</div>
-                <div class="stat-val c-speed" id="valSpeed">0.0</div>
-                <span class="stat-unit">km/h</span>
+        <div class="live-grid">
+            <div class="live-card">
+                <div class="live-lbl">Hastighet</div>
+                <div class="live-val c-speed" id="valSpeed">0.0</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">RPM</div>
-                <div class="stat-val c-rpm" id="valRpm">0</div>
+            <div class="live-card">
+                <div class="live-lbl">Kadens</div>
+                <div class="live-val c-cad" id="valCad">0</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Distans</div>
-                <div class="stat-val c-dist" id="valDist">0.00</div>
-                <span class="stat-unit">km</span>
+            <div class="live-card">
+                <div class="live-lbl">Sträcka</div>
+                <div class="live-val c-dist" id="valDist">0.000</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Kalorier</div>
-                <div class="stat-val c-cal" id="valCal">0</div>
-                <span class="stat-unit">kcal</span>
+            <div class="live-card">
+                <div class="live-lbl">Kalorier</div>
+                <div class="live-val c-cal" id="valCal">0</div>
             </div>
         </div>
 
-        <div style="margin-top:auto">
-            <div class="progress-container" id="progContainer">
-                <div class="progress-bar" id="progBar"></div>
-            </div>
-            <div class="status-text" id="statusText"></div>
-
-            <button class="btn-main" id="connectBtn">ANSLUT CYKEL</button>
-            <button class="btn-main btn-stop" id="stopBtn">AVSLUTA & SPARA</button>
+        <div>
+            <div class="progress-box" id="progBox"><div class="progress-fill" id="progFill"></div></div>
+            <div id="statusText" style="text-align:center; font-size:0.7rem; color:#666; min-height:15px; margin-bottom:5px;"></div>
+            <button class="btn-action" id="connectBtn">ANSLUT CYKEL</button>
+            <button class="btn-action btn-stop" id="stopBtn">SPARA & AVSLUTA</button>
         </div>
     </div>
 
-    <!-- HÖGER: GRAFER & HISTORIK -->
-    <div class="analysis-panel scrollable-panel">
-        <div class="analysis-header">
-            <span class="analysis-title">Analys & Data</span>
-            <select id="graphRes">
-                <option value="10">Upplösning: 10s</option>
-                <option value="30">Upplösning: 30s</option>
-                <option value="60" selected>Upplösning: 1 min</option>
-                <option value="300">Upplösning: 5 min</option>
+    <!-- HÖGER: ANALYS -->
+    <div class="panel">
+        
+        <div class="graph-controls">
+            <span style="font-size:0.8rem; color:#888;">Upplösning:</span>
+            <select id="graphRes" class="main-select">
+                <option value="1">1 sek</option>
+                <option value="2">2 sek</option>
+                <option value="5">5 sek</option>
+                <option value="10">10 sek</option>
+                <option value="30">30 sek</option>
+                <option value="60" selected>1 min</option>
+                <option value="300">5 min</option>
             </select>
         </div>
 
-        <div class="totals-row">
-            <div class="total-item">
-                <span class="total-lbl">Total Sträcka</span>
-                <span class="total-val c-dist" id="lifeDist">0.0 km</span>
-            </div>
-            <div class="total-item">
-                <span class="total-lbl">Antal Pass</span>
-                <span class="total-val" id="sessCount">0</span>
-            </div>
-            <div class="total-item">
-                <span class="total-lbl">Snitt Watt (Nu)</span>
-                <span class="total-val c-watt" id="avgWatt">0 W</span>
-            </div>
+        <!-- KONFIGURATIONS-RUTOR (DE 4 RUTORNA) -->
+        <div class="config-grid" id="configGrid">
+            <!-- Skapas dynamiskt av JS -->
         </div>
 
-        <div class="chart-container">
-            <div style="position:absolute; top:10px; left:15px; font-size:11px; color:rgba(255,255,255,0.5); font-weight:600;">
-                <span style="color:var(--accent-watt)">― Watt</span> &nbsp;&nbsp; 
-                <span style="color:var(--accent-speed)">-- Hastighet</span>
-            </div>
+        <!-- GRAF -->
+        <div class="graph-wrapper" id="graphContainer">
             <svg id="chartSvg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
         </div>
 
-        <div class="history-list" id="sessionList"></div>
-
-        <div class="file-controls">
-            <button class="btn-sec" id="exportBtn">Exportera JSON</button>
-            <button class="btn-sec" onclick="document.getElementById('importFile').click()">Importera JSON</button>
+        <!-- FILHANTERING -->
+        <div class="history-controls">
+            <button class="btn-tiny" id="exportBtn">Exportera JSON</button>
+            <button class="btn-tiny" onclick="document.getElementById('importFile').click()">Importera JSON</button>
             <input type="file" id="importFile" style="display:none" accept=".json">
-            <button class="btn-sec" onclick="resetHistory()" style="color:#ff5555; border-color:#ff5555; flex:0 0 auto;">X</button>
+            <button class="btn-tiny" onclick="if(confirm('Rensa?')) { localStorage.clear(); location.reload(); }" style="color:#ff5555; border-color:#ff5555;">Reset Allt</button>
         </div>
-    </div>
+        <div style="font-size:0.7rem; color:#666; text-align:center;">
+            Total sträcka: <span id="lifeDist" class="c-dist">0.000 km</span> | Pass: <span id="sessCount">0</span>
+        </div>
 
+    </div>
 </div>
 
 <script>
+    // --- UI REFERENSER ---
     const ui = {
         connectBtn: document.getElementById('connectBtn'),
         stopBtn: document.getElementById('stopBtn'),
-        connLabel: document.getElementById('connStatus'),
-        loadBar: document.getElementById('progBar'),
-        loadCont: document.getElementById('progContainer'),
+        connStatus: document.getElementById('connStatus'),
+        progBox: document.getElementById('progBox'),
+        progFill: document.getElementById('progFill'),
         statusText: document.getElementById('statusText'),
+        // Värden
         speed: document.getElementById('valSpeed'),
         watt: document.getElementById('valWatt'),
-        rpm: document.getElementById('valRpm'),
+        cad: document.getElementById('valCad'),
         dist: document.getElementById('valDist'),
         cal: document.getElementById('valCal'),
         time: document.getElementById('valTime'),
         hr: document.getElementById('valHr'),
         res: document.getElementById('valRes'),
+        // Knappar
         btnResUp: document.getElementById('btnResUp'),
         btnResDown: document.getElementById('btnResDown'),
+        // Analys
         chart: document.getElementById('chartSvg'),
+        graphWrapper: document.getElementById('graphContainer'),
         graphRes: document.getElementById('graphRes'),
+        configGrid: document.getElementById('configGrid'),
         lifeDist: document.getElementById('lifeDist'),
-        sessCount: document.getElementById('sessCount'),
-        avgWatt: document.getElementById('avgWatt'),
-        sessionList: document.getElementById('sessionList')
+        sessCount: document.getElementById('sessCount')
     };
 
+    // --- VARIABLER ---
     let iconsoleWrite = null;
     let pollInterval = null;
     let currentResistance = 1;
-    let sessionData = [];
+    let sessionData = []; // { t, w, s, c, h }
     let startTime = null;
-    
-    // Synkroniseringsvariabler
-    let calculatedDistance = 0; // Vår lokala uträkning
-    let lastRawDistance = -1;   // Senast kända "ankare" från cykeln
+    let calcDist = 0;
+    let lastRawDist = -1;
     let lastPktTime = 0;
 
+    // Protokoll (Facit)
     const SEQ = [
-        { name: "Ping",   bytes: [0xF0, 0xA0, 0x01, 0x01, 0x92], expect: 0xB0 },
-        { name: "Mode",   bytes: [0xF0, 0xA3, 0x01, 0x01, 0x01, 0x96], expect: 0xB3 },
-        { name: "Config", bytes: [0xF0, 0xA4, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xA0], expect: 0xB4 },
-        { name: "Start",  bytes: [0xF0, 0xA5, 0x01, 0x01, 0x02, 0x99], expect: 0xB5 }
+        { bytes: [0xF0, 0xA0, 0x01, 0x01, 0x92], expect: 0xB0 },
+        { bytes: [0xF0, 0xA3, 0x01, 0x01, 0x01, 0x96], expect: 0xB3 },
+        { bytes: [0xF0, 0xA4, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xA0], expect: 0xB4 },
+        { bytes: [0xF0, 0xA5, 0x01, 0x01, 0x02, 0x99], expect: 0xB5 }
     ];
     let seqIndex = 0;
     const READ_CMD = [0xF0, 0xA2, 0x01, 0x01, 0x94];
     const STOP_CMD = [0xF0, 0xA5, 0x01, 0x01, 0x04, 0x9B];
 
-    let history = JSON.parse(localStorage.getItem('gymstick_v2_history')) || { sessions: [], totalDist: 0 };
+    let history = JSON.parse(localStorage.getItem('gymstick_v3_history')) || { sessions: [], totalDist: 0 };
     updateHistoryUI();
 
+    // --- SETUP CONFIG CARDS ---
+    const TIME_OPTS = [
+        {v:'graph', t:'Grafen'}, // Ny option
+        {v:5, t:'5s'}, {v:10, t:'10s'}, {v:30, t:'30s'},
+        {v:60, t:'1m'}, {v:120, t:'2m'}, {v:300, t:'5m'},
+        {v:600, t:'10m'}, {v:1800, t:'30m'}, {v:3600, t:'1h'}, {v:-1, t:'Tot'}
+    ];
+    // Default selection: 1m, 10m, Tot
+    const DEF_SELS = [60, 600, -1];
+
+    const METRICS = [
+        { key: 'w', title: 'EFFEKT', color: 'var(--c-watt)' },
+        { key: 's', title: 'HASTIGHET', color: 'var(--c-speed)' },
+        { key: 'c', title: 'KADENS', color: 'var(--c-cad)' },
+        { key: 'h', title: 'PULS', color: 'var(--c-hr)' }
+    ];
+
+    function initConfigGrid() {
+        ui.configGrid.innerHTML = '';
+        METRICS.forEach(m => {
+            const card = document.createElement('div');
+            card.className = 'config-card single-mode'; // Default single mode
+            card.style.borderLeft = `3px solid ${m.color}`;
+            
+            // Header
+            const hdr = document.createElement('div');
+            hdr.className = 'config-header';
+            hdr.innerHTML = `
+                <span class="config-title" style="color:${m.color}">
+                    <input type="checkbox" id="chk_${m.key}" checked class="chk"> ${m.title}
+                </span>
+                <div class="config-opts">
+                    <label><input type="checkbox" data-key="${m.key}" data-rows="2"> 2</label>
+                    <label><input type="checkbox" data-key="${m.key}" data-rows="3"> 3</label>
+                </div>
+            `;
+            card.appendChild(hdr);
+
+            // Container for averages
+            const avgCont = document.createElement('div');
+            avgCont.className = 'avg-container';
+            avgCont.id = `avgs_${m.key}`;
+
+            // Create 3 rows (hidden by default via CSS/Logic)
+            for(let i=0; i<3; i++) {
+                const row = document.createElement('div');
+                row.className = 'avg-row';
+                if(i > 0) row.style.display = 'none'; // Default hide 2 & 3
+                
+                const sel = document.createElement('select');
+                sel.className = 'tiny-select';
+                TIME_OPTS.forEach(opt => {
+                    const o = document.createElement('option');
+                    o.value = opt.v;
+                    o.textContent = opt.t;
+                    if(opt.v === DEF_SELS[i]) o.selected = true;
+                    sel.appendChild(o);
+                });
+                sel.dataset.metric = m.key;
+                sel.dataset.idx = i;
+                sel.onchange = updateAverages;
+
+                const val = document.createElement('span');
+                val.className = 'avg-val';
+                val.style.color = m.color;
+                val.textContent = '-';
+                val.id = `val_${m.key}_${i}`;
+
+                row.appendChild(sel);
+                row.appendChild(val);
+                avgCont.appendChild(row);
+            }
+            card.appendChild(avgCont);
+            ui.configGrid.appendChild(card);
+
+            // Event Listeners for 2/3 checkboxes - EXKLUSIV LOGIK (Radio-beteende)
+            const inputs = hdr.querySelectorAll('input[type=checkbox][data-rows]');
+            inputs.forEach(inp => {
+                inp.onchange = (e) => {
+                    const r = parseInt(e.target.dataset.rows); // 2 eller 3
+                    const isChecked = e.target.checked;
+                    
+                    // Hitta den andra checkboxen (om jag klickade 3, hitta 2)
+                    const otherRowIdx = r === 3 ? 2 : 3;
+                    const otherInp = hdr.querySelector(`input[data-rows="${otherRowIdx}"]`);
+                    
+                    // Om vi aktiverade denna, avaktivera den andra
+                    if(isChecked && otherInp) {
+                        otherInp.checked = false;
+                    }
+                    
+                    // Läs av status igen för att bestämma visning
+                    const chk2 = hdr.querySelector('input[data-rows="2"]').checked;
+                    const chk3 = hdr.querySelector('input[data-rows="3"]').checked;
+                    
+                    const row2 = avgCont.children[1]; // Index 1
+                    const row3 = avgCont.children[2]; // Index 2
+                    
+                    if (chk3) {
+                        // Visa 3 rader (1, 2, 3)
+                        row2.style.display = 'flex';
+                        row3.style.display = 'flex';
+                        card.classList.remove('single-mode');
+                    } else if (chk2) {
+                        // Visa 2 rader (1, 2)
+                        row2.style.display = 'flex';
+                        row3.style.display = 'none';
+                        card.classList.remove('single-mode');
+                    } else {
+                        // Visa 1 rad (Single)
+                        row2.style.display = 'none';
+                        row3.style.display = 'none';
+                        card.classList.add('single-mode');
+                    }
+                };
+            });
+
+            // Graph toggle
+            document.getElementById(`chk_${m.key}`).onchange = drawGraph;
+        });
+    }
+    initConfigGrid();
+
+    // --- BLUETOOTH CONNECT ---
     ui.connectBtn.onclick = async () => {
         try {
-            ui.statusText.textContent = "Söker enhet...";
+            ui.statusText.textContent = "Söker...";
             const device = await navigator.bluetooth.requestDevice({
                 filters: [{ services: ['fitness_machine'] }],
                 optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb']
             });
-
             device.addEventListener('gattserverdisconnected', onDisconnect);
-            ui.statusText.textContent = "Ansluter...";
             
             const server = await device.gatt.connect();
             const service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
-            
             const notifyChar = await service.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
             await notifyChar.startNotifications();
             notifyChar.addEventListener('characteristicvaluechanged', handleData);
@@ -361,77 +472,58 @@
             iconsoleWrite = await service.getCharacteristic('0000fff2-0000-1000-8000-00805f9b34fb');
             
             ui.connectBtn.style.display = 'none';
-            ui.loadCont.style.display = 'block';
+            ui.progBox.style.display = 'block';
             startHandshake();
 
-        } catch (e) {
-            ui.statusText.textContent = "Fel: " + e.message;
-        }
+        } catch (e) { ui.statusText.textContent = "Fel: " + e.message; }
     };
 
     function onDisconnect() {
-        ui.connLabel.style.display = 'none';
+        ui.connStatus.textContent = "EJ ANSLUTEN";
+        ui.connStatus.style.color = "#555";
         ui.connectBtn.style.display = 'block';
         ui.stopBtn.style.display = 'none';
-        ui.loadCont.style.display = 'none';
-        ui.statusText.textContent = "Frånkopplad";
+        ui.progBox.style.display = 'none';
         if(pollInterval) clearInterval(pollInterval);
     }
 
-    function startHandshake() {
-        seqIndex = 0;
-        sendNext();
+    async function send(bytes) {
+        if(!iconsoleWrite) return;
+        try { await iconsoleWrite.writeValue(new Uint8Array(bytes)); } catch(e){}
     }
+
+    function startHandshake() { seqIndex = 0; sendNext(); }
 
     async function sendNext() {
         if (seqIndex >= SEQ.length) {
-            ui.statusText.textContent = "";
-            ui.loadCont.style.display = 'none';
-            ui.connLabel.style.display = 'block';
+            ui.statusText.textContent = "KÖR!";
+            ui.progBox.style.display = 'none';
+            ui.connStatus.textContent = "ANSLUTEN";
+            ui.connStatus.style.color = "var(--c-speed)";
             ui.stopBtn.style.display = 'block';
             
             if (pollInterval) clearInterval(pollInterval);
             pollInterval = setInterval(() => send(READ_CMD), 1000);
             
-            // RESET SESSION
             sessionData = [];
             startTime = Date.now();
-            calculatedDistance = 0;
-            lastRawDistance = -1;
-            lastPktTime = Date.now();
+            calcDist = 0; lastRawDist = -1; lastPktTime = Date.now();
             return;
         }
         const step = SEQ[seqIndex];
-        ui.loadBar.style.width = ((seqIndex / SEQ.length) * 100) + "%";
-        ui.statusText.textContent = "Initierar: " + step.name;
+        ui.progFill.style.width = ((seqIndex / SEQ.length) * 100) + "%";
+        ui.statusText.textContent = "Initierar...";
         await send(step.bytes);
     }
 
-    async function send(bytes) {
-        if(!iconsoleWrite) return;
-        try { await iconsoleWrite.writeValue(new Uint8Array(bytes)); }
-        catch(e) { console.log("TX error", e); }
-    }
-
-    async function setResistance(lvl) {
-        if(lvl < 1) lvl = 1; if(lvl > 32) lvl = 32;
-        const byteLvl = lvl + 1;
-        const bytes = [0xF0, 0xA6, 0x01, 0x01, byteLvl];
-        let sum = 0; for(let b of bytes) sum += b;
-        bytes.push(sum & 0xFF);
-        await send(bytes);
-        currentResistance = lvl;
-    }
-    ui.btnResUp.onclick = () => setResistance(currentResistance + 1);
-    ui.btnResDown.onclick = () => setResistance(currentResistance - 1);
-
+    // --- DATA PARSING ---
     function handleData(event) {
         const data = new Uint8Array(event.target.value.buffer);
 
         if (seqIndex < SEQ.length) {
             if (data[0] === 0xF0 && data[1] === SEQ[seqIndex].expect) {
                 seqIndex++;
-                setTimeout(sendNext, 250);
+                setTimeout(sendNext, 200);
                 return;
             }
         }
@@ -441,9 +533,7 @@
 
             const speed = val(6, 7) / 10;
             const rpm = val(8, 9);
-            // RAW DIST: 100 meters resolution (e.g. 5 means 0.5km)
-            const rawDistKm = val(10, 11) / 10; 
-            
+            const rawDist = val(10, 11) / 10;
             const cal = val(12, 13);
             const hr = val(14, 15);
             const watt = val(16, 17) / 10;
@@ -453,87 +543,157 @@
             let tMin = data[4] - 1; if(tMin<0) tMin=0;
             let tSec = data[5] - 1; if(tSec<0) tSec=0;
 
-            // --- SMART DISTANS KALIBRERING ---
             const now = Date.now();
-            const timeDelta = (now - lastPktTime) / 1000;
+            const dt = (now - lastPktTime) / 1000;
             lastPktTime = now;
 
-            // 1. Har vi fått ett nytt "Ankare"? (t.ex. slagit om från 0.4 till 0.5)
-            if (rawDistKm > lastRawDistance && lastRawDistance !== -1) {
-                // HÅRD SYNK: Vi vet exakt att vi just passerade gränsen
-                calculatedDistance = rawDistKm;
+            if (rawDist > lastRawDist && lastRawDist !== -1) {
+                calcDist = rawDist;
             } else {
-                // 2. Dead Reckoning: Addera uträknad sträcka
-                if (speed > 0 && timeDelta > 0 && timeDelta < 5) {
-                    const distInc = (speed / 3600) * timeDelta;
-                    calculatedDistance += distInc;
-                }
-                // 3. Drift Protection (Taket)
-                // Om vi räknat upp till 0.599 men cykeln fortfarande säger 0.5,
-                // då får vi inte gå över 0.599 (dvs nästa raw steg)
-                if (calculatedDistance > (rawDistKm + 0.099)) {
-                    calculatedDistance = rawDistKm + 0.099;
-                }
-                // Botten: Får aldrig vara mindre än vad cykeln säger
-                if (calculatedDistance < rawDistKm) {
-                    calculatedDistance = rawDistKm;
-                }
+                if (speed > 0 && dt < 5) calcDist += (speed / 3600) * dt;
+                if (calcDist > rawDist + 0.099) calcDist = rawDist + 0.099;
+                if (calcDist < rawDist) calcDist = rawDist;
             }
-            lastRawDistance = rawDistKm;
+            lastRawDist = rawDist;
 
             ui.speed.textContent = speed.toFixed(1);
             ui.watt.textContent = watt.toFixed(0);
-            ui.rpm.textContent = rpm;
+            ui.cad.textContent = rpm;
             ui.hr.textContent = hr;
             ui.cal.textContent = cal;
             ui.res.textContent = level;
             ui.time.textContent = `${tMin}:${tSec.toString().padStart(2,'0')}`;
-            
-            // Visa vår smarta distans
-            ui.dist.textContent = calculatedDistance.toFixed(3);
+            ui.dist.textContent = calcDist.toFixed(3);
 
             if(startTime) {
                 const elapsed = (Date.now() - startTime) / 1000;
-                sessionData.push({ t: elapsed, w: watt, s: speed, h: hr });
-                if(sessionData.length % 5 === 0) updateChart(sessionData);
-                const avg = sessionData.reduce((a,b)=>a+b.w,0) / sessionData.length;
-                ui.avgWatt.textContent = Math.round(avg) + " W";
+                sessionData.push({ t: elapsed, w: watt, s: speed, c: rpm, h: hr });
+                if(sessionData.length % 2 === 0) {
+                    updateAverages();
+                    drawGraph();
+                }
             }
         }
     }
 
-    function updateChart(dataPoints) {
-        if(!dataPoints || dataPoints.length < 2) return;
+    async function setRes(lvl) {
+        if(lvl < 1) lvl = 1; if(lvl > 32) lvl = 32;
+        const bLvl = lvl + 1;
+        const bytes = [0xF0, 0xA6, 0x01, 0x01, bLvl];
+        let sum = 0; for(let b of bytes) sum += b;
+        bytes.push(sum & 0xFF);
+        await send(bytes);
+    }
+    ui.btnResUp.onclick = () => setRes(currentResistance + 1);
+    ui.btnResDown.onclick = () => setRes(currentResistance - 1);
+
+    // --- ANALYSIS LOGIC ---
+    function updateAverages() {
+        if(sessionData.length === 0) return;
+        const now = sessionData[sessionData.length-1].t;
+        const graphResVal = parseInt(ui.graphRes.value);
+
+        function calc(metric) {
+            for(let i=0; i<3; i++) {
+                const sel = document.querySelector(`select[data-metric="${metric}"][data-idx="${i}"]`);
+                const disp = document.getElementById(`val_${metric}_${i}`);
+                if(!sel || !disp) continue;
+
+                let timeWin = sel.value;
+                if(timeWin === 'graph') timeWin = graphResVal; // Använd grafens upplösning
+                else timeWin = parseInt(timeWin);
+                
+                let sum = 0, count = 0;
+                const cutoff = (timeWin === -1) ? 0 : (now - timeWin);
+                
+                for(let j=sessionData.length-1; j>=0; j--) {
+                    if(sessionData[j].t < cutoff) break;
+                    sum += sessionData[j][metric];
+                    count++;
+                }
+                
+                disp.textContent = count > 0 ? Math.round(sum/count) : '-';
+            }
+        }
+
+        calc('w'); calc('s'); calc('c'); calc('h');
+    }
+
+    function drawGraph() {
+        if(sessionData.length < 2) return;
         const res = parseInt(ui.graphRes.value);
+        
+        // Sampling
         const buckets = [];
-        dataPoints.forEach(p => {
+        sessionData.forEach(p => {
             const idx = Math.floor(p.t / res);
-            if(!buckets[idx]) buckets[idx] = {c:0, w:0, s:0, t:idx*res};
-            buckets[idx].c++; buckets[idx].w += p.w; buckets[idx].s += p.s;
+            if(!buckets[idx]) buckets[idx] = {c:0, w:0, s:0, c_rpm:0, h:0, t:idx*res};
+            buckets[idx].c++;
+            buckets[idx].w += p.w;
+            buckets[idx].s += p.s;
+            buckets[idx].c_rpm += p.c; // Map 'c' to c_rpm
+            buckets[idx].h += p.h;
         });
         const valid = buckets.filter(b=>b);
         if(valid.length < 2) return;
 
-        const maxW = Math.max(...valid.map(b=>b.w/b.c)) || 100;
-        const maxS = Math.max(...valid.map(b=>b.s/b.c)) || 40;
+        // Rita
+        const svg = ui.chart;
+        svg.innerHTML = ''; 
 
-        let pW="", pS="";
-        valid.forEach((b, i) => {
-            const x = (i / (valid.length-1)) * 100;
-            pW += `${x},${100 - ((b.w/b.c)/ (maxW*1.2) * 100)} `;
-            pS += `${x},${100 - ((b.s/b.c)/ (maxS*1.2) * 100)} `;
+        // Helper
+        function makePoly(metricKey, color, maxVal, width, height) {
+            let pts = "";
+            valid.forEach((b, i) => {
+                const x = (i / (valid.length - 1)) * width;
+                const val = b[metricKey] / b.c;
+                const y = height - ((val / maxVal) * height);
+                pts += `${x},${y} `;
+            });
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+            line.setAttribute("points", pts);
+            line.setAttribute("stroke", color);
+            line.setAttribute("fill", "none");
+            line.setAttribute("stroke-width", "2");
+            line.setAttribute("stroke-linejoin", "round");
+            return line;
+        }
+
+        // Hitta aktiva
+        const active = [];
+        if(document.getElementById('chk_w').checked) active.push({key:'w', color:'var(--c-watt)', lbl:'W'});
+        if(document.getElementById('chk_s').checked) active.push({key:'s', color:'var(--c-speed)', lbl:'km/h'});
+        if(document.getElementById('chk_c').checked) active.push({key:'c_rpm', color:'var(--c-cad)', lbl:'rpm'});
+        if(document.getElementById('chk_h').checked) active.push({key:'h', color:'var(--c-hr)', lbl:'bpm'});
+
+        if(active.length === 0) return;
+
+        // Skapa Axlar
+        active.forEach((m, idx) => {
+            const max = Math.max(...valid.map(b => b[m.key]/b.c)) || 100;
+            const scaledMax = max * 1.1; 
+
+            // Linje
+            svg.appendChild(makePoly(m.key, m.color, scaledMax, 100, 100));
+
+            // Text
+            const xPos = (idx % 2 === 0) ? 2 : 90; 
+            const yPos = 10 + (Math.floor(idx/2) * 10);
+            
+            const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            txt.setAttribute("x", xPos);
+            txt.setAttribute("y", yPos);
+            txt.setAttribute("fill", m.color);
+            txt.setAttribute("class", "axis-text");
+            txt.textContent = `${m.lbl}: ${Math.round(max)}`;
+            svg.appendChild(txt);
         });
-
-        ui.chart.innerHTML = `
-            <polyline points="${pW}" stroke="#f72585" />
-            <polyline points="${pS}" stroke="#23d5ab" stroke-dasharray="4" opacity="0.6" />
-        `;
     }
-    
-    ui.graphRes.onchange = () => updateChart(sessionData);
+
+    ui.graphRes.onchange = () => { updateAverages(); drawGraph(); };
 
     ui.stopBtn.onclick = async () => {
-        if(confirm("Avsluta pass och spara?")) {
+        if(confirm("Avsluta?")) {
             await send(STOP_CMD);
             history.sessions.push({
                 date: new Date().toISOString(),
@@ -541,61 +701,35 @@
                 data: sessionData
             });
             history.totalDist += parseFloat(ui.dist.textContent);
-            saveHistory();
+            localStorage.setItem('gymstick_v3_history', JSON.stringify(history));
             onDisconnect();
+            updateHistoryUI();
         }
     };
 
     function updateHistoryUI() {
-        ui.lifeDist.textContent = history.totalDist.toFixed(1) + " km";
+        ui.lifeDist.textContent = history.totalDist.toFixed(3) + " km";
         ui.sessCount.textContent = history.sessions.length;
-        ui.sessionList.innerHTML = history.sessions.slice().reverse().map((s, i) => {
-            const date = new Date(s.date).toLocaleString().slice(0,16);
-            return `<div class="session-item" onclick="loadOldSession(${history.sessions.length - 1 - i})">
-                <span>${date}</span> <span>${s.dist.toFixed(2)} km</span>
-            </div>`;
-        }).join('');
     }
-
-    window.loadOldSession = (idx) => {
-        const sess = history.sessions[idx];
-        updateChart(sess.data);
-    };
-
-    function saveHistory() {
-        localStorage.setItem('gymstick_v2_history', JSON.stringify(history));
-        updateHistoryUI();
-    }
-
-    window.resetHistory = () => {
-        if(confirm("Radera all historik?")) {
-            localStorage.clear();
-            history = { sessions: [], totalDist: 0 };
-            updateHistoryUI();
-            location.reload();
-        }
-    };
 
     document.getElementById('exportBtn').onclick = () => {
-        const blob = new Blob([JSON.stringify(history)], {type: "application/json"});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = "gymstick_data.json";
-        a.click();
+        const b = new Blob([JSON.stringify(history)],{type:'application/json'});
+        const a =document.createElement('a'); a.href=URL.createObjectURL(b); a.download='gymstick.json'; a.click();
     };
-
     document.getElementById('importFile').onchange = (e) => {
         const r = new FileReader();
-        r.onload = (evt) => {
+        r.onload = (ev) => {
             try {
-                history = JSON.parse(evt.target.result);
-                saveHistory();
-                if(history.sessions.length > 0) {
-                    const last = history.sessions[history.sessions.length-1];
-                    updateChart(last.data);
+                history = JSON.parse(ev.target.result);
+                localStorage.setItem('gymstick_v3_history', JSON.stringify(history));
+                updateHistoryUI();
+                if(history.sessions.length) {
+                    sessionData = history.sessions[history.sessions.length-1].data;
+                    drawGraph();
+                    updateAverages();
                 }
-                alert("Data importerad!");
-            } catch(err) { alert("Felaktig fil."); }
+                alert("Klar!");
+            } catch(x){alert("Fel fil");}
         };
         r.readAsText(e.target.files[0]);
     };
