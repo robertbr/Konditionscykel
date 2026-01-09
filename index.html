@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gymstick Explorer v10</title>
+    <title>Gymstick Explorer v12</title>
     <style>
         :root {
             --bg-color: #0d1117;
@@ -61,34 +61,23 @@
             border-radius: 6px;
             border: 1px solid var(--border-color);
         }
-        .cmd-row {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        select, input {
-            background: #0d1117;
-            border: 1px solid var(--border-color);
-            color: #fff;
-            padding: 10px;
-            border-radius: 4px;
-            flex-grow: 1;
-        }
-        select { flex-grow: 2; }
         
         button { 
             background: var(--accent-green); 
             color: white; 
             border: none; 
-            padding: 10px 20px; 
+            padding: 12px; 
             border-radius: 4px;
             font-weight: bold; 
             cursor: pointer; 
+            font-size: 0.9rem;
+            width: 100%;
+            margin-top: 10px;
         }
         button:hover { opacity: 0.9; }
         button:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; }
 
-        #connectBtn { width: 100%; font-size: 1.1rem; padding: 15px; margin-bottom: 20px; background: var(--accent); }
+        #connectBtn { font-size: 1.1rem; padding: 15px; margin-bottom: 20px; background: var(--accent); margin-top: 0;}
 
         /* LOG */
         .log-window {
@@ -105,7 +94,7 @@
             box-sizing: border-box;
         }
         
-        .l-data { color: #58a6ff; }
+        .l-data { color: #58a6ff; font-weight: bold; }
         .l-err { color: #f85149; }
         .l-succ { color: #3fb950; }
         .l-info { color: #8b949e; }
@@ -116,57 +105,46 @@
 
 <div class="dashboard">
     <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:5px;">
-        <strong>Gymstick Explorer v10</strong>
+        <strong>Gymstick Explorer v12</strong>
         <span id="status">Ej ansluten</span>
     </div>
 
-    <button id="connectBtn">ANSLUT TILL ALLT</button>
+    <button id="connectBtn">ANSLUT TILL CYKEL</button>
 
     <!-- Realtidsdata -->
     <div class="data-grid">
         <div class="data-box">
-            <div class="data-lbl">Hastighet (km/h)</div>
+            <div class="data-lbl">Hastighet</div>
             <div class="data-val" id="valSpeed">0.0</div>
         </div>
         <div class="data-box">
-            <div class="data-lbl">Effekt (Watt)</div>
+            <div class="data-lbl">Effekt</div>
             <div class="data-val" id="valWatt">0</div>
         </div>
         <div class="data-box">
-            <div class="data-lbl">Kadens (rpm)</div>
-            <div class="data-val" id="valCadence">0</div>
+            <div class="data-lbl">Tid (Min:Sek)</div>
+            <div class="data-val" id="valTime">00:00</div>
         </div>
         <div class="data-box">
-            <div class="data-lbl">Puls (bpm)</div>
-            <div class="data-val" id="valHr">0</div>
+            <div class="data-lbl">Nivå</div>
+            <div class="data-val" id="valLevel">--</div>
         </div>
     </div>
 
     <!-- Kommando Sändare -->
     <div class="cmd-section">
-        <div class="data-lbl">Skicka Kommando (Hex)</div>
-        <div class="cmd-row">
-            <select id="charSelect">
-                <option value="none">Välj kanal...</option>
-                <!-- Fylls på dynamiskt -->
-            </select>
-        </div>
-        <div class="cmd-row">
-            <input type="text" id="hexInput" placeholder="T.ex: A0 eller 07" maxlength="20">
-            <button id="sendBtn" disabled>SÄND</button>
-        </div>
-        <div style="font-size:0.75rem; color:#8b949e; margin-top:5px;">
-            Testa: <strong>A0</strong> (iConsole), <strong>07</strong> (FTMS Start)
-        </div>
+        <div class="data-lbl" style="margin-bottom:10px;">iConsole Kommandon</div>
+        <button id="btnStartComplex" disabled>Skicka iConsole START-paket (F0 A5...)</button>
+        <button id="btnPing" disabled style="background:#8b949e">Skicka Ping (F0)</button>
     </div>
 </div>
 
 <div style="width:100%; max-width:600px; display:flex; gap:10px; margin-bottom:5px;">
-    <button id="dlLogBtn" style="background:#21262d; flex:1;">Spara Logg</button>
-    <button id="clearLogBtn" style="background:#21262d; flex:1;">Rensa</button>
+    <button id="dlLogBtn" style="background:#21262d; flex:1; margin-top:0;">Spara Logg</button>
+    <button id="clearLogBtn" style="background:#21262d; flex:1; margin-top:0;">Rensa</button>
 </div>
 
-<div class="log-window" id="logOutput">Logg startad...</div>
+<div class="log-window" id="logOutput">Klicka på ANSLUT för att börja...</div>
 
 <script>
     // --- UI ---
@@ -175,15 +153,14 @@
         log: document.getElementById('logOutput'),
         speed: document.getElementById('valSpeed'),
         watt: document.getElementById('valWatt'),
-        cadence: document.getElementById('valCadence'),
-        hr: document.getElementById('valHr'),
-        charSelect: document.getElementById('charSelect'),
-        hexInput: document.getElementById('hexInput'),
-        sendBtn: document.getElementById('sendBtn')
+        time: document.getElementById('valTime'),
+        level: document.getElementById('valLevel'),
+        btnStartComplex: document.getElementById('btnStartComplex'),
+        btnPing: document.getElementById('btnPing')
     };
 
     let fullLog = [];
-    let writeCharacteristics = {}; // Map: UUID -> Characteristic Object
+    let iconsoleWriteChar = null; // FFF2
 
     // --- LOGGNING ---
     function log(msg, type = 'info') {
@@ -203,7 +180,7 @@
         const blob = new Blob([fullLog.join('\n')], { type: 'text/plain' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = "gymstick_v10_log.txt";
+        a.download = "gymstick_v12_log.txt";
         a.click();
     };
 
@@ -211,15 +188,12 @@
     document.getElementById('connectBtn').onclick = async () => {
         try {
             ui.status.textContent = "Söker...";
-            log("Startar sökning efter tjänster...", 'info');
+            log("Startar sökning...", 'info');
 
             const device = await navigator.bluetooth.requestDevice({
-                acceptAllDevices: true,
+                filters: [{ services: ['fitness_machine'] }],
                 optionalServices: [
-                    'fitness_machine', // 0x1826
-                    'cycling_power',   // 0x1818
-                    'cycling_speed_and_cadence', // 0x1816
-                    'heart_rate',      // 0x180D
+                    'fitness_machine',
                     '0000fff0-0000-1000-8000-00805f9b34fb' // iConsole
                 ]
             });
@@ -228,60 +202,35 @@
                 ui.status.textContent = "Frånkopplad";
                 log("Enhet frånkopplad!", 'err');
                 document.getElementById('connectBtn').disabled = false;
-                ui.sendBtn.disabled = true;
+                disableButtons();
             });
 
-            log(`Vald enhet: ${device.name}`, 'succ');
+            log(`Vald: ${device.name}`, 'succ');
             const server = await device.gatt.connect();
-            log("GATT Ansluten. Hämtar tjänster...", 'succ');
-            
+            log("GATT Ansluten.", 'succ');
             ui.status.textContent = "Ansluten";
             document.getElementById('connectBtn').disabled = true;
 
-            const services = await server.getPrimaryServices();
-            
-            // Loopa igenom allt vi hittar
-            for (const service of services) {
-                log(`Service hittad: ${shortUUID(service.uuid)}`, 'info');
+            // 1. SETUP iConsole
+            try {
+                const service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
+                log("Hittade iConsole (FFF0)", 'info');
+
+                // Lyssna på FFF1
+                const notifyChar = await service.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
+                await notifyChar.startNotifications();
+                notifyChar.addEventListener('characteristicvaluechanged', (e) => handleData(e, 'ICONSOLE'));
+                log("Lyssnar på FFF1", 'succ');
+
+                // Spara skriv-kanal FFF2
+                iconsoleWriteChar = await service.getCharacteristic('0000fff2-0000-1000-8000-00805f9b34fb');
+                log("Skriv-kanal FFF2 redo.", 'info');
                 
-                try {
-                    const chars = await service.getCharacteristics();
-                    for (const char of chars) {
-                        const uuid = shortUUID(char.uuid);
-                        const props = getProps(char);
-                        
-                        log(`  -> Char: ${uuid} [${props}]`, 'info');
+                enableButtons();
 
-                        // Om den går att SKRIVA till, lägg till i dropdown
-                        if (char.properties.write || char.properties.writeWithoutResponse) {
-                            writeCharacteristics[char.uuid] = char;
-                            const opt = document.createElement('option');
-                            opt.value = char.uuid;
-                            // Ge användarvänliga namn
-                            let name = uuid;
-                            if (uuid.includes('2ad9')) name = "FTMS Control (2AD9)";
-                            if (uuid.includes('fff2')) name = "iConsole Write (FFF2)";
-                            opt.textContent = name;
-                            ui.charSelect.appendChild(opt);
-                        }
-
-                        // Om den går att LYSSNA på, starta notiser
-                        if (char.properties.notify || char.properties.indicate) {
-                            try {
-                                await char.startNotifications();
-                                char.addEventListener('characteristicvaluechanged', (e) => handleData(e, uuid));
-                                log(`     Notiser startade på ${uuid}`, 'succ');
-                            } catch (e) {
-                                log(`     Kunde inte starta notis: ${e}`, 'err');
-                            }
-                        }
-                    }
-                } catch (e) { log(`  Kunde inte läsa chars: ${e}`, 'err'); }
+            } catch (e) {
+                log("Kunde inte hitta iConsole: " + e, 'err');
             }
-            
-            // Aktivera sänd-knappen
-            ui.sendBtn.disabled = false;
-            log("Redo för kommandon.", 'succ');
 
         } catch (err) {
             log("Fel: " + err, 'err');
@@ -289,79 +238,94 @@
         }
     };
 
-    // --- DATA HANTERING ---
-    function handleData(event, uuid) {
+    // --- DATA ---
+    function handleData(event, type) {
         const data = new Uint8Array(event.target.value.buffer);
         const hex = Array.from(data).map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
         
-        // Logga bara unika värden eller sällan för att inte dränka loggen? Nej, vi vill se allt nu.
-        log(`DATA [${uuid}]: ${hex}`, 'data');
+        log(`RX: ${hex}`, 'data');
 
-        // Enkel parsing för display (om vi har tur och det är standardformat)
-        
-        // FTMS Indoor Bike Data (2AD2)
-        if (uuid.includes('2ad2') && data.length > 3) {
-            // Speed brukar vara uint16 i byte 2-3
-            const speed = new DataView(data.buffer).getUint16(2, true);
-            ui.speed.textContent = (speed / 100).toFixed(1);
+        // iConsole Parsing (F2 ...)
+        if (data[0] === 0xF2) {
+            // Struktur: F2 [Len] [Data...] [CS]
+            // Dataoffset börjar på index 2
+            // Ofta: 
+            // Byte 2-3: Time
+            // Byte 4-5: Speed * 10
+            // Byte 6-7: RPM
+            // Byte 8-9: Dist
+            // Byte 10-11: Watt
             
-            // Watt brukar vara byte 6-7
+            if (data.length > 5) {
+                const speedVal = (data[4] << 8) | data[5];
+                ui.speed.textContent = (speedVal / 10).toFixed(1);
+            }
             if (data.length > 7) {
-                const watt = new DataView(data.buffer).getInt16(6, true);
-                ui.watt.textContent = watt;
+                // Gissning: RPM
+            }
+            if (data.length > 11) {
+                const wattVal = (data[10] << 8) | data[11];
+                ui.watt.textContent = wattVal;
+            }
+            
+            // Tid (Byte 2-3)
+            if (data.length > 3) {
+               const timeM = data[2];
+               const timeS = data[3];
+               ui.time.textContent = `${timeM}:${timeS.toString().padStart(2,'0')}`;
+            }
+            
+            // Level (ofta byte 13 eller 14?)
+            if (data.length > 13) {
+               ui.level.textContent = data[13];
             }
         }
-        
-        // Cycling Speed & Cadence (2A5B)
-        if (uuid.includes('2a5b') && data.length > 1) {
-            // Mycket förenklad parsing, beror på flags
-            log("CSC Data mottagen (ej parsad)", 'succ');
-        }
-        
-        // Cycling Power (2A63)
-        if (uuid.includes('2a63') && data.length > 3) {
-            const watt = new DataView(data.buffer).getInt16(2, true);
-            ui.watt.textContent = watt;
-        }
     }
 
-    // --- SÄND KOMMANDO ---
-    ui.sendBtn.onclick = async () => {
-        const uuid = ui.charSelect.value;
-        const hexStr = ui.hexInput.value.replace(/\s+/g, '');
-        
-        if (uuid === 'none') { alert("Välj en kanal först!"); return; }
-        if (!hexStr) { alert("Skriv hex-kod!"); return; }
+    function enableButtons() {
+        ui.btnStartComplex.disabled = false;
+        ui.btnPing.disabled = false;
+    }
+    
+    function disableButtons() {
+        ui.btnStartComplex.disabled = true;
+        ui.btnPing.disabled = true;
+    }
 
-        // Konvertera hex string till Uint8Array
-        const bytes = [];
-        for (let i = 0; i < hexStr.length; i += 2) {
-            bytes.push(parseInt(hexStr.substr(i, 2), 16));
-        }
-
+    async function send(bytes) {
+        if (!iconsoleWriteChar) return;
         try {
-            const char = writeCharacteristics[uuid];
-            log(`Skickar ${hexStr} till ${shortUUID(uuid)}...`, 'info');
-            await char.writeValue(new Uint8Array(bytes));
-            log("Skickat OK!", 'succ');
-        } catch (e) {
-            log("Sändningsfel: " + e, 'err');
-        }
-    };
+            // Beräkna Checksumma (Sista byten)
+            // iConsole checksum är ofta summan av alla bytes & 0xFF
+            let sum = 0;
+            for(let b of bytes) sum += b;
+            const checksum = sum & 0xFF;
+            bytes.push(checksum); // Lägg till CS på slutet
 
-    // Hjälpfunktioner
-    function shortUUID(uuid) {
-        if (uuid.startsWith("0000")) return uuid.substring(4, 8).toUpperCase();
-        return uuid.substring(0, 8);
+            const hex = bytes.map(b => b.toString(16).toUpperCase()).join(' ');
+            log(`TX [FFF2]: ${hex}`, 'info');
+            await iconsoleWriteChar.writeValue(new Uint8Array(bytes));
+        } catch (e) { log("Sändningsfel: " + e, 'err'); }
     }
-    function getProps(char) {
-        let p = [];
-        if (char.properties.read) p.push("R");
-        if (char.properties.write) p.push("W");
-        if (char.properties.notify) p.push("N");
-        if (char.properties.indicate) p.push("I");
-        return p.join('');
-    }
+
+    // Ping (Bara för test)
+    ui.btnPing.onclick = () => send([0xF0]);
+
+    // DET KOMPLEXA START-PAKETET
+    // Format: Header(F0) Cmd(A5) Time(1,2) Dist(3,4) Cal(5,6) Pulse(7,8) Level(9)
+    // Vi sätter: Tid=20min, Dist=0, Cal=0, Puls=0, Level=1
+    ui.btnStartComplex.onclick = () => {
+        const packet = [
+            0xF0, // Header
+            0xA5, // CMD: Start
+            0x00, 0x14, // Time: 20 minuter (00 14)
+            0x00, 0x00, // Distance: 0
+            0x00, 0x00, // Calories: 0
+            0x00, 0x00, // Pulse limit: 0
+            0x01  // Level: 1
+        ];
+        send(packet);
+    };
 
 </script>
 
