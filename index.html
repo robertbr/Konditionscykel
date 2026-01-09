@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gymstick iConsole Fix</title>
+    <title>Gymstick Manual Probe</title>
     <style>
         :root {
             --bg-color: #000000;
@@ -49,6 +49,24 @@
         button:hover { background: #006600; }
         button:disabled { border-color: #555; color: #555; background: #111; cursor: not-allowed; }
 
+        /* TESTPANEL */
+        .test-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+            border-top: 1px solid #333;
+            padding-top: 10px;
+        }
+        .btn-cmd {
+            padding: 10px;
+            font-size: 0.8rem;
+            background: #002244;
+            border-color: #004488;
+            color: #00aaff;
+        }
+        .btn-cmd:hover { background: #003366; }
+
         /* LOGG FÖNSTER */
         .log-window {
             width: 100%;
@@ -76,20 +94,26 @@
 
 <div class="dashboard">
     <div class="header-row">
-        <div>Gymstick / iConsole Hacking</div>
+        <div>Gymstick / iConsole Manual Probe</div>
         <div id="status">Väntar...</div>
     </div>
     
-    <div style="margin-bottom:20px; color:#aaa; font-size:0.9rem;">
-        Försöker väcka iConsole genom att skicka magiska bytes till FFF2.
-    </div>
-
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
         <div>Hastighet: <span id="speed" style="color:white; font-size:1.2em">0.0</span></div>
-        <div>Watt: <span id="watt" style="color:white; font-size:1.2em">0</span></div>
+        <div>Raw Data: <span id="lastRaw" style="color:#aaa; font-size:0.8em">--</span></div>
     </div>
 
-    <button id="connectBtn">ANSLUT & VÄCK CYKEL</button>
+    <button id="connectBtn">1. ANSLUT (Endast Lyssna)</button>
+
+    <div class="test-panel">
+        <button class="btn-cmd" id="btnA0">2. iConsole: Skicka A0</button>
+        <button class="btn-cmd" id="btnB0">3. iConsole: Skicka B0</button>
+        <button class="btn-cmd" id="btnStart">4. FTMS: Start (0x07)</button>
+        <button class="btn-cmd" id="btnReset">5. FTMS: Reset (0x00)</button>
+    </div>
+    <div style="font-size:0.7rem; color:#666; text-align:center; margin-top:5px;">
+        Tryck på knapparna en i taget och vänta 5s för att se om data kommer.
+    </div>
 </div>
 
 <div class="action-row">
@@ -107,8 +131,13 @@
     const logOut = document.getElementById('logOutput');
     const ui = {
         speed: document.getElementById('speed'),
-        watt: document.getElementById('watt')
+        lastRaw: document.getElementById('lastRaw')
     };
+
+    // Bluetooth object cache
+    let gattServer = null;
+    let iconsoleWriteChar = null;
+    let ftmsControlChar = null;
 
     let fullLog = []; 
 
@@ -135,21 +164,45 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = "gymstick_iconsole_debug.txt";
+        a.download = "gymstick_probe_log.txt";
         a.click();
     });
 
+    // --- KNAPPAR FÖR MANUELL TESTNING ---
+    document.getElementById('btnA0').addEventListener('click', () => sendIConsole([0xA0]));
+    document.getElementById('btnB0').addEventListener('click', () => sendIConsole([0xB0]));
+    document.getElementById('btnStart').addEventListener('click', () => sendFTMS([0x07]));
+    document.getElementById('btnReset').addEventListener('click', () => sendFTMS([0x00]));
+
+    async function sendIConsole(bytes) {
+        if (!iconsoleWriteChar) { log("Ingen iConsole-kanal (FFF2) tillgänglig.", 'err'); return; }
+        try {
+            const hex = bytes.map(b => b.toString(16).toUpperCase()).join(' ');
+            log(`Skickar till FFF2: ${hex}`, 'info');
+            await iconsoleWriteChar.writeValue(new Uint8Array(bytes));
+        } catch (e) { log("Fel vid skrivning till FFF2: " + e, 'err'); }
+    }
+
+    async function sendFTMS(bytes) {
+        if (!ftmsControlChar) { log("Ingen FTMS Control Point (2AD9) tillgänglig.", 'err'); return; }
+        try {
+            const hex = bytes.map(b => b.toString(16).toUpperCase()).join(' ');
+            log(`Skickar till 2AD9: ${hex}`, 'info');
+            await ftmsControlChar.writeValue(new Uint8Array(bytes));
+        } catch (e) { log("Fel vid skrivning till FTMS: " + e, 'err'); }
+    }
+
+    // --- HUVUDANSLUTNING ---
     connectBtn.addEventListener('click', async () => {
         try {
             statusEl.textContent = "Söker...";
-            log("--- STARTAR ANSLUTNING ---");
+            log("--- STARTAR ANSLUTNING (PASSIV) ---");
             
             const device = await navigator.bluetooth.requestDevice({
                 filters: [{ services: ['fitness_machine'] }],
                 optionalServices: [
                     'fitness_machine', 
-                    // iConsole UUIDs (VIKTIGA)
-                    '0000fff0-0000-1000-8000-00805f9b34fb'
+                    '0000fff0-0000-1000-8000-00805f9b34fb' // iConsole
                 ]
             });
 
@@ -160,48 +213,43 @@
             });
 
             log(`Vald: ${device.name}`);
-            
-            const server = await device.gatt.connect();
+            gattServer = await device.gatt.connect();
             log("GATT Ansluten!", 'succ');
 
-            // 1. Starta lyssning på FTMS (om den vaknar)
+            // 1. FTMS Setup
             try {
-                const ftms = await server.getPrimaryService('fitness_machine');
+                const ftms = await gattServer.getPrimaryService('fitness_machine');
+                
+                // Lyssna på Data
                 const dataChar = await ftms.getCharacteristic('00002ad2-0000-1000-8000-00805f9b34fb');
                 await dataChar.startNotifications();
                 dataChar.addEventListener('characteristicvaluechanged', (e) => handleData(e, 'FTMS'));
                 log("Lyssnar på FTMS (2AD2)", 'info');
                 
-                // Försök standard start
-                const cp = await ftms.getCharacteristic('00002ad9-0000-1000-8000-00805f9b34fb');
-                await cp.startNotifications();
-                await cp.writeValue(new Uint8Array([0x00])); // Reset
-                setTimeout(() => cp.writeValue(new Uint8Array([0x07])), 500); // Start
+                // Spara kontrollpunkt men SKRIV INTE än
+                ftmsControlChar = await ftms.getCharacteristic('00002ad9-0000-1000-8000-00805f9b34fb');
+                await ftmsControlChar.startNotifications(); // För svar
+                log("FTMS Control Point (2AD9) redo.", 'info');
                 
-            } catch (e) { log("Kunde inte starta FTMS: " + e, 'err'); }
+            } catch (e) { log("FTMS Setup Error: " + e, 'err'); }
 
-            // 2. Starta lyssning på iConsole (FFF0)
+            // 2. iConsole Setup
             try {
-                const iconsole = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
-                log("Hittade iConsole Service (FFF0)!", 'succ');
+                const iconsole = await gattServer.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
                 
+                // Lyssna på Data (FFF1)
                 const notifyChar = await iconsole.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
                 await notifyChar.startNotifications();
                 notifyChar.addEventListener('characteristicvaluechanged', (e) => handleData(e, 'ICONSOLE'));
-                log("Lyssnar på iConsole Data (FFF1)", 'info');
+                log("Lyssnar på iConsole (FFF1)", 'info');
 
-                // 3. SKICKA MAGISKA BYTES TILL FFF2
-                const writeChar = await iconsole.getCharacteristic('0000fff2-0000-1000-8000-00805f9b34fb');
-                log("Hittade skrivkanal (FFF2). Försöker väcka...", 'info');
+                // Spara skrivkanal (FFF2)
+                iconsoleWriteChar = await iconsole.getCharacteristic('0000fff2-0000-1000-8000-00805f9b34fb');
+                log("iConsole Write (FFF2) redo.", 'info');
 
-                // iConsole Handshake ping (Bara för att säga 'Hej')
-                const ping = new Uint8Array([0xF0]);
-                log("Skickar PING: F0", 'info');
-                await writeChar.writeValue(ping);
+            } catch (e) { log("iConsole Setup Error: " + e, 'err'); }
 
-            } catch (e) { log("Ingen iConsole Service hittades: " + e, 'err'); }
-
-            statusEl.textContent = "Ansluten. Trampa!";
+            statusEl.textContent = "Ansluten. Prova knapparna.";
             connectBtn.disabled = true;
 
         } catch (err) {
@@ -220,21 +268,23 @@
         const hexStr = hex.join(" ");
         
         log(`DATA [${type}]: ${hexStr}`, 'data');
+        ui.lastRaw.textContent = hexStr;
 
-        // Om vi får data på iConsole (FFF1), försök tolka den
-        // iConsole format varierar, men ofta:
-        // Header: F2, Len, ... Data ... CS
-        if (type === 'ICONSOLE' && raw.length > 5) {
-            // Detta är en gissning på formatet, vi justerar när vi ser din logg
-            // Ofta ligger hastighet/watt på fasta positioner
-            log("Fick data från iConsole! Analyserar...", 'succ');
+        // --- TOLKNING ---
+        
+        // iConsole (FFF1) - Ofta F2 <len> <data> ...
+        // Eller A0 <len> <data> ...
+        if (type === 'ICONSOLE') {
+            log("iConsole data mottagen!", 'succ');
+            // Försök hitta hastighet. iConsole varierar, men ofta byte 4-5 eller 5-6
+            // Vi loggar bara för analys nu
         }
         
-        // Om vi får data på FTMS (2AD2)
+        // FTMS (2AD2)
         if (type === 'FTMS' && raw.length > 2) {
              const speedRaw = new DataView(value.buffer).getUint16(2, true);
              ui.speed.textContent = (speedRaw / 100).toFixed(1);
-             log("Fick data från FTMS!", 'succ');
+             log("FTMS Data tolkad!", 'succ');
         }
     }
 
