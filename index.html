@@ -13,11 +13,11 @@
             --text-dim: #8d99ae;
             --accent-primary: #e94560;
             --accent-secondary: #4cc9f0;
-            --accent-speed: #23d5ab; /* Ny grön färg för hastighet */
+            --accent-speed: #23d5ab;
             --accent-cadence: #7209b7;
             --accent-watt: #f72585;
             --accent-cal: #fca311;
-            --accent-res: #ffd166; /* Färg för motstånd */
+            --accent-res: #ffd166;
         }
 
         body { 
@@ -108,10 +108,26 @@
         }
         button:hover { transform: scale(1.02); background: #ff5e78; }
         button:disabled { background: #555; cursor: not-allowed; transform: none; box-shadow: none; }
-
-        #simBtn { background: var(--border-color); box-shadow: none; font-size: 0.9rem; padding: 8px 20px; }
-        #simBtn:hover { background: #1a4b8c; }
         
+        .btn-secondary { background: var(--border-color); box-shadow: none; font-size: 0.9rem; padding: 10px; }
+        .btn-secondary:hover { background: #1a4b8c; }
+        
+        /* Filuppladdning knapp */
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+        .file-input-wrapper input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
         .status { font-size: 0.8rem; color: var(--text-dim); margin-top: 15px; min-height: 20px; text-align: center; }
         .error-msg { color: #ff6b6b; font-size: 0.75rem; margin-top: 5px; font-weight: 600; }
 
@@ -123,7 +139,7 @@
             border-radius: 20px;
             border: 1px solid var(--border-color);
             padding: 20px;
-            display: none; /* Döljs initialt */
+            display: none; 
             margin-top: 20px;
         }
         .analysis-section.visible { display: block; }
@@ -137,11 +153,10 @@
         .total-card { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; font-size: 0.9rem; }
         .total-card b { display: block; font-size: 1.1rem; margin-bottom: 2px; }
 
-        /* Enkel SVG Graf */
+        /* Graf */
         .chart-container { width: 100%; height: 250px; background: rgba(0,0,0,0.2); border-radius: 10px; position: relative; margin-bottom: 20px; padding: 10px; box-sizing: border-box; }
         svg { width: 100%; height: 100%; }
         polyline { fill: none; stroke-width: 2; vector-effect: non-scaling-stroke; }
-        .chart-label { position: absolute; font-size: 10px; color: #666; }
 
         /* Datatabell */
         .table-container { overflow-x: auto; max-height: 300px; }
@@ -150,17 +165,29 @@
         th { text-align: right; color: var(--text-dim); position: sticky; top: 0; background: var(--card-bg); }
         th:first-child, td:first-child { text-align: left; }
 
-        /* Färger för text */
         .text-watt { color: var(--accent-watt); }
         .text-dist { color: var(--accent-secondary); }
         .text-cal { color: var(--accent-cal); }
         .text-cad { color: var(--accent-cadence); }
-        .text-speed { color: var(--accent-speed); } /* Grön */
+        .text-speed { color: var(--accent-speed); }
         .text-res { color: var(--accent-res); }
 
-        .action-btns { display: flex; gap: 10px; margin-top: 20px; }
-        .btn-small { flex: 1; font-size: 0.8rem; padding: 10px; }
-        .btn-secondary { background: var(--border-color); }
+        .action-btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+        .btn-small { flex: 1; font-size: 0.8rem; padding: 10px; min-width: 120px;}
+
+        /* --- DEBUG PANEL --- */
+        .debug-panel {
+            margin-top: 30px;
+            width: 100%;
+            max-width: 400px;
+            font-family: monospace;
+            font-size: 10px;
+            color: #666;
+            text-align: left;
+            border-top: 1px solid #333;
+            padding-top: 10px;
+        }
+        #rawLog { background: #000; color: #0f0; padding: 10px; border-radius: 5px; height: 100px; overflow-y: scroll; margin-top: 5px; }
 
     </style>
 </head>
@@ -168,7 +195,6 @@
 
 <!-- HUVUDPANEL -->
 <div class="dashboard">
-    <!-- Header: Tid | Motstånd | Puls -->
     <div class="header-row">
         <div class="top-stat left">
             <span class="label">Tid</span>
@@ -187,14 +213,12 @@
         </div>
     </div>
 
-    <!-- Huvudnummer: Effekt -->
     <div class="main-stat">
         <div class="label">Effekt</div>
         <div class="main-val" id="power">0</div>
         <div class="main-unit">WATT</div>
     </div>
 
-    <!-- Rutnät: Hastighet, Sträcka, Kadens, Kalorier -->
     <div class="grid-stats">
         <div class="stat-box">
             <div class="label">Hastighet</div>
@@ -220,76 +244,82 @@
 
     <div class="controls">
         <button id="connectBtn">ANSLUT CYKEL</button>
-        <button id="simBtn">SIMULERA DATA (DEMO)</button>
+        <button id="simBtn" class="btn-secondary">SIMULERA DATA (DEMO)</button>
         <button id="toggleAnalysisBtn" class="btn-secondary">VISA HISTORIK & ANALYS</button>
         <div id="status" class="status">Klar att ansluta...</div>
+    </div>
+    
+    <!-- DEBUGG FÖR "NOLL-VÄRDEN" -->
+    <div class="debug-panel">
+        <div>TEKNISK LOGG (Senaste paket)</div>
+        <div id="rawLog">Väntar på data...</div>
     </div>
 </div>
 
 <!-- ANALYS & HISTORIK -->
 <div class="analysis-section" id="analysisSection">
     <div class="analysis-header">
-        <span class="analysis-title">Analys & Data</span>
+        <span class="analysis-title">Historik & Sessioner</span>
         <select id="resolutionSelect">
             <option value="10">Upplösning: 10s</option>
             <option value="30">Upplösning: 30s</option>
             <option value="60" selected>Upplösning: 1 min</option>
             <option value="120">Upplösning: 2 min</option>
             <option value="300">Upplösning: 5 min</option>
-            <option value="600">Upplösning: 10 min</option>
         </select>
     </div>
 
-    <!-- Totaler -->
     <div class="totals-grid">
         <div class="total-card text-dist">Total Sträcka (Livstid)<br><b id="lifeDistance">0.00 km</b></div>
-        <div class="total-card text-res">Tid på Nivå <span id="currentResLevel">--</span><br><b id="resTime">0 min</b></div>
-        <div class="total-card text-watt">Snitt Watt (Pass)<br><b id="avgWatt">0 W</b></div>
+        <div class="total-card text-res">Antal Sparade Pass<br><b id="sessionCount">0</b></div>
+        <div class="total-card text-watt">Nuvarande Pass Watt<br><b id="avgWatt">0 W</b></div>
     </div>
 
-    <!-- Graf -->
     <div class="chart-container">
         <div style="position:absolute; top:5px; left:10px; font-size:10px; color:#aaa;">Watt (Rosa) & Puls (Röd)</div>
-        <svg id="chartSvg" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <!-- Linjer ritas här med JS -->
-        </svg>
+        <svg id="chartSvg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
     </div>
 
-    <!-- Tabell -->
     <div class="table-container">
         <table id="dataTable">
             <thead>
                 <tr>
                     <th>Tid</th>
-                    <th>Watt (Avg)</th>
-                    <th>Km/h (Avg)</th>
-                    <th>Puls (Avg)</th>
-                    <th>Dist (Sum)</th>
+                    <th>Watt</th>
+                    <th>Km/h</th>
+                    <th>Puls</th>
                 </tr>
             </thead>
-            <tbody>
-                <!-- Data fylls på här -->
-            </tbody>
+            <tbody></tbody>
         </table>
     </div>
 
     <div class="action-btns">
-        <button class="btn-small" id="exportBtn">Ladda ner Save-fil (CSV)</button>
-        <button class="btn-small btn-secondary" onclick="if(confirm('Rensa all historik?')) localStorage.clear(); location.reload();">Rensa Data</button>
+        <button class="btn-small" id="endSessionBtn">Avsluta & Spara Pass</button>
+        <button class="btn-small" id="exportJsonBtn">Ladda ner Alla Pass (JSON)</button>
+        
+        <div class="file-input-wrapper btn-small btn-secondary">
+            <button class="btn-secondary" style="width:100%; pointer-events:none;">Ladda upp JSON</button>
+            <input type="file" id="importJsonInput" accept=".json">
+        </div>
+        
+        <button class="btn-small btn-secondary" onclick="if(confirm('Rensa all historik?')) { localStorage.clear(); location.reload(); }">Rensa Allt</button>
     </div>
 </div>
 
 <script>
-    // --- KONFIGURATION & ELEMENT ---
+    // --- UI REFERENSER ---
     const connectBtn = document.getElementById('connectBtn');
     const simBtn = document.getElementById('simBtn');
     const toggleAnalysisBtn = document.getElementById('toggleAnalysisBtn');
     const statusEl = document.getElementById('status');
     const analysisSection = document.getElementById('analysisSection');
     const resolutionSelect = document.getElementById('resolutionSelect');
-    const exportBtn = document.getElementById('exportBtn');
-    
-    // UI-referenser för realtidsdata
+    const rawLog = document.getElementById('rawLog');
+    const endSessionBtn = document.getElementById('endSessionBtn');
+    const exportJsonBtn = document.getElementById('exportJsonBtn');
+    const importJsonInput = document.getElementById('importJsonInput');
+
     const ui = {
         time: document.getElementById('time'),
         hr: document.getElementById('hr'),
@@ -299,16 +329,14 @@
         power: document.getElementById('power'),
         calories: document.getElementById('calories'),
         resistance: document.getElementById('resistance'),
-        // Analys UI
         lifeDistance: document.getElementById('lifeDistance'),
-        resTime: document.getElementById('resTime'),
-        currentResLevel: document.getElementById('currentResLevel'),
+        sessionCount: document.getElementById('sessionCount'),
         avgWatt: document.getElementById('avgWatt'),
         dataTable: document.getElementById('dataTable').querySelector('tbody'),
         chartSvg: document.getElementById('chartSvg')
     };
 
-    // --- VARIABLER FÖR DATA ---
+    // --- VARIABLER ---
     let startTime = null;
     let timerInterval = null;
     let simulationInterval = null;
@@ -316,150 +344,186 @@
     let controlPointChar = null;
     let currentResistance = 0;
     
-    // Dataloggning
-    let sessionData = []; // Sparar varje "tick" av data
-    let globalStats = JSON.parse(localStorage.getItem('gymstick_stats')) || {
-        totalDistanceKm: 0,
-        resistanceTimes: {} // Format: { "1": minuter, "2": minuter }
+    // Nuvarande pass
+    let currentSession = {
+        startTime: null,
+        dataPoints: [] 
     };
 
-    // Uppdatera UI med sparad totalsträcka direkt
-    ui.lifeDistance.textContent = globalStats.totalDistanceKm.toFixed(2) + " km";
+    // Ladda historik (Alla tidigare pass)
+    let allHistory = JSON.parse(localStorage.getItem('gymstick_full_history')) || {
+        sessions: [],
+        totalDistanceKm: 0
+    };
 
-    // --- ANALYS-FUNKTIONER ---
-    toggleAnalysisBtn.addEventListener('click', () => {
-        analysisSection.classList.toggle('visible');
-        if (analysisSection.classList.contains('visible')) {
-            updateAnalysis();
+    // Uppdatera UI vid start
+    updateGlobalStats();
+
+    // --- FUNKTIONER FÖR SESSION & HISTORIK ---
+
+    function updateGlobalStats() {
+        ui.lifeDistance.textContent = (allHistory.totalDistanceKm || 0).toFixed(2) + " km";
+        ui.sessionCount.textContent = allHistory.sessions.length;
+    }
+
+    // Spara ner passet när man är klar
+    endSessionBtn.addEventListener('click', () => {
+        if (!currentSession.startTime || currentSession.dataPoints.length === 0) {
+            alert("Inget aktivt pass att spara.");
+            return;
         }
+        
+        const confirmed = confirm("Vill du avsluta och spara detta pass till historiken?");
+        if (!confirmed) return;
+
+        // Summera passet
+        const sessionSummary = {
+            date: new Date(currentSession.startTime).toISOString(),
+            durationSeconds: (Date.now() - currentSession.startTime) / 1000,
+            avgWatt: Math.round(currentSession.dataPoints.reduce((a,b)=>a+b.power,0) / currentSession.dataPoints.length) || 0,
+            maxDist: currentSession.dataPoints[currentSession.dataPoints.length-1].distanceDiffAcc || 0, // Ackumulerad
+            data: currentSession.dataPoints // Spara all rådata för framtida grafer
+        };
+
+        // Lägg till i historik
+        allHistory.sessions.push(sessionSummary);
+        
+        // Uppdatera totalsträcka (Vi har redan uppdaterat den löpande, men säkrar här)
+        localStorage.setItem('gymstick_full_history', JSON.stringify(allHistory));
+        
+        alert("Pass sparat! Sidan laddas om.");
+        location.reload();
     });
 
-    resolutionSelect.addEventListener('change', updateAnalysis);
+    // EXPORT JSON (Backup av allt)
+    exportJsonBtn.addEventListener('click', () => {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allHistory));
+        const link = document.createElement('a');
+        link.setAttribute("href", dataStr);
+        link.setAttribute("download", "gymstick_history_backup.json");
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+    });
 
-    function logData(speed, power, hr, cadence, distanceDiff) {
+    // IMPORT JSON (Återställ backup)
+    importJsonInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                const importedData = JSON.parse(event.target.result);
+                if (importedData.sessions && typeof importedData.totalDistanceKm !== 'undefined') {
+                    if(confirm(`Hittade ${importedData.sessions.length} pass och ${importedData.totalDistanceKm.toFixed(1)} km. Vill du skriva över nuvarande historik?`)) {
+                        allHistory = importedData;
+                        localStorage.setItem('gymstick_full_history', JSON.stringify(allHistory));
+                        updateGlobalStats();
+                        alert("Historik återställd!");
+                    }
+                } else {
+                    alert("Felaktigt format på JSON-filen.");
+                }
+            } catch(err) {
+                alert("Kunde inte läsa filen: " + err);
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    // --- REALTIDSLOGGNING ---
+    function logDataPoint(speed, power, hr, cadence, distanceDiff) {
         if (!startTime) return;
         
         const now = Date.now();
-        const elapsedSec = (now - startTime) / 1000;
+        const elapsed = (now - startTime) / 1000;
 
-        // Spara datapunkt
-        sessionData.push({
-            timestamp: now,
-            elapsed: elapsedSec,
+        // Lägg till i total sträcka direkt
+        if (distanceDiff > 0) {
+            allHistory.totalDistanceKm = (allHistory.totalDistanceKm || 0) + distanceDiff;
+            ui.lifeDistance.textContent = allHistory.totalDistanceKm.toFixed(2) + " km";
+            // Spara lite då och då ifall webbläsaren kraschar
+            if (Math.floor(elapsed) % 30 === 0) {
+                localStorage.setItem('gymstick_full_history', JSON.stringify(allHistory));
+            }
+        }
+
+        // Spara punkt i nuvarande session
+        currentSession.dataPoints.push({
+            elapsed: elapsed,
             speed: parseFloat(speed) || 0,
             power: parseInt(power) || 0,
             hr: parseInt(hr) || 0,
-            cadence: parseInt(cadence) || 0,
             resistance: currentResistance
         });
 
-        // Uppdatera global statistik (Total Sträcka)
-        if (distanceDiff > 0) {
-            globalStats.totalDistanceKm += distanceDiff;
-            ui.lifeDistance.textContent = globalStats.totalDistanceKm.toFixed(2) + " km";
-            localStorage.setItem('gymstick_stats', JSON.stringify(globalStats));
+        // Uppdatera graf om sektionen är öppen
+        if (analysisSection.classList.contains('visible') && Math.floor(elapsed) % 5 === 0) {
+            updateAnalysisCharts();
         }
-
-        // Uppdatera historik för motstånd (varje sekund)
-        // Vi gör detta enkelt genom att bara öka en räknare om passet är igång
-        if (currentResistance > 0) {
-            if (!globalStats.resistanceTimes[currentResistance]) globalStats.resistanceTimes[currentResistance] = 0;
-            // Lägg till 1 sekund (1/60 minut)
-            globalStats.resistanceTimes[currentResistance] += (1/60);
-            
-            // Spara var 10:e sekund för att spara prestanda/skrivningar
-            if (Math.floor(elapsedSec) % 10 === 0) {
-                localStorage.setItem('gymstick_stats', JSON.stringify(globalStats));
-            }
-            
-            ui.currentResLevel.textContent = currentResistance;
-            ui.resTime.textContent = Math.floor(globalStats.resistanceTimes[currentResistance]) + " min";
-        }
-
-        // Uppdatera snitt-watt för passet
-        const totalP = sessionData.reduce((sum, d) => sum + d.power, 0);
-        ui.avgWatt.textContent = Math.round(totalP / sessionData.length) + " W";
-
-        // Uppdatera grafer/tabell om sektionen är öppen (inte varje sekund för prestanda)
-        if (analysisSection.classList.contains('visible') && Math.floor(elapsedSec) % 5 === 0) {
-            updateAnalysis();
-        }
+        
+        // Uppdatera snitt-watt i UI
+        const points = currentSession.dataPoints;
+        const avg = Math.round(points.reduce((a,b)=>a+b.power,0) / points.length) || 0;
+        ui.avgWatt.textContent = avg + " W";
     }
 
-    function updateAnalysis() {
-        if (sessionData.length === 0) return;
+    function updateAnalysisCharts() {
+        const points = currentSession.dataPoints;
+        if (points.length < 2) return;
 
-        const resolution = parseInt(resolutionSelect.value); // sekunder
+        const resolution = parseInt(resolutionSelect.value);
+        // Gruppera data för prestanda (enkel sampling)
         const buckets = [];
-        
-        // Gruppera data i "hinkar" (buckets) baserat på tid
-        let currentBucket = null;
-        
-        sessionData.forEach(d => {
-            const bucketIndex = Math.floor(d.elapsed / resolution);
-            
-            if (!currentBucket || currentBucket.index !== bucketIndex) {
-                if (currentBucket) buckets.push(currentBucket);
-                currentBucket = {
-                    index: bucketIndex,
-                    startTime: bucketIndex * resolution,
-                    count: 0,
-                    sumPower: 0, sumSpeed: 0, sumHr: 0, maxDist: 0
-                };
-            }
-            
-            currentBucket.count++;
-            currentBucket.sumPower += d.power;
-            currentBucket.sumSpeed += d.speed;
-            currentBucket.sumHr += d.hr;
-            // Distans är lite knepigt då det är ackumulerat, vi tar bara diffar om vi vill
-            // Men för tabellen visar vi snittfart
-        });
-        if (currentBucket) buckets.push(currentBucket);
+        for (let i = 0; i < points.length; i++) {
+            const p = points[i];
+            const bucketIdx = Math.floor(p.elapsed / resolution);
+            if (!buckets[bucketIdx]) buckets[bucketIdx] = { count:0, sumW:0, sumHr:0, sumS:0, time: bucketIdx*resolution };
+            buckets[bucketIdx].count++;
+            buckets[bucketIdx].sumW += p.power;
+            buckets[bucketIdx].sumHr += p.hr;
+            buckets[bucketIdx].sumS += p.speed;
+        }
 
-        // Rita Tabell
-        ui.dataTable.innerHTML = buckets.map(b => {
-            const avgP = Math.round(b.sumPower / b.count);
-            const avgS = (b.sumSpeed / b.count).toFixed(1);
-            const avgH = Math.round(b.sumHr / b.count);
-            const timeStr = formatTime(b.startTime);
+        // Rita tabell
+        ui.dataTable.innerHTML = buckets.filter(b=>b).map(b => {
             return `<tr>
-                <td>${timeStr}</td>
-                <td class="text-watt">${avgP} W</td>
-                <td class="text-speed">${avgS}</td>
-                <td>${avgH}</td>
-                <td>-</td>
+                <td>${formatTime(b.time)}</td>
+                <td class="text-watt">${Math.round(b.sumW/b.count)}</td>
+                <td class="text-speed">${(b.sumS/b.count).toFixed(1)}</td>
+                <td>${Math.round(b.sumHr/b.count)}</td>
             </tr>`;
-        }).join('');
+        }).reverse().join(''); // Nyast överst
 
-        // Rita Graf (SVG) - Vi ritar Watt och Puls
-        if (buckets.length < 2) return;
+        // Rita Graf
+        const validBuckets = buckets.filter(b=>b);
+        if(validBuckets.length < 2) return;
         
-        const maxPower = Math.max(...buckets.map(b => b.sumPower/b.count)) || 100;
-        const maxHr = Math.max(...buckets.map(b => b.sumHr/b.count)) || 100;
-        const width = 100; 
-        const height = 100;
+        const maxW = Math.max(...validBuckets.map(b => b.sumW/b.count)) || 200;
+        const maxHr = Math.max(...validBuckets.map(b => b.sumHr/b.count)) || 180;
         
-        // Skapa punkter för Watt (Rosa)
-        let polylineWatt = "";
-        let polylineHr = "";
-        
-        buckets.forEach((b, i) => {
-            const x = (i / (buckets.length - 1)) * width;
-            
-            // Invertera Y eftersom 0 är toppen i SVG
-            const yWatt = height - ((b.sumPower / b.count) / (maxPower * 1.1)) * height;
-            polylineWatt += `${x},${yWatt} `;
-
-            const yHr = height - ((b.sumHr / b.count) / (maxHr * 1.1)) * height;
-            polylineHr += `${x},${yHr} `;
+        let polyW = "", polyHr = "";
+        validBuckets.forEach((b, i) => {
+            const x = (i / (validBuckets.length-1)) * 100;
+            const yW = 100 - ((b.sumW/b.count) / (maxW*1.1) * 100);
+            const yH = 100 - ((b.sumHr/b.count) / (maxHr*1.1) * 100);
+            polyW += `${x},${yW} `;
+            polyHr += `${x},${yH} `;
         });
 
         ui.chartSvg.innerHTML = `
-            <polyline points="${polylineWatt}" stroke="#f72585" fill="none" />
-            <polyline points="${polylineHr}" stroke="#e94560" fill="none" stroke-dasharray="2" />
+            <polyline points="${polyW}" stroke="#f72585" fill="none" />
+            <polyline points="${polyHr}" stroke="#e94560" fill="none" stroke-dasharray="2" />
         `;
     }
+
+    // --- UI HELPERS ---
+    toggleAnalysisBtn.addEventListener('click', () => {
+        analysisSection.classList.toggle('visible');
+        updateAnalysisCharts();
+    });
+    resolutionSelect.addEventListener('change', updateAnalysisCharts);
 
     function formatTime(seconds) {
         const m = Math.floor(seconds / 60);
@@ -467,90 +531,11 @@
         return `${m}:${s.toString().padStart(2, '0')}`;
     }
 
-    // --- EXPORT ---
-    exportBtn.addEventListener('click', () => {
-        let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "Time(s),Power(W),Speed(km/h),HR(bpm),Cadence(rpm),Resistance\n";
-        
-        sessionData.forEach(row => {
-            csvContent += `${row.elapsed.toFixed(1)},${row.power},${row.speed},${row.hr},${row.cadence},${row.resistance}\n`;
-        });
-
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `gymstick_data_${new Date().toISOString().slice(0,10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-    });
-
-    // --- SIMULERING ---
-    simBtn.addEventListener('click', () => {
-        if (isSimulating) {
-            stopSimulation();
-            return;
-        }
-        startSimulation();
-    });
-
-    function startSimulation() {
-        isSimulating = true;
-        simBtn.textContent = "STOPPA SIMULERING";
-        simBtn.style.background = "#bd2130";
-        connectBtn.disabled = true;
-        statusEl.textContent = "Kör simulering...";
-        if (!timerInterval) startTimer();
-
-        let simDistance = 0;
-        let simCalories = 0;
-        let lastDist = 0;
-
-        simulationInterval = setInterval(() => {
-            const simSpeed = (25 + Math.random() * 5).toFixed(1);
-            const simCadence = Math.floor(70 + Math.random() * 10);
-            const simPower = Math.floor(140 + Math.random() * 30);
-            const simHr = Math.floor(120 + Math.random() * 10);
-            const simRes = Math.floor(5 + Math.random() * 5); // Simulera motstånd 5-10
-            
-            const distInc = (simSpeed / 3600);
-            simDistance += distInc; 
-            simCalories += (simPower * 1 / 4184) * 10; 
-
-            currentResistance = simRes;
-
-            // Uppdatera UI
-            ui.speed.textContent = simSpeed;
-            ui.cadence.textContent = simCadence;
-            ui.power.textContent = simPower;
-            ui.hr.textContent = simHr;
-            ui.distance.textContent = simDistance.toFixed(2);
-            ui.calories.textContent = Math.floor(simCalories);
-            ui.resistance.textContent = simRes;
-
-            // Logga data för analys
-            logData(simSpeed, simPower, simHr, simCadence, distInc);
-
-        }, 1000);
-    }
-
-    function stopSimulation() {
-        isSimulating = false;
-        clearInterval(simulationInterval);
-        clearInterval(timerInterval);
-        timerInterval = null;
-        simBtn.textContent = "SIMULERA DATA (DEMO)";
-        simBtn.style.background = "#0f3460";
-        connectBtn.disabled = false;
-        statusEl.textContent = "Simulering stoppad.";
-    }
-
-    // --- BLUETOOTH LOGIK ---
+    // --- BLUETOOTH ANSLUTNING ---
     connectBtn.addEventListener('click', async () => {
-        statusEl.innerHTML = "Söker efter Gymstick...";
-        statusEl.className = "status";
-
+        statusEl.innerHTML = "Söker...";
         if (!navigator.bluetooth) {
-            statusEl.innerHTML = "<span class='error-msg'>Ingen Bluetooth. Använd Chrome/Edge.</span>";
+            statusEl.innerHTML = "<span class='error-msg'>Ingen Bluetooth (använd Chrome/Edge).</span>";
             return;
         }
 
@@ -565,151 +550,182 @@
             device.addEventListener('gattserverdisconnected', onDisconnected);
 
             const service = await server.getPrimaryService('fitness_machine');
-            
             const dataChar = await service.getCharacteristic('00002ad2-0000-1000-8000-00805f9b34fb');
+            
             await dataChar.startNotifications();
             dataChar.addEventListener('characteristicvaluechanged', handleBikeData);
 
-            // Försök ta kontroll (Starta passet)
+            // Försök starta sessionen (viktigt för Gymstick!)
             try {
                 controlPointChar = await service.getCharacteristic('00002ad9-0000-1000-8000-00805f9b34fb');
-                await controlPointChar.startNotifications(); 
-                statusEl.textContent = "Initierar...";
+                await controlPointChar.startNotifications();
+                statusEl.textContent = "Startar...";
                 await controlPointChar.writeValue(new Uint8Array([0x00])); // Request Control
                 setTimeout(async () => {
-                    await controlPointChar.writeValue(new Uint8Array([0x07])); // Start
-                    statusEl.textContent = "Ansluten! Trampa på.";
+                    await controlPointChar.writeValue(new Uint8Array([0x07])); // Start Session
+                    statusEl.textContent = "Klar! Börja trampa.";
                 }, 500);
             } catch (err) {
-                console.log("Kontroll ej tillgänglig:", err);
-                statusEl.textContent = "Ansluten (Endast läsläge).";
+                console.log("Control Point Error:", err);
+                statusEl.textContent = "Ansluten (Läsläge).";
             }
 
-            // Puls
-            try {
-                const hrService = await server.getPrimaryService('heart_rate');
-                const hrChar = await hrService.getCharacteristic('heart_rate_measurement');
-                await hrChar.startNotifications();
-                hrChar.addEventListener('characteristicvaluechanged', handleHeartRate);
-            } catch (e) { }
-
+            // UI Reset
             connectBtn.textContent = "ANSLUTEN";
             connectBtn.disabled = true;
             connectBtn.style.background = "#28a745";
-            simBtn.style.display = 'none'; 
-
-            if (!timerInterval) startTimer();
+            simBtn.style.display = 'none';
+            
+            if (!startTime) {
+                startTime = Date.now();
+                currentSession.startTime = startTime;
+                timerInterval = setInterval(() => {
+                    const diff = Math.floor((Date.now() - startTime) / 1000);
+                    ui.time.textContent = formatTime(diff);
+                }, 1000);
+            }
 
         } catch (error) {
             console.error(error);
-            statusEl.innerHTML = "<span class='error-msg'>Fel vid anslutning. Kräver HTTPS.</span>";
+            statusEl.textContent = "Fel: " + error.message;
         }
     });
 
-    function onDisconnected(event) {
-        statusEl.innerHTML = "<span class='error-msg'>Anslutning bröts.</span>";
-        connectBtn.textContent = "ANSLUT CYKEL";
+    function onDisconnected() {
+        statusEl.textContent = "Frånkopplad.";
         connectBtn.disabled = false;
+        connectBtn.textContent = "ANSLUT IGEN";
         connectBtn.style.background = "#e94560";
-        simBtn.style.display = 'block';
+        simBtn.style.display = "block";
         clearInterval(timerInterval);
-        timerInterval = null;
     }
 
-    function startTimer() {
-        startTime = Date.now();
-        // Rensa gammal sessionsdata vid ny start
-        sessionData = []; 
-        timerInterval = setInterval(() => {
-            const diff = Math.floor((Date.now() - startTime) / 1000);
-            const m = Math.floor(diff / 60).toString().padStart(2, '0');
-            const s = (diff % 60).toString().padStart(2, '0');
-            ui.time.textContent = `${m}:${s}`;
-        }, 1000);
-    }
-
-    // --- PARSERS ---
+    // --- DEN VIKTIGA BITEN: DATA PARSING & DEBUG ---
     let lastDistanceKm = 0;
-
-    function handleHeartRate(event) {
-        const value = event.target.value;
-        const flags = value.getUint8(0);
-        let hrVal = (flags & 0x01) === 0 ? value.getUint8(1) : value.getUint16(1, true);
-        ui.hr.textContent = hrVal;
-    }
 
     function handleBikeData(event) {
         const value = event.target.value;
-        let offset = 0;
-        const flags = value.getUint16(offset, true); 
-        offset += 2;
+        const rawBytes = new Uint8Array(value.buffer);
+        
+        // 1. Skriv ut exakt vad cykeln skickar i den svarta rutan
+        // Detta är nyckeln för att lösa "0"-problemet
+        let hexString = "";
+        for(let i=0; i<rawBytes.length; i++) {
+            hexString += rawBytes[i].toString(16).padStart(2,'0').toUpperCase() + " ";
+        }
+        rawLog.textContent = hexString + "\n" + rawLog.textContent.slice(0, 200); // Behåll historik
 
-        let speed = 0, cadence = 0, power = 0, hr = 0, distanceKm = 0;
+        // 2. Tolka data (Standard FTMS)
+        // Byte 0 & 1 är FLAGS
+        const flags = value.getUint16(0, true);
+        let offset = 2; // Vi börjar läsa efter flaggorna
 
-        // Hastighet
+        // Bit 0: More Data. Vanligtvis 0 för "Instant Speed present" i Indoor Bike.
+        // HASTIGHET (Standard: Alltid först om inte "More Data" säger annat)
+        // OBS: Om bit 0 är 0, betyder det ATT hastighet är med i 0x2AD2.
         const speedRaw = value.getUint16(offset, true);
-        speed = (speedRaw / 100).toFixed(1);
+        const speed = (speedRaw / 100).toFixed(1);
         ui.speed.textContent = speed;
         offset += 2;
 
-        // Kadens (Bit 2)
+        // KADENS (Bit 2)
+        let cadence = 0;
         if (flags & (1 << 2)) {
-            const cadenceRaw = value.getUint16(offset, true);
-            cadence = Math.round(cadenceRaw * 0.5);
+            cadence = Math.round(value.getUint16(offset, true) * 0.5);
             ui.cadence.textContent = cadence;
             offset += 2;
         }
 
-        // Sträcka (Bit 4)
+        // STRÄCKA (Bit 4)
+        let distanceKm = 0;
         if (flags & (1 << 4)) {
-            const distLow = value.getUint16(offset, true);
-            const distHigh = value.getUint8(offset + 2);
-            const totalDistMeters = (distHigh << 16) | distLow;
-            distanceKm = (totalDistMeters / 1000);
+            const low = value.getUint16(offset, true);
+            const high = value.getUint8(offset + 2);
+            const totalMeters = (high << 16) | low;
+            distanceKm = totalMeters / 1000;
             ui.distance.textContent = distanceKm.toFixed(2);
             offset += 3;
         }
 
-        // Motstånd (Bit 5) - NYTT
+        // MOTSTÅND (Bit 5)
         if (flags & (1 << 5)) {
-            const res = value.getInt16(offset, true);
-            currentResistance = res;
-            ui.resistance.textContent = res;
+            currentResistance = value.getInt16(offset, true);
+            ui.resistance.textContent = currentResistance;
             offset += 2;
         }
 
-        // Effekt (Bit 6)
+        // EFFEKT (Bit 6)
+        let power = 0;
         if (flags & (1 << 6)) {
             power = value.getInt16(offset, true);
             ui.power.textContent = power;
             offset += 2;
         }
 
-        // Kalorier (Bit 8)
+        // KALORIER (Bit 8)
+        let cals = 0;
         if (flags & (1 << 8)) {
-            const totalCals = value.getUint16(offset, true);
-            ui.calories.textContent = totalCals;
-            offset += 5; 
+            cals = value.getUint16(offset, true);
+            ui.calories.textContent = cals;
+            offset += 5; // Hoppa över "per hour" etc
         }
         
-        // Puls inbäddad (Bit 9)
+        // PULS (Bit 9)
+        let hr = 0;
         if (flags & (1 << 9)) {
             hr = value.getUint8(offset);
             ui.hr.textContent = hr;
             offset += 1;
         }
 
-        // Logga för analys
-        // Räkna ut distansökning sedan förra paketet för totalräkning
+        // Räkna distans-diff
         let distDiff = 0;
         if (distanceKm > lastDistanceKm && lastDistanceKm > 0) {
             distDiff = distanceKm - lastDistanceKm;
         }
         if (distanceKm > 0) lastDistanceKm = distanceKm;
 
-        logData(speed, power, hr, cadence, distDiff);
+        // Logga!
+        logDataPoint(speed, power, hr, cadence, distDiff);
     }
-</script>
 
+    // --- SIMULERING ---
+    simBtn.addEventListener('click', () => {
+        if(isSimulating) {
+            clearInterval(simulationInterval);
+            isSimulating = false;
+            simBtn.textContent = "SIMULERA DATA (DEMO)";
+            return;
+        }
+        isSimulating = true;
+        simBtn.textContent = "STOPPA";
+        if(!startTime) { startTime = Date.now(); currentSession.startTime = startTime; timerInterval = setInterval(()=>{ ui.time.textContent = formatTime((Date.now()-startTime)/1000); },1000); }
+        
+        let simDist = 0;
+        simulationInterval = setInterval(() => {
+            const s = (20 + Math.random()*5).toFixed(1);
+            const p = Math.floor(150 + Math.random()*20);
+            const c = Math.floor(80 + Math.random()*5);
+            const h = Math.floor(130 + Math.random()*5);
+            currentResistance = 5;
+            
+            ui.speed.textContent = s;
+            ui.power.textContent = p;
+            ui.cadence.textContent = c;
+            ui.hr.textContent = h;
+            ui.resistance.textContent = currentResistance;
+            
+            const distAdd = (s/3600);
+            simDist += distAdd;
+            ui.distance.textContent = simDist.toFixed(2);
+            
+            logDataPoint(s, p, h, c, distAdd);
+            
+            // Simulera raw log
+            rawLog.textContent = `SIMULERAD DATA: ${s}kmh ${p}W ${c}rpm\n` + rawLog.textContent.slice(0,100);
+        }, 1000);
+    });
+
+</script>
 </body>
 </html>
