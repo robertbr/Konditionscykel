@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gymstick Diagnosverktyg</title>
+    <title>Gymstick Deep Scan</title>
     <style>
         :root {
             --bg-color: #000000;
@@ -27,16 +27,13 @@
             border: 1px solid var(--text-main);
             padding: 20px;
             width: 100%;
-            max-width: 600px;
+            max-width: 800px;
             margin-bottom: 20px;
         }
 
         .header-row { display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px;}
         .big-val { font-size: 2rem; font-weight: bold; }
         .label { font-size: 0.8rem; opacity: 0.7; }
-
-        .grid-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .stat-box { text-align: center; border: 1px solid var(--border-color); padding: 10px; }
 
         button { 
             background: #004400; 
@@ -55,54 +52,46 @@
         /* LOGG FÖNSTER */
         .log-window {
             width: 100%;
-            max-width: 600px;
-            height: 300px;
+            max-width: 800px;
+            height: 400px;
             background: #111;
             border: 1px solid #555;
             overflow-y: scroll;
-            font-size: 10px;
+            font-size: 11px;
             padding: 10px;
             white-space: pre-wrap;
             margin-top: 20px;
+            color: #ccc;
         }
+        
+        .log-data { color: #00ffff; font-weight: bold; }
+        .log-info { color: #888; }
+        .log-err { color: #ff5555; }
 
-        .action-row { display: flex; gap: 10px; width: 100%; max-width: 600px; }
+        .action-row { display: flex; gap: 10px; width: 100%; max-width: 800px; }
     </style>
 </head>
 <body>
 
 <div class="dashboard">
     <div class="header-row">
-        <div>
-            <div class="label">STATUS</div>
-            <div id="status">Väntar...</div>
-        </div>
-        <div style="text-align:right">
-            <div class="label">WATT</div>
-            <div class="big-val" id="power">0</div>
-        </div>
+        <div>Gymstick / iConsole Deep Scan</div>
+        <div id="status">Väntar...</div>
+    </div>
+    
+    <div style="margin-bottom:20px; color:#aaa; font-size:0.9rem;">
+        Detta verktyg letar efter ALLA datakanaler. Trampa hela tiden medan scanningen pågår.
     </div>
 
-    <div class="grid-stats">
-        <div class="stat-box">
-            <div class="label">HASTIGHET</div>
-            <div class="big-val"><span id="speed">0.0</span> <span style="font-size:1rem">km/h</span></div>
-        </div>
-        <div class="stat-box">
-            <div class="label">KADENS</div>
-            <div class="big-val"><span id="cadence">0</span> <span style="font-size:1rem">rpm</span></div>
-        </div>
-    </div>
-
-    <button id="connectBtn">ANSLUT CYKEL & LOGGA</button>
+    <button id="connectBtn">STARTA DJUPSCANNING</button>
 </div>
 
 <div class="action-row">
-    <button id="dlLogBtn">SPARA LOGG-FIL (För felsökning)</button>
-    <button id="resetBtn" style="background:#330000; border-color:red; color:red">NOLLSTÄLL</button>
+    <button id="dlLogBtn">SPARA LOGG-FIL</button>
+    <button id="resetBtn" style="background:#330000; border-color:red; color:red">LADDA OM</button>
 </div>
 
-<div class="log-window" id="logOutput">Klicka på Anslut för att starta loggning...</div>
+<div class="log-window" id="logOutput">Klicka på knappen för att starta...</div>
 
 <script>
     const connectBtn = document.getElementById('connectBtn');
@@ -110,129 +99,130 @@
     const resetBtn = document.getElementById('resetBtn');
     const statusEl = document.getElementById('status');
     const logOut = document.getElementById('logOutput');
-    const ui = {
-        speed: document.getElementById('speed'),
-        cadence: document.getElementById('cadence'),
-        power: document.getElementById('power')
-    };
 
-    let deviceCache = null;
-    let fullLog = []; // Sparar all text för nedladdning
+    let fullLog = []; 
 
-    function log(msg) {
+    function log(msg, type = 'info') {
         const time = new Date().toLocaleTimeString();
         const line = `[${time}] ${msg}`;
         fullLog.push(line);
-        logOut.textContent = line + "\n" + logOut.textContent.slice(0, 5000);
+        
+        const span = document.createElement('div');
+        span.textContent = line;
+        if(type === 'data') span.className = 'log-data';
+        if(type === 'err') span.className = 'log-err';
+        if(type === 'info') span.className = 'log-info';
+        
+        logOut.appendChild(span);
+        logOut.scrollTop = logOut.scrollHeight;
         console.log(line);
     }
 
-    resetBtn.addEventListener('click', () => {
-        location.reload();
-    });
+    resetBtn.addEventListener('click', () => location.reload());
 
     dlLogBtn.addEventListener('click', () => {
         const blob = new Blob([fullLog.join('\n')], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = "gymstick_debug_log.txt";
+        a.download = "gymstick_deep_scan.txt";
         a.click();
     });
 
     connectBtn.addEventListener('click', async () => {
         try {
             statusEl.textContent = "Söker...";
-            log("--- STARTAR SÖKNING ---");
+            log("--- STARTAR DJUPSCANNING ---");
             
-            // Vi söker brett för att se ALLT cykeln erbjuder
+            // VIKTIGT: acceptAllDevices: true låter oss se ALLT, 
+            // men vi måste inkludera optionalServices för att få tillgång till dem.
+            // Vi listar vanliga iConsole UUIDs här.
             const device = await navigator.bluetooth.requestDevice({
-                acceptAllDevices: false,
-                filters: [{ services: ['fitness_machine'] }],
+                acceptAllDevices: true,
                 optionalServices: [
-                    'fitness_machine', 
-                    'cycling_power', 
-                    'cycling_speed_and_cadence',
-                    'heart_rate',
-                    'device_information' // Bra för att se exakt modell
+                    'fitness_machine', 'cycling_power', 'cycling_speed_and_cadence', 'heart_rate', 'device_information',
+                    // iConsole / Proprietary UUIDs (ofta FFF0 eller liknande)
+                    '0000fff0-0000-1000-8000-00805f9b34fb',
+                    '0000fe95-0000-1000-8000-00805f9b34fb' 
                 ]
             });
 
-            deviceCache = device;
             device.addEventListener('gattserverdisconnected', () => {
-                log("!!! FRÅNKOPPLAD !!!");
+                log("!!! FRÅNKOPPLAD !!!", 'err');
                 statusEl.textContent = "Frånkopplad";
                 connectBtn.disabled = false;
             });
 
             log(`Vald enhet: ${device.name} (ID: ${device.id})`);
-            statusEl.textContent = "Ansluter GATT...";
             
             const server = await device.gatt.connect();
-            log("GATT Ansluten!");
+            log("GATT Ansluten! Hämtar tjänster...");
 
-            /* --- STEG 1: Leta efter Tjänster --- */
-            // Vi försöker hitta Fitness Machine Service (0x1826)
-            try {
-                const service = await server.getPrimaryService('fitness_machine');
-                log("Hittade Service: Fitness Machine (0x1826)");
+            const services = await server.getPrimaryServices();
+            log(`Hittade ${services.length} tjänster.`);
 
-                // Försök hitta Indoor Bike Data (0x2AD2)
-                const char = await service.getCharacteristic('00002ad2-0000-1000-8000-00805f9b34fb');
-                log("Hittade Karakteristik: Indoor Bike Data (0x2AD2)");
+            // Loopa igenom ALLA tjänster
+            for (const service of services) {
+                log(`SERVICE: ${service.uuid}`, 'info');
                 
-                await char.startNotifications();
-                log("Notifikationer startade på 0x2AD2");
-                char.addEventListener('characteristicvaluechanged', (e) => handleData(e, 'FTMS'));
+                try {
+                    const characteristics = await service.getCharacteristics();
+                    
+                    for (const char of characteristics) {
+                        const props = [];
+                        if (char.properties.read) props.push("READ");
+                        if (char.properties.write) props.push("WRITE");
+                        if (char.properties.notify) props.push("NOTIFY");
+                        if (char.properties.indicate) props.push("INDICATE");
+                        
+                        log(`  -> CHAR: ${char.uuid} [${props.join(', ')}]`, 'info');
 
-                // Försök starta (Control Point)
-                startSession(service);
-
-            } catch (e) {
-                log("FEL: Kunde inte hitta Fitness Machine Service: " + e);
+                        // Om den går att lyssna på, starta lyssning!
+                        if (char.properties.notify || char.properties.indicate) {
+                            try {
+                                await char.startNotifications();
+                                char.addEventListener('characteristicvaluechanged', (e) => handleData(e, char.uuid));
+                                log(`     Lyckades starta notifikationer på ${char.uuid}`, 'data');
+                            } catch (err) {
+                                log(`     Kunde inte starta notifikationer: ${err}`, 'err');
+                            }
+                        }
+                    }
+                } catch (err) {
+                    log(`  Kunde inte hämta characteristics: ${err}`, 'err');
+                }
             }
 
-            /* --- STEG 2: Leta efter Alternativa Tjänster (Om FTMS är trasig) --- */
-            try {
-                const powerService = await server.getPrimaryService('cycling_power');
-                log("Hittade Service: Cycling Power (0x1818)");
-                const powerChar = await powerService.getCharacteristic('cycling_power_measurement');
-                await powerChar.startNotifications();
-                powerChar.addEventListener('characteristicvaluechanged', (e) => handleData(e, 'PWR'));
-                log("Lyssnar på Power Measurement");
-            } catch (e) { log("Ingen Cycling Power Service (detta är normalt)."); }
-
-            statusEl.textContent = "Ansluten & Lyssnar";
-            connectBtn.disabled = true;
+            // Försök starta standard FTMS session om vi hittade kontrollpunkten
+            log("--- FÖRSÖKER STARTA SESSION (FTMS) ---");
+            startSessionAttempt(server);
 
         } catch (err) {
-            log("CRITICAL ERROR: " + err);
+            log("CRITICAL ERROR: " + err, 'err');
             statusEl.textContent = "Fel!";
         }
     });
 
-    async function startSession(service) {
+    async function startSessionAttempt(server) {
         try {
-            // Fitness Machine Control Point (0x2AD9)
+            // Försök hitta FTMS Control Point
+            const service = await server.getPrimaryService('fitness_machine');
             const cp = await service.getCharacteristic('00002ad9-0000-1000-8000-00805f9b34fb');
-            await cp.startNotifications(); // Måste lyssna på svar
-            log("Control Point (0x2AD9) hittad.");
             
-            // Försök: Request Control (0x00)
-            log("Skickar: Request Control (0x00)");
-            await cp.writeValue(new Uint8Array([0x00]));
+            log("Skickar Reset (0x01) till FTMS CP...");
+            await cp.writeValue(new Uint8Array([0x01]));
             
             setTimeout(async () => {
-                log("Skickar: Start (0x07)");
-                await cp.writeValue(new Uint8Array([0x07]));
+                 log("Skickar Start (0x07) till FTMS CP...");
+                 await cp.writeValue(new Uint8Array([0x07]));
             }, 1000);
 
         } catch (e) {
-            log("Kunde inte skriva till Control Point (Kanske read-only?): " + e);
+            log("Ingen standard FTMS Control Point tillgänglig eller skrivfel.", 'info');
         }
     }
 
-    function handleData(event, type) {
+    function handleData(event, uuid) {
         const value = event.target.value;
         const raw = new Uint8Array(value.buffer);
         
@@ -241,19 +231,10 @@
         for(let b of raw) hex.push(b.toString(16).padStart(2,'0').toUpperCase());
         const hexStr = hex.join(" ");
         
-        log(`DATA [${type}]: ${hexStr}`);
-
-        // Enkel parsing för att se om något rör sig
-        if (type === 'FTMS') {
-            // Byte 0-1: Flags
-            // Byte 2-3: Speed (vanligtvis)
-            if (raw.length > 3) {
-                const speedRaw = new DataView(value.buffer).getUint16(2, true);
-                ui.speed.textContent = (speedRaw / 100).toFixed(1);
-            }
-            // Byte 6-7: Watt (om Flags stämmer)
-            // Detta är en gissning, vi får se i loggen exakt var det hamnar
-        }
+        // Visa UUID kort (sista 4 tecknen)
+        const shortId = uuid.split('-')[0].substr(4); 
+        
+        log(`DATA [${shortId}...]: ${hexStr}`, 'data');
     }
 
 </script>
