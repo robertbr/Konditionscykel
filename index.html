@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gymstick Explorer v12</title>
+    <title>Gymstick Java Protocol v14</title>
     <style>
         :root {
             --bg-color: #0d1117;
@@ -12,7 +12,7 @@
             --border-color: #30363d;
             --accent: #58a6ff;
             --accent-green: #238636;
-            --accent-red: #da3633;
+            --accent-orange: #d29922;
         }
 
         body { 
@@ -54,30 +54,24 @@
         .data-val { font-size: 1.5rem; font-weight: bold; color: var(--text-main); }
         .data-lbl { font-size: 0.7rem; color: #8b949e; text-transform: uppercase; }
 
-        /* COMMAND SECTION */
-        .cmd-section {
-            background: #21262d;
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-        }
-        
+        /* BUTTONS */
         button { 
             background: var(--accent-green); 
             color: white; 
             border: none; 
-            padding: 12px; 
+            padding: 15px; 
             border-radius: 4px;
             font-weight: bold; 
             cursor: pointer; 
-            font-size: 0.9rem;
+            font-size: 1rem;
             width: 100%;
-            margin-top: 10px;
+            margin-bottom: 10px;
         }
         button:hover { opacity: 0.9; }
         button:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; }
 
-        #connectBtn { font-size: 1.1rem; padding: 15px; margin-bottom: 20px; background: var(--accent); margin-top: 0;}
+        #connectBtn { background: var(--accent); }
+        #startSeqBtn { background: var(--accent-orange); display: none; }
 
         /* LOG */
         .log-window {
@@ -94,9 +88,9 @@
             box-sizing: border-box;
         }
         
-        .l-data { color: #58a6ff; font-weight: bold; }
+        .l-tx { color: #58a6ff; }
+        .l-rx { color: #3fb950; font-weight: bold; }
         .l-err { color: #f85149; }
-        .l-succ { color: #3fb950; }
         .l-info { color: #8b949e; }
 
     </style>
@@ -105,11 +99,12 @@
 
 <div class="dashboard">
     <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:5px;">
-        <strong>Gymstick Explorer v12</strong>
+        <strong>Gymstick Java Protocol v14</strong>
         <span id="status">Ej ansluten</span>
     </div>
 
-    <button id="connectBtn">ANSLUT TILL CYKEL</button>
+    <button id="connectBtn">1. ANSLUT</button>
+    <button id="startSeqBtn">2. KÖR JAVA-STARTSEKVENS</button>
 
     <!-- Realtidsdata -->
     <div class="data-grid">
@@ -118,33 +113,34 @@
             <div class="data-val" id="valSpeed">0.0</div>
         </div>
         <div class="data-box">
-            <div class="data-lbl">Effekt</div>
+            <div class="data-lbl">Effekt (Watt)</div>
             <div class="data-val" id="valWatt">0</div>
         </div>
         <div class="data-box">
-            <div class="data-lbl">Tid (Min:Sek)</div>
+            <div class="data-lbl">Tid</div>
             <div class="data-val" id="valTime">00:00</div>
         </div>
         <div class="data-box">
-            <div class="data-lbl">Nivå</div>
-            <div class="data-val" id="valLevel">--</div>
+            <div class="data-lbl">Distans</div>
+            <div class="data-val" id="valDist">0.0</div>
         </div>
-    </div>
-
-    <!-- Kommando Sändare -->
-    <div class="cmd-section">
-        <div class="data-lbl" style="margin-bottom:10px;">iConsole Kommandon</div>
-        <button id="btnStartComplex" disabled>Skicka iConsole START-paket (F0 A5...)</button>
-        <button id="btnPing" disabled style="background:#8b949e">Skicka Ping (F0)</button>
+        <div class="data-box">
+            <div class="data-lbl">Kadens</div>
+            <div class="data-val" id="valRpm">0</div>
+        </div>
+        <div class="data-box">
+            <div class="data-lbl">Puls</div>
+            <div class="data-val" id="valHr">0</div>
+        </div>
     </div>
 </div>
 
 <div style="width:100%; max-width:600px; display:flex; gap:10px; margin-bottom:5px;">
-    <button id="dlLogBtn" style="background:#21262d; flex:1; margin-top:0;">Spara Logg</button>
-    <button id="clearLogBtn" style="background:#21262d; flex:1; margin-top:0;">Rensa</button>
+    <button id="dlLogBtn" style="background:#21262d; flex:1; margin-bottom:0; padding:10px;">Spara Logg</button>
+    <button id="clearLogBtn" style="background:#21262d; flex:1; margin-bottom:0; padding:10px;">Rensa</button>
 </div>
 
-<div class="log-window" id="logOutput">Klicka på ANSLUT för att börja...</div>
+<div class="log-window" id="logOutput">Redo...</div>
 
 <script>
     // --- UI ---
@@ -154,20 +150,34 @@
         speed: document.getElementById('valSpeed'),
         watt: document.getElementById('valWatt'),
         time: document.getElementById('valTime'),
-        level: document.getElementById('valLevel'),
-        btnStartComplex: document.getElementById('btnStartComplex'),
-        btnPing: document.getElementById('btnPing')
+        dist: document.getElementById('valDist'),
+        rpm: document.getElementById('valRpm'),
+        hr: document.getElementById('valHr'),
+        connectBtn: document.getElementById('connectBtn'),
+        startSeqBtn: document.getElementById('startSeqBtn')
     };
 
-    let fullLog = [];
     let iconsoleWriteChar = null; // FFF2
+    let pollInterval = null;
+    let fullLog = [];
+
+    // --- PROTOKOLL-DEFINITIONER (Från Java-koden) ---
+    const CMDS = {
+        PING:    [0xF0, 0xA0, 0x01, 0x01, 0x92],
+        INIT_A0: [0xF0, 0xA0, 0x02, 0x02, 0x94],
+        STATUS:  [0xF0, 0xA1, 0x01, 0x01, 0x93],
+        INIT_A3: [0xF0, 0xA3, 0x01, 0x01, 0x01, 0x96],
+        // INIT_A4 är lång: F0 A4 + 11 st 0x01 + A0
+        INIT_A4: [0xF0, 0xA4, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xA0],
+        START:   [0xF0, 0xA5, 0x01, 0x01, 0x02, 0x99],
+        READ:    [0xF0, 0xA2, 0x01, 0x01, 0x94]
+    };
 
     // --- LOGGNING ---
     function log(msg, type = 'info') {
         const time = new Date().toLocaleTimeString().split(' ')[0];
         const line = `[${time}] ${msg}`;
         fullLog.push(line);
-        
         const div = document.createElement('div');
         div.textContent = line;
         div.className = 'l-' + type;
@@ -180,152 +190,151 @@
         const blob = new Blob([fullLog.join('\n')], { type: 'text/plain' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = "gymstick_v12_log.txt";
+        a.download = "gymstick_v14_log.txt";
         a.click();
     };
 
     // --- ANSLUTNING ---
-    document.getElementById('connectBtn').onclick = async () => {
+    ui.connectBtn.onclick = async () => {
         try {
             ui.status.textContent = "Söker...";
-            log("Startar sökning...", 'info');
-
             const device = await navigator.bluetooth.requestDevice({
                 filters: [{ services: ['fitness_machine'] }],
-                optionalServices: [
-                    'fitness_machine',
-                    '0000fff0-0000-1000-8000-00805f9b34fb' // iConsole
-                ]
+                optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb']
             });
 
-            device.addEventListener('gattserverdisconnected', () => {
-                ui.status.textContent = "Frånkopplad";
-                log("Enhet frånkopplad!", 'err');
-                document.getElementById('connectBtn').disabled = false;
-                disableButtons();
-            });
-
-            log(`Vald: ${device.name}`, 'succ');
+            device.addEventListener('gattserverdisconnected', onDisconnected);
+            log(`Ansluter till ${device.name}...`, 'info');
+            
             const server = await device.gatt.connect();
-            log("GATT Ansluten.", 'succ');
+            const service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
+            
+            // Lyssna (FFF1)
+            const notifyChar = await service.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
+            await notifyChar.startNotifications();
+            notifyChar.addEventListener('characteristicvaluechanged', handleData);
+            
+            // Skriv (FFF2)
+            iconsoleWriteChar = await service.getCharacteristic('0000fff2-0000-1000-8000-00805f9b34fb');
+            
+            log("Ansluten till iConsole (FFF0).", 'info');
             ui.status.textContent = "Ansluten";
-            document.getElementById('connectBtn').disabled = true;
+            ui.connectBtn.style.display = 'none';
+            ui.startSeqBtn.style.display = 'block';
 
-            // 1. SETUP iConsole
-            try {
-                const service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
-                log("Hittade iConsole (FFF0)", 'info');
-
-                // Lyssna på FFF1
-                const notifyChar = await service.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
-                await notifyChar.startNotifications();
-                notifyChar.addEventListener('characteristicvaluechanged', (e) => handleData(e, 'ICONSOLE'));
-                log("Lyssnar på FFF1", 'succ');
-
-                // Spara skriv-kanal FFF2
-                iconsoleWriteChar = await service.getCharacteristic('0000fff2-0000-1000-8000-00805f9b34fb');
-                log("Skriv-kanal FFF2 redo.", 'info');
-                
-                enableButtons();
-
-            } catch (e) {
-                log("Kunde inte hitta iConsole: " + e, 'err');
-            }
-
-        } catch (err) {
-            log("Fel: " + err, 'err');
-            ui.status.textContent = "Fel";
+        } catch (e) {
+            log("Fel: " + e, 'err');
         }
     };
 
-    // --- DATA ---
-    function handleData(event, type) {
+    function onDisconnected() {
+        log("Frånkopplad!", 'err');
+        ui.status.textContent = "Frånkopplad";
+        ui.connectBtn.style.display = 'block';
+        ui.connectBtn.disabled = false;
+        ui.startSeqBtn.style.display = 'none';
+        if (pollInterval) clearInterval(pollInterval);
+    }
+
+    // --- SÄNDNING ---
+    async function send(bytes, name) {
+        if (!iconsoleWriteChar) return;
+        try {
+            const hex = bytes.map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
+            log(`TX [${name}]: ${hex}`, 'tx');
+            await iconsoleWriteChar.writeValue(new Uint8Array(bytes));
+        } catch (e) { log("Sändfel: " + e, 'err'); }
+    }
+
+    // --- SEKVENSEN ---
+    ui.startSeqBtn.onclick = async () => {
+        ui.startSeqBtn.disabled = true;
+        log("--- STARTAR SEKVENS ---", 'info');
+
+        // Detta är en "Blind" sekvens (vi väntar en stund mellan varje kommando)
+        // Eftersom web-bluetooth kan vara segt med events, kör vi timings.
+        
+        await send(CMDS.PING, "PING");
+        await delay(500);
+        
+        await send(CMDS.INIT_A0, "INIT_A0");
+        await delay(500);
+        
+        await send(CMDS.STATUS, "STATUS");
+        await delay(500);
+        
+        await send(CMDS.INIT_A3, "INIT_A3");
+        await delay(500);
+        
+        await send(CMDS.INIT_A4, "INIT_A4");
+        await delay(500);
+        
+        await send(CMDS.START, "START");
+        await delay(1000);
+        
+        log("Sekvens klar. Startar POLLING (Läsning)...", 'info');
+        
+        // Starta loopen som hämtar data varje sekund
+        if (pollInterval) clearInterval(pollInterval);
+        pollInterval = setInterval(() => {
+            send(CMDS.READ, "READ");
+        }, 1000); // Enligt java-koden: 500ms vid READ-state, vi kör 1s för att vara snälla
+    };
+
+    function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+    // --- DATATOLKNING (Den hemliga formeln) ---
+    function handleData(event) {
         const data = new Uint8Array(event.target.value.buffer);
         const hex = Array.from(data).map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
         
-        log(`RX: ${hex}`, 'data');
+        // Filtrera bort "ACK" svar (De som börjar på F0 B...) så vi inte spammar loggen
+        if (data[0] === 0xF0 && (data[1] & 0xF0) === 0xB0) {
+            // Detta är bara ett "OK" från cykeln, vi behöver inte logga varje gång
+            // log(`RX ACK: ${hex}`, 'info'); 
+            return;
+        }
 
-        // iConsole Parsing (F2 ...)
-        if (data[0] === 0xF2) {
-            // Struktur: F2 [Len] [Data...] [CS]
-            // Dataoffset börjar på index 2
-            // Ofta: 
-            // Byte 2-3: Time
-            // Byte 4-5: Speed * 10
-            // Byte 6-7: RPM
-            // Byte 8-9: Dist
-            // Byte 10-11: Watt
+        log(`RX DATA: ${hex}`, 'rx');
+
+        // Kolla om det är ett svar på READ (F0 B2 ...) och att längden är tillräcklig
+        // Java: mDataListener.onData(new Data(got));
+        // Data-klassen säger:
+        // Time = bytes[2]..bytes[5] (komplicerat)
+        // Speed = 100 * (bytes[6]-1) + bytes[7]-1
+        // RPM = 100 * (bytes[8]-1) + bytes[9]-1
+        // Dist = 100 * (bytes[10]-1) + bytes[11]-1
+        // Cal = 100 * (bytes[12]-1) + bytes[13]-1
+        // Watt = 100 * (bytes[16]-1) + bytes[17]-1
+        
+        // Vi antar att paketet börjar på F0 B2 och har rätt längd (ca 20-21 bytes)
+        if (data.length >= 20) {
             
-            if (data.length > 5) {
-                const speedVal = (data[4] << 8) | data[5];
-                ui.speed.textContent = (speedVal / 10).toFixed(1);
-            }
-            if (data.length > 7) {
-                // Gissning: RPM
-            }
-            if (data.length > 11) {
-                const wattVal = (data[10] << 8) | data[11];
-                ui.watt.textContent = wattVal;
-            }
-            
-            // Tid (Byte 2-3)
-            if (data.length > 3) {
-               const timeM = data[2];
-               const timeS = data[3];
-               ui.time.textContent = `${timeM}:${timeS.toString().padStart(2,'0')}`;
-            }
-            
-            // Level (ofta byte 13 eller 14?)
-            if (data.length > 13) {
-               ui.level.textContent = data[13];
-            }
+            // Hjälpfunktion för det konstiga "-1" formatet
+            const parseVal = (idxHigh, idxLow) => {
+                return 100 * (data[idxHigh] - 1) + (data[idxLow] - 1);
+            };
+
+            const speed = parseVal(6, 7) / 10; // Java säger speed10, så vi delar med 10
+            const rpm = parseVal(8, 9);
+            const dist = parseVal(10, 11) / 10; // Java säger dist10
+            const cal = parseVal(12, 13);
+            const hr = parseVal(14, 15);
+            const watt = parseVal(16, 17) / 10; // Java säger power10
+
+            // Tid (förenklad)
+            const min = data[4] - 1; 
+            const sec = data[5] - 1;
+
+            // Uppdatera UI
+            ui.speed.textContent = speed.toFixed(1);
+            ui.rpm.textContent = rpm;
+            ui.dist.textContent = dist.toFixed(2);
+            ui.watt.textContent = watt.toFixed(0);
+            ui.hr.textContent = hr;
+            ui.time.textContent = `${min}:${sec.toString().padStart(2,'0')}`;
         }
     }
-
-    function enableButtons() {
-        ui.btnStartComplex.disabled = false;
-        ui.btnPing.disabled = false;
-    }
-    
-    function disableButtons() {
-        ui.btnStartComplex.disabled = true;
-        ui.btnPing.disabled = true;
-    }
-
-    async function send(bytes) {
-        if (!iconsoleWriteChar) return;
-        try {
-            // Beräkna Checksumma (Sista byten)
-            // iConsole checksum är ofta summan av alla bytes & 0xFF
-            let sum = 0;
-            for(let b of bytes) sum += b;
-            const checksum = sum & 0xFF;
-            bytes.push(checksum); // Lägg till CS på slutet
-
-            const hex = bytes.map(b => b.toString(16).toUpperCase()).join(' ');
-            log(`TX [FFF2]: ${hex}`, 'info');
-            await iconsoleWriteChar.writeValue(new Uint8Array(bytes));
-        } catch (e) { log("Sändningsfel: " + e, 'err'); }
-    }
-
-    // Ping (Bara för test)
-    ui.btnPing.onclick = () => send([0xF0]);
-
-    // DET KOMPLEXA START-PAKETET
-    // Format: Header(F0) Cmd(A5) Time(1,2) Dist(3,4) Cal(5,6) Pulse(7,8) Level(9)
-    // Vi sätter: Tid=20min, Dist=0, Cal=0, Puls=0, Level=1
-    ui.btnStartComplex.onclick = () => {
-        const packet = [
-            0xF0, // Header
-            0xA5, // CMD: Start
-            0x00, 0x14, // Time: 20 minuter (00 14)
-            0x00, 0x00, // Distance: 0
-            0x00, 0x00, // Calories: 0
-            0x00, 0x00, // Pulse limit: 0
-            0x01  // Level: 1
-        ];
-        send(packet);
-    };
 
 </script>
 
