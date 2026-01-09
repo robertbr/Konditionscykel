@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gymstick State Machine v15</title>
+    <title>Gymstick Manual Step v16</title>
     <style>
         :root {
             --bg-color: #0d1117;
@@ -70,23 +70,16 @@
         button:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; }
 
         #connectBtn { background: var(--accent); }
-        #startSeqBtn { background: var(--accent-wait); display: none; }
-        #stopBtn { background: var(--accent-red); display: none; }
-
-        .progress-bar {
-            width: 100%;
-            height: 10px;
-            background: #30363d;
-            border-radius: 5px;
+        #nextStepBtn { background: var(--accent-wait); display: none; }
+        
+        .status-box {
+            padding: 10px;
+            background: #21262d;
+            border: 1px solid #30363d;
             margin-bottom: 15px;
-            overflow: hidden;
-            display: none;
-        }
-        .progress-fill {
-            height: 100%;
-            background: var(--accent-green);
-            width: 0%;
-            transition: width 0.3s;
+            text-align: center;
+            font-weight: bold;
+            color: var(--accent);
         }
 
         .log-window {
@@ -107,7 +100,6 @@
         .l-rx { color: #3fb950; font-weight: bold; }
         .l-err { color: #f85149; }
         .l-info { color: #8b949e; }
-        .l-state { color: var(--accent-orange); font-weight: bold; border-top: 1px dashed #333; margin-top: 5px; padding-top:5px; }
 
     </style>
 </head>
@@ -115,14 +107,14 @@
 
 <div class="dashboard">
     <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:5px;">
-        <strong>Gymstick SafeMode v15</strong>
-        <span id="status">Ej ansluten</span>
+        <strong>Gymstick Manual v16</strong>
+        <span id="connStatus">Ej ansluten</span>
     </div>
 
     <button id="connectBtn">1. ANSLUT</button>
-    <div class="progress-bar" id="progBar"><div class="progress-fill" id="progFill"></div></div>
-    <button id="startSeqBtn">2. STARTA SÄKER SEKVENS (Steg-för-steg)</button>
-    <button id="stopBtn">NÖDSTOPP / STOPPA</button>
+    
+    <div class="status-box" id="stepStatus">Väntar på anslutning...</div>
+    <button id="nextStepBtn">SKICKA NÄSTA STEG</button>
 
     <div class="data-grid">
         <div class="data-box">
@@ -130,7 +122,7 @@
             <div class="data-val" id="valSpeed">0.0</div>
         </div>
         <div class="data-box">
-            <div class="data-lbl">Effekt (Watt)</div>
+            <div class="data-lbl">Watt</div>
             <div class="data-val" id="valWatt">0</div>
         </div>
         <div class="data-box">
@@ -149,22 +141,20 @@
     <button id="clearLogBtn" style="background:#21262d; flex:1; margin-bottom:0; padding:10px;">Rensa</button>
 </div>
 
-<div class="log-window" id="logOutput">Väntar på anslutning...</div>
+<div class="log-window" id="logOutput">Väntar...</div>
 
 <script>
     // --- UI ---
     const ui = {
-        status: document.getElementById('status'),
+        connStatus: document.getElementById('connStatus'),
+        stepStatus: document.getElementById('stepStatus'),
         log: document.getElementById('logOutput'),
         speed: document.getElementById('valSpeed'),
         watt: document.getElementById('valWatt'),
         time: document.getElementById('valTime'),
         dist: document.getElementById('valDist'),
         connectBtn: document.getElementById('connectBtn'),
-        startSeqBtn: document.getElementById('startSeqBtn'),
-        stopBtn: document.getElementById('stopBtn'),
-        progBar: document.getElementById('progBar'),
-        progFill: document.getElementById('progFill')
+        nextStepBtn: document.getElementById('nextStepBtn')
     };
 
     let iconsoleWriteChar = null; // FFF2
@@ -172,28 +162,16 @@
     let fullLog = [];
     
     // STATES
-    const STATE = {
-        IDLE: 0,
-        PING_SENT: 1,
-        A0_SENT: 2,
-        STATUS_SENT: 3,
-        A3_SENT: 4,
-        A4_SENT: 5,
-        START_SENT: 6,
-        RUNNING: 7
-    };
-    let currentState = STATE.IDLE;
-
-    // --- PROTOKOLL (Exakt kopia från Java) ---
-    const CMDS = {
-        PING:    [0xF0, 0xA0, 0x01, 0x01, 0x92],
-        INIT_A0: [0xF0, 0xA0, 0x02, 0x02, 0x94],
-        STATUS:  [0xF0, 0xA1, 0x01, 0x01, 0x93],
-        INIT_A3: [0xF0, 0xA3, 0x01, 0x01, 0x01, 0x96],
-        INIT_A4: [0xF0, 0xA4, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xA0],
-        START:   [0xF0, 0xA5, 0x01, 0x01, 0x02, 0x99],
-        READ:    [0xF0, 0xA2, 0x01, 0x01, 0x94]
-    };
+    const STEPS = [
+        { name: "PING (F0 A0...)", bytes: [0xF0, 0xA0, 0x01, 0x01, 0x92] },
+        { name: "INIT A0",         bytes: [0xF0, 0xA0, 0x02, 0x02, 0x94] },
+        { name: "STATUS",          bytes: [0xF0, 0xA1, 0x01, 0x01, 0x93] },
+        { name: "INIT A3",         bytes: [0xF0, 0xA3, 0x01, 0x01, 0x01, 0x96] },
+        { name: "INIT A4",         bytes: [0xF0, 0xA4, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xA0] },
+        { name: "START (A5)",      bytes: [0xF0, 0xA5, 0x01, 0x01, 0x02, 0x99] },
+        { name: "READ LOOP",       bytes: [0xF0, 0xA2, 0x01, 0x01, 0x94], loop: true }
+    ];
+    let currentStepIndex = 0;
 
     // --- LOGGNING ---
     function log(msg, type = 'info') {
@@ -212,14 +190,14 @@
         const blob = new Blob([fullLog.join('\n')], { type: 'text/plain' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = "gymstick_v15_log.txt";
+        a.download = "gymstick_v16_log.txt";
         a.click();
     };
 
     // --- ANSLUTNING ---
     ui.connectBtn.onclick = async () => {
         try {
-            ui.status.textContent = "Söker...";
+            ui.connStatus.textContent = "Söker...";
             const device = await navigator.bluetooth.requestDevice({
                 filters: [{ services: ['fitness_machine'] }],
                 optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb']
@@ -238,9 +216,11 @@
             iconsoleWriteChar = await service.getCharacteristic('0000fff2-0000-1000-8000-00805f9b34fb');
             
             log("Ansluten till iConsole (FFF0).", 'info');
-            ui.status.textContent = "Ansluten";
+            ui.connStatus.textContent = "Ansluten";
             ui.connectBtn.style.display = 'none';
-            ui.startSeqBtn.style.display = 'block';
+            ui.nextStepBtn.style.display = 'block';
+            
+            prepareNextStep();
 
         } catch (e) {
             log("Fel: " + e, 'err');
@@ -249,17 +229,41 @@
 
     function onDisconnected() {
         log("Frånkopplad!", 'err');
-        ui.status.textContent = "Frånkopplad";
+        ui.connStatus.textContent = "Frånkopplad";
         ui.connectBtn.style.display = 'block';
         ui.connectBtn.disabled = false;
-        ui.startSeqBtn.style.display = 'none';
-        ui.stopBtn.style.display = 'none';
-        ui.progBar.style.display = 'none';
+        ui.nextStepBtn.style.display = 'none';
         if (readInterval) clearInterval(readInterval);
-        currentState = STATE.IDLE;
+        currentStepIndex = 0;
     }
 
-    // --- SÄNDNING ---
+    // --- STEGANALYS ---
+    function prepareNextStep() {
+        if (currentStepIndex >= STEPS.length) return;
+        
+        const step = STEPS[currentStepIndex];
+        ui.nextStepBtn.textContent = `SKICKA ${currentStepIndex + 1}: ${step.name}`;
+        ui.nextStepBtn.disabled = false;
+        ui.stepStatus.textContent = `Redo att skicka steg ${currentStepIndex + 1}...`;
+        ui.stepStatus.style.color = "#fff";
+    }
+
+    ui.nextStepBtn.onclick = async () => {
+        ui.nextStepBtn.disabled = true;
+        const step = STEPS[currentStepIndex];
+        
+        if (step.loop) {
+            log("Startar READ-loop...", 'info');
+            ui.nextStepBtn.style.display = 'none';
+            ui.stepStatus.textContent = "Läser data...";
+            readInterval = setInterval(() => send(step.bytes, "READ"), 1000);
+        } else {
+            ui.stepStatus.textContent = "Väntar på svar...";
+            ui.stepStatus.style.color = "#ff9800";
+            await send(step.bytes, step.name);
+        }
+    };
+
     async function send(bytes, name) {
         if (!iconsoleWriteChar) return;
         try {
@@ -269,133 +273,39 @@
         } catch (e) { log("Sändfel: " + e, 'err'); }
     }
 
-    // --- SEKVENS-STYRNING ---
-    ui.startSeqBtn.onclick = () => {
-        ui.startSeqBtn.style.display = 'none';
-        ui.stopBtn.style.display = 'block';
-        ui.progBar.style.display = 'block';
-        
-        log("--- STARTAR STATE MACHINE ---", 'state');
-        currentState = STATE.PING_SENT;
-        updateProgress(10);
-        send(CMDS.PING, "PING");
-    };
-
-    ui.stopBtn.onclick = () => {
-        if (readInterval) clearInterval(readInterval);
-        log("Stoppar manuellt.", 'err');
-        onDisconnected(); // Enkel reset
-    };
-
-    function updateProgress(pct) {
-        ui.progFill.style.width = pct + '%';
-    }
-
-    // --- DATA & STATE MACHINE ---
+    // --- DATA ---
     function handleData(event) {
         const data = new Uint8Array(event.target.value.buffer);
         const hex = Array.from(data).map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
         
-        // Ignorera vissa paket om vi vill, men vi loggar allt för säkerhets skull
-        // log(`RX: ${hex}`, 'rx');
+        // Logga allt
+        log(`RX: ${hex}`, 'rx');
 
-        // STATE MACHINE LOGIK
-        // Java: processIOAck() kollar om mNextState ska ändras baserat på ACK
-        // Om vi skickar A0 (Ping), förväntar vi oss B0 (Ack)
-        
-        const cmdId = data[1] & 0xF0; // T.ex. B0 från F0 B0 ...
-        const isAck = (data[0] === 0xF0 && (cmdId === 0xB0));
-
-        if (isAck) {
-            log(`Fick ACK: ${hex}`, 'rx');
+        // Hantera ACK (B0)
+        // Format: F0 B0 ...
+        if (data[0] === 0xF0 && (data[1] & 0xF0) === 0xB0) {
+            log("ACK Mottaget!", 'info');
             
-            // Hantera nästa steg
-            switch (currentState) {
-                case STATE.PING_SENT:
-                    log("PING OK -> Skickar INIT_A0", 'state');
-                    currentState = STATE.A0_SENT;
-                    updateProgress(25);
-                    setTimeout(() => send(CMDS.INIT_A0, "INIT_A0"), 100);
-                    break;
-
-                case STATE.A0_SENT:
-                    log("INIT_A0 OK -> Skickar STATUS", 'state');
-                    currentState = STATE.STATUS_SENT;
-                    updateProgress(40);
-                    setTimeout(() => send(CMDS.STATUS, "STATUS"), 100);
-                    break;
-
-                case STATE.STATUS_SENT:
-                    log("STATUS OK -> Skickar INIT_A3", 'state');
-                    currentState = STATE.A3_SENT;
-                    updateProgress(55);
-                    setTimeout(() => send(CMDS.INIT_A3, "INIT_A3"), 100);
-                    break;
-
-                case STATE.A3_SENT:
-                    log("INIT_A3 OK -> Skickar INIT_A4", 'state');
-                    currentState = STATE.A4_SENT;
-                    updateProgress(70);
-                    setTimeout(() => send(CMDS.INIT_A4, "INIT_A4"), 100);
-                    break;
-
-                case STATE.A4_SENT:
-                    log("INIT_A4 OK -> Skickar START!", 'state');
-                    currentState = STATE.START_SENT;
-                    updateProgress(85);
-                    setTimeout(() => send(CMDS.START, "START"), 100);
-                    break;
-
-                case STATE.START_SENT:
-                    log("START OK! -> Går in i RUNNING Mode", 'state');
-                    currentState = STATE.RUNNING;
-                    updateProgress(100);
-                    ui.progFill.style.backgroundColor = "#00ff00";
-                    startReadLoop();
-                    break;
-                
-                case STATE.RUNNING:
-                    // Vi är igång! Om detta är ett svar på READ, parse it!
-                    if (data.length >= 20) {
-                        parseData(data);
-                    }
-                    break;
+            // Om vi inte är i loopen, gå till nästa steg
+            if (!STEPS[currentStepIndex].loop) {
+                currentStepIndex++;
+                prepareNextStep();
             }
-        } else {
-            // Det kanske är data ändå?
-            if (currentState === STATE.RUNNING && data.length >= 20) {
-                parseData(data);
-            } else {
-                log(`RX (Okänd): ${hex}`, 'info');
-            }
+        }
+
+        // Hantera DATA (F0 B2 ...)
+        if (data.length >= 20) {
+            parseData(data);
         }
     }
 
-    function startReadLoop() {
-        // Enligt Java: Skicka READ (F0 A2...) regelbundet
-        log("Startar READ-loop (varje sekund)...", 'info');
-        readInterval = setInterval(() => {
-            send(CMDS.READ, "READ");
-        }, 1000);
-    }
-
     function parseData(data) {
-        // Java Data-klass logik:
-        // Speed = 100 * (bytes[6]-1) + bytes[7]-1
         const parseVal = (h, l) => 100 * (data[h] - 1) + (data[l] - 1);
 
-        // Säkerhetskoll
-        if (data.length < 18) return;
-
         const speed = parseVal(6, 7) / 10;
-        const rpm = parseVal(8, 9);
         const dist = parseVal(10, 11) / 10;
         const watt = parseVal(16, 17) / 10;
-        const hr = parseVal(14, 15);
         
-        // Tid (Byte 2-5 är krånglig i Java, förenklar här)
-        // mTime = (((bytes[2]-1) * 24 + bytes[3]-1) * 60 +  bytes[4]-1) * 60 + bytes[5]-1
-        // Det ser ut som Dagar, Timmar, Minuter, Sekunder
         const min = data[4] - 1;
         const sec = data[5] - 1;
 
@@ -403,9 +313,6 @@
         ui.watt.textContent = watt.toFixed(0);
         ui.dist.textContent = dist.toFixed(2);
         ui.time.textContent = `${min}:${sec.toString().padStart(2,'0')}`;
-        
-        // Logga bara ibland
-        // log(`Data: ${speed} km/h, ${watt} W`, 'rx');
     }
 
 </script>
