@@ -3,347 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gymstick BLE Native v17</title>
+    <title>Gymstick GB8.0 Test</title>
     <style>
-        :root {
-            --bg-color: #0d1117;
-            --card-bg: #161b22;
-            --text-main: #c9d1d9;
-            --border-color: #30363d;
-            --accent: #58a6ff;
-            --accent-green: #238636;
-            --accent-red: #da3633;
-            --accent-wait: #9e6a03;
-        }
-
-        body { 
-            font-family: 'Segoe UI', monospace; 
-            background: var(--bg-color); 
-            color: var(--text-main);
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin: 0;
-        }
-
-        .dashboard { 
-            background: var(--card-bg); 
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 15px;
-            width: 100%;
-            max-width: 600px;
-            margin-bottom: 15px;
-            box-sizing: border-box;
-        }
-
-        .data-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .data-box {
-            background: #0d1117;
-            border: 1px solid var(--border-color);
-            padding: 10px;
-            text-align: center;
-            border-radius: 4px;
-        }
-        .data-val { font-size: 1.5rem; font-weight: bold; color: var(--text-main); }
-        .data-lbl { font-size: 0.7rem; color: #8b949e; text-transform: uppercase; }
-
-        button { 
-            background: var(--accent-green); 
-            color: white; 
-            border: none; 
-            padding: 15px; 
-            border-radius: 4px;
-            font-weight: bold; 
-            cursor: pointer; 
-            font-size: 1rem;
-            width: 100%;
-            margin-bottom: 10px;
-        }
-        button:hover { opacity: 0.9; }
-        button:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; }
-
-        #connectBtn { background: var(--accent); }
-        #nextStepBtn { background: var(--accent-wait); display: none; }
-        
-        .status-box {
-            padding: 10px;
-            background: #21262d;
-            border: 1px solid #30363d;
-            margin-bottom: 15px;
-            text-align: center;
-            font-weight: bold;
-            color: var(--accent);
-        }
-
-        .log-window {
-            width: 100%;
-            max-width: 600px;
-            height: 300px;
-            background: #0d1117;
-            border: 1px solid var(--border-color);
-            overflow-y: scroll;
-            font-family: monospace;
-            font-size: 11px;
-            padding: 10px;
-            white-space: pre-wrap;
-            box-sizing: border-box;
-        }
-        
-        .l-tx { color: #58a6ff; }
-        .l-rx { color: #3fb950; font-weight: bold; }
-        .l-err { color: #f85149; }
-        .l-info { color: #8b949e; }
-
+        body { font-family: sans-serif; padding: 20px; text-align: center; }
+        button { padding: 15px 30px; font-size: 18px; margin: 10px; cursor: pointer; }
+        #status { color: gray; margin-bottom: 20px; }
+        #data-display { font-size: 24px; font-weight: bold; margin-top: 20px; }
+        .error { color: red; }
+        .success { color: green; }
     </style>
 </head>
 <body>
 
-<div class="dashboard">
-    <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:5px;">
-        <strong>Gymstick BLE Native v17</strong>
-        <span id="connStatus">Ej ansluten</span>
+    <h1>Gymstick GB8.0 Testare</h1>
+    <p>Se till att bluetooth är på och cykeln är igång.</p>
+
+    <button id="connectBtn">Anslut till cykel</button>
+    <button id="disconnectBtn" disabled>Koppla från</button>
+
+    <div id="status">Väntar på anslutning...</div>
+    
+    <div id="data-display">
+        RPM: <span id="rpm">0</span> | 
+        Hastighet: <span id="speed">0.0</span> km/h | 
+        Watt: <span id="watt">0</span>
     </div>
 
-    <button id="connectBtn">1. ANSLUT</button>
-    
-    <div class="status-box" id="stepStatus">Väntar på anslutning...</div>
-    <button id="nextStepBtn">SKICKA NÄSTA STEG</button>
+    <script>
+        // UUIDs baserat på din cykel och iConsole-protokollet
+        const SERVICE_UUID = 0xFF10;
+        const WRITE_UUID   = 0xFF11; // Skicka kommandon här
+        const NOTIFY_UUID  = 0xFF12; // Lyssna på data här
 
-    <div class="data-grid">
-        <div class="data-box">
-            <div class="data-lbl">Hastighet</div>
-            <div class="data-val" id="valSpeed">0.0</div>
-        </div>
-        <div class="data-box">
-            <div class="data-lbl">Watt</div>
-            <div class="data-val" id="valWatt">0</div>
-        </div>
-        <div class="data-box">
-            <div class="data-lbl">Tid</div>
-            <div class="data-val" id="valTime">00:00</div>
-        </div>
-        <div class="data-box">
-            <div class="data-lbl">Distans</div>
-            <div class="data-val" id="valDist">0.0</div>
-        </div>
-    </div>
-</div>
+        // Handslaget (Byte-sekvenser från IConsole.java)
+        const COMMANDS = {
+            PING:    [0xF0, 0xA0, 0x01, 0x01, 0x92],
+            INIT_A0: [0xF0, 0xA0, 0x02, 0x02, 0x94],
+            STATUS:  [0xF0, 0xA1, 0x01, 0x01, 0x93],
+            INIT_A3: [0xF0, 0xA3, 0x01, 0x01, 0x01, 0x96],
+            INIT_A4: [0xF0, 0xA4, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xA0],
+            START:   [0xF0, 0xA5, 0x01, 0x01, 0x02, 0x99],
+            READ:    [0xF0, 0xA2, 0x01, 0x01, 0x94] // Polling-kommando
+        };
 
-<div style="width:100%; max-width:600px; display:flex; gap:10px; margin-bottom:5px;">
-    <button id="dlLogBtn" style="background:#21262d; flex:1; margin-bottom:0; padding:10px;">Spara Logg</button>
-    <button id="clearLogBtn" style="background:#21262d; flex:1; margin-bottom:0; padding:10px;">Rensa</button>
-</div>
+        let device, server, service, writeChar, notifyChar;
+        let pollingInterval;
 
-<div class="log-window" id="logOutput">Väntar...</div>
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const statusDiv = document.getElementById('status');
 
-<script>
-    // --- UI ---
-    const ui = {
-        connStatus: document.getElementById('connStatus'),
-        stepStatus: document.getElementById('stepStatus'),
-        log: document.getElementById('logOutput'),
-        speed: document.getElementById('valSpeed'),
-        watt: document.getElementById('valWatt'),
-        time: document.getElementById('valTime'),
-        dist: document.getElementById('valDist'),
-        connectBtn: document.getElementById('connectBtn'),
-        nextStepBtn: document.getElementById('nextStepBtn')
-    };
+        connectBtn.addEventListener('click', connect);
+        disconnectBtn.addEventListener('click', disconnect);
 
-    let iconsoleWriteChar = null; // FFF2
-    let readInterval = null;
-    let fullLog = [];
-    
-    // --- PROTOKOLL v17 (BLE Native - Utan F0 header) ---
-    // Vi tar bort första byten (F0) och räknar om checksumman om den behövs.
-    // Men i Java-koden var checksumman hårdkodad i sista byten.
-    // Vi provar att skicka kommandona exakt som i Java men UTAN F0.
-    
-    const STEPS = [
-        { name: "PING (A0...)",    bytes: [0xA0, 0x01, 0x01, 0x92] }, 
-        { name: "INIT A0",         bytes: [0xA0, 0x02, 0x02, 0x94] },
-        { name: "STATUS",          bytes: [0xA1, 0x01, 0x01, 0x93] },
-        { name: "INIT A3",         bytes: [0xA3, 0x01, 0x01, 0x01, 0x96] },
-        { name: "INIT A4",         bytes: [0xA4, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xA0] },
-        { name: "START (A5)",      bytes: [0xA5, 0x01, 0x01, 0x02, 0x99] },
-        { name: "READ LOOP",       bytes: [0xA2, 0x01, 0x01, 0x94], loop: true }
-    ];
-    let currentStepIndex = 0;
+        async function connect() {
+            try {
+                statusDiv.innerText = "Söker efter cykel...";
+                
+                // 1. Sök efter enhet
+                device = await navigator.bluetooth.requestDevice({
+                    filters: [{ services: [SERVICE_UUID] }],
+                    optionalServices: [SERVICE_UUID]
+                });
 
-    // --- LOGGNING ---
-    function log(msg, type = 'info') {
-        const time = new Date().toLocaleTimeString().split(' ')[0];
-        const line = `[${time}] ${msg}`;
-        fullLog.push(line);
-        const div = document.createElement('div');
-        div.textContent = line;
-        div.className = 'l-' + type;
-        ui.log.appendChild(div);
-        ui.log.scrollTop = ui.log.scrollHeight;
-    }
+                statusDiv.innerText = "Ansluter till GATT Server...";
+                server = await device.gatt.connect();
 
-    document.getElementById('clearLogBtn').onclick = () => { ui.log.innerHTML = ''; fullLog = []; };
-    document.getElementById('dlLogBtn').onclick = () => {
-        const blob = new Blob([fullLog.join('\n')], { type: 'text/plain' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = "gymstick_v17_log.txt";
-        a.click();
-    };
+                statusDiv.innerText = "Hämtar Service...";
+                service = await server.getPrimaryService(SERVICE_UUID);
 
-    // --- ANSLUTNING ---
-    ui.connectBtn.onclick = async () => {
-        try {
-            ui.connStatus.textContent = "Söker...";
-            const device = await navigator.bluetooth.requestDevice({
-                filters: [{ services: ['fitness_machine'] }],
-                optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb']
-            });
+                statusDiv.innerText = "Hämtar Characteristics...";
+                writeChar = await service.getCharacteristic(WRITE_UUID);
+                notifyChar = await service.getCharacteristic(NOTIFY_UUID);
 
-            device.addEventListener('gattserverdisconnected', onDisconnected);
-            log(`Ansluter till ${device.name}...`, 'info');
-            
-            const server = await device.gatt.connect();
-            const service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
-            
-            const notifyChar = await service.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
-            await notifyChar.startNotifications();
-            notifyChar.addEventListener('characteristicvaluechanged', handleData);
-            
-            iconsoleWriteChar = await service.getCharacteristic('0000fff2-0000-1000-8000-00805f9b34fb');
-            
-            log("Ansluten till iConsole (FFF0).", 'info');
-            ui.connStatus.textContent = "Ansluten";
-            ui.connectBtn.style.display = 'none';
-            ui.nextStepBtn.style.display = 'block';
-            
-            prepareNextStep();
+                // 2. Börja lyssna på svar
+                await notifyChar.startNotifications();
+                notifyChar.addEventListener('characteristicvaluechanged', handleData);
 
-        } catch (e) {
-            log("Fel: " + e, 'err');
-        }
-    };
+                statusDiv.innerText = "Utför handslag...";
+                statusDiv.className = "success";
 
-    function onDisconnected() {
-        log("Frånkopplad!", 'err');
-        ui.connStatus.textContent = "Frånkopplad";
-        ui.connectBtn.style.display = 'block';
-        ui.connectBtn.disabled = false;
-        ui.nextStepBtn.style.display = 'none';
-        if (readInterval) clearInterval(readInterval);
-        currentStepIndex = 0;
-    }
+                // 3. Utför det hemliga handslaget
+                await sendCommand(COMMANDS.PING);
+                await sleep(100);
+                await sendCommand(COMMANDS.INIT_A0);
+                await sleep(100);
+                await sendCommand(COMMANDS.STATUS);
+                await sleep(100);
+                await sendCommand(COMMANDS.INIT_A3);
+                await sleep(100);
+                await sendCommand(COMMANDS.INIT_A4);
+                await sleep(200);
+                await sendCommand(COMMANDS.START);
+                
+                statusDiv.innerText = "Ansluten! Läser data...";
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
 
-    // --- STEGANALYS ---
-    function prepareNextStep() {
-        if (currentStepIndex >= STEPS.length) return;
-        
-        const step = STEPS[currentStepIndex];
-        ui.nextStepBtn.textContent = `SKICKA ${currentStepIndex + 1}: ${step.name}`;
-        ui.nextStepBtn.disabled = false;
-        ui.stepStatus.textContent = `Redo att skicka steg ${currentStepIndex + 1}...`;
-        ui.stepStatus.style.color = "#fff";
-    }
+                // 4. Starta loop som frågar efter data varje sekund
+                startPolling();
 
-    ui.nextStepBtn.onclick = async () => {
-        ui.nextStepBtn.disabled = true;
-        const step = STEPS[currentStepIndex];
-        
-        if (step.loop) {
-            log("Startar READ-loop...", 'info');
-            ui.nextStepBtn.style.display = 'none';
-            ui.stepStatus.textContent = "Läser data...";
-            readInterval = setInterval(() => send(step.bytes, "READ"), 1000);
-        } else {
-            ui.stepStatus.textContent = "Väntar på svar...";
-            ui.stepStatus.style.color = "#ff9800";
-            await send(step.bytes, step.name);
-        }
-    };
-
-    async function send(bytes, name) {
-        if (!iconsoleWriteChar) return;
-        try {
-            const hex = bytes.map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
-            log(`TX [${name}]: ${hex}`, 'tx');
-            await iconsoleWriteChar.writeValue(new Uint8Array(bytes));
-        } catch (e) { log("Sändfel: " + e, 'err'); }
-    }
-
-    // --- DATA ---
-    function handleData(event) {
-        const data = new Uint8Array(event.target.value.buffer);
-        const hex = Array.from(data).map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
-        
-        log(`RX: ${hex}`, 'rx');
-
-        // Hantera ACK (B0)
-        // I BLE mode (utan F0 header) förväntar vi oss nog svar utan F0 också.
-        // Eller så har svaret F0. Vi kollar båda.
-        // Svar på A0 bör vara B0.
-        
-        // Scenario 1: Svaret har F0 (Classic style) -> F0 B0 ...
-        // Scenario 2: Svaret har inte F0 (BLE style) -> B0 ...
-        
-        let isAck = false;
-        if (data[0] === 0xF0 && (data[1] & 0xF0) === 0xB0) isAck = true;
-        if ((data[0] & 0xF0) === 0xB0) isAck = true;
-
-        if (isAck) {
-            log("ACK Mottaget!", 'info');
-            if (!STEPS[currentStepIndex].loop) {
-                currentStepIndex++;
-                prepareNextStep();
+            } catch (error) {
+                console.error(error);
+                statusDiv.innerText = "Fel: " + error;
+                statusDiv.className = "error";
             }
         }
 
-        // Hantera DATA (F0 B2 ... eller bara B2 ...)
-        // Om vi får något som är långt, försök parsa
-        if (data.length >= 10) {
-            parseData(data);
+        function disconnect() {
+            if (device && device.gatt.connected) {
+                device.gatt.disconnect();
+            }
+            clearInterval(pollingInterval);
+            statusDiv.innerText = "Frånkopplad.";
+            connectBtn.disabled = false;
+            disconnectBtn.disabled = true;
         }
-    }
 
-    function parseData(data) {
-        // Justera offset beroende på om F0 finns
-        let off = 0;
-        if (data[0] === 0xF0) off = 0; // Classic header
-        else off = -1; // BLE headerless (allt flyttas ett steg vänster jämfört med Java-koden)
+        async function sendCommand(bytes) {
+            let buffer = new Uint8Array(bytes);
+            await writeChar.writeValue(buffer);
+        }
 
-        // Java: Speed = bytes[6] & bytes[7]
-        // Med offset: data[6 + off]...
-        
-        // Skydd mot array out of bounds
-        if (data.length < (18 + off)) return;
+        function startPolling() {
+            pollingInterval = setInterval(() => {
+                if (device && device.gatt.connected) {
+                    sendCommand(COMMANDS.READ);
+                }
+            }, 1000); // Polla varje sekund
+        }
 
-        const parseVal = (h, l) => {
-            const high = data[h + off];
-            const low = data[l + off];
-            if(high === undefined || low === undefined) return 0;
-            return 100 * (high - 1) + (low - 1);
-        };
+        // Hjälpfunktion för att pausa
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
 
-        const speed = parseVal(6, 7) / 10;
-        const dist = parseVal(10, 11) / 10;
-        const watt = parseVal(16, 17) / 10;
-        
-        const min = (data[4 + off] || 1) - 1;
-        const sec = (data[5 + off] || 1) - 1;
+        // 5. Tolka datan från cykeln
+        function handleData(event) {
+            const value = event.target.value;
+            const bytes = new Uint8Array(value.buffer);
 
-        ui.speed.textContent = speed.toFixed(1);
-        ui.watt.textContent = watt.toFixed(0);
-        ui.dist.textContent = dist.toFixed(2);
-        ui.time.textContent = `${min}:${sec.toString().padStart(2,'0')}`;
-    }
+            // Kolla om det är ett datasvar (börjar ofta på F0 B2)
+            // Vi använder formeln: 100 * (byte - 1) + (nästa_byte - 1)
+            if (bytes.length > 10) { 
+                
+                // RPM ligger på byte 8 och 9 (index 0-baserat)
+                let rpm = 100 * (bytes[8] - 1) + (bytes[9] - 1);
+                
+                // Hastighet ligger på byte 6 och 7
+                let speedRaw = 100 * (bytes[6] - 1) + (bytes[7] - 1);
+                let speed = speedRaw / 10; // Dela med 10 för km/h
 
-</script>
+                // Watt ligger på byte 16 och 17
+                let watt = 0;
+                if(bytes.length > 17) {
+                    watt = 100 * (bytes[16] - 1) + (bytes[17] - 1);
+                }
 
+                // Uppdatera skärmen
+                document.getElementById('rpm').innerText = rpm;
+                document.getElementById('speed').innerText = speed.toFixed(1);
+                document.getElementById('watt').innerText = watt;
+            }
+        }
+    </script>
 </body>
 </html>
