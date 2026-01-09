@@ -3,169 +3,370 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gymstick GB8.0 Test</title>
+    <title>Gymstick "Log Replica" v21</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; text-align: center; }
-        button { padding: 15px 30px; font-size: 18px; margin: 10px; cursor: pointer; }
-        #status { color: gray; margin-bottom: 20px; }
-        #data-display { font-size: 24px; font-weight: bold; margin-top: 20px; }
-        .error { color: red; }
-        .success { color: green; }
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --text-main: #c9d1d9;
+            --border-color: #30363d;
+            --accent: #58a6ff;
+            --accent-green: #238636;
+            --accent-red: #da3633;
+            --accent-wait: #d29922;
+        }
+
+        body { 
+            font-family: 'Segoe UI', monospace; 
+            background: var(--bg-color); 
+            color: var(--text-main);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+        }
+
+        .dashboard { 
+            background: var(--card-bg); 
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .data-box {
+            background: #0d1117;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: center;
+            border-radius: 4px;
+        }
+        .data-val { font-size: 1.8rem; font-weight: bold; color: var(--text-main); }
+        .data-lbl { font-size: 0.7rem; color: #8b949e; text-transform: uppercase; }
+
+        button { 
+            background: var(--accent-green); 
+            color: white; 
+            border: none; 
+            padding: 15px; 
+            border-radius: 4px;
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 1rem;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        button:hover { opacity: 0.9; }
+        button:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; }
+
+        #connectBtn { background: var(--accent); }
+        #startSeqBtn { background: var(--accent-wait); display: none; }
+        #stopBtn { background: var(--accent-red); display: none; }
+
+        .progress-container {
+            width: 100%;
+            background: #30363d;
+            height: 24px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            position: relative;
+            display: none;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: var(--accent-green);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .progress-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            top: 2px;
+            font-size: 0.8rem;
+            color: white;
+            font-weight: bold;
+            text-shadow: 0 0 3px black;
+        }
+
+        .log-window {
+            width: 100%;
+            max-width: 600px;
+            height: 300px;
+            background: #0d1117;
+            border: 1px solid var(--border-color);
+            overflow-y: scroll;
+            font-family: monospace;
+            font-size: 11px;
+            padding: 10px;
+            white-space: pre-wrap;
+            box-sizing: border-box;
+        }
+        
+        .l-tx { color: #58a6ff; }
+        .l-rx { color: #3fb950; font-weight: bold; }
+        .l-err { color: #f85149; }
+        .l-info { color: #8b949e; }
+
     </style>
 </head>
 <body>
 
-    <h1>Gymstick GB8.0 Testare</h1>
-    <p>Se till att bluetooth är på och cykeln är igång.</p>
-
-    <button id="connectBtn">Anslut till cykel</button>
-    <button id="disconnectBtn" disabled>Koppla från</button>
-
-    <div id="status">Väntar på anslutning...</div>
-    
-    <div id="data-display">
-        RPM: <span id="rpm">0</span> | 
-        Hastighet: <span id="speed">0.0</span> km/h | 
-        Watt: <span id="watt">0</span>
+<div class="dashboard">
+    <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:5px;">
+        <strong>Gymstick "Log Replica" v21</strong>
+        <span id="connStatus">Ej ansluten</span>
     </div>
 
-    <script>
-        // UUIDs baserat på din cykel och iConsole-protokollet
-        const SERVICE_UUID = 0xFF10;
-        const WRITE_UUID   = 0xFF11; // Skicka kommandon här
-        const NOTIFY_UUID  = 0xFF12; // Lyssna på data här
+    <button id="connectBtn">1. ANSLUT</button>
+    
+    <div class="progress-container" id="progContainer">
+        <div class="progress-bar" id="progBar"></div>
+        <div class="progress-text" id="progText">Väntar...</div>
+    </div>
 
-        // Handslaget (Byte-sekvenser från IConsole.java)
-        const COMMANDS = {
-            PING:    [0xF0, 0xA0, 0x01, 0x01, 0x92],
-            INIT_A0: [0xF0, 0xA0, 0x02, 0x02, 0x94],
-            STATUS:  [0xF0, 0xA1, 0x01, 0x01, 0x93],
-            INIT_A3: [0xF0, 0xA3, 0x01, 0x01, 0x01, 0x96],
-            INIT_A4: [0xF0, 0xA4, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xA0],
-            START:   [0xF0, 0xA5, 0x01, 0x01, 0x02, 0x99],
-            READ:    [0xF0, 0xA2, 0x01, 0x01, 0x94] // Polling-kommando
+    <button id="startSeqBtn">2. STARTA LOGG-SEKVENSEN (v21)</button>
+    <button id="stopBtn">NÖDSTOPP</button>
+
+    <div class="data-grid">
+        <div class="data-box">
+            <div class="data-lbl">Hastighet</div>
+            <div class="data-val" style="color: #23d5ab" id="valSpeed">0.0</div>
+        </div>
+        <div class="data-box">
+            <div class="data-lbl">Effekt (Watt)</div>
+            <div class="data-val" style="color: #f72585" id="valWatt">0</div>
+        </div>
+        <div class="data-box">
+            <div class="data-lbl">RPM</div>
+            <div class="data-val" style="color: #7209b7" id="valRpm">0</div>
+        </div>
+        <div class="data-box">
+            <div class="data-lbl">Puls</div>
+            <div class="data-val" style="color: #fca311" id="valHr">0</div>
+        </div>
+        <div class="data-box">
+            <div class="data-lbl">Tid</div>
+            <div class="data-val" id="valTime">00:00</div>
+        </div>
+        <div class="data-box">
+            <div class="data-lbl">Distans (km)</div>
+            <div class="data-val" id="valDist">0.0</div>
+        </div>
+    </div>
+</div>
+
+<div style="width:100%; max-width:600px; display:flex; gap:10px; margin-bottom:5px;">
+    <button id="dlLogBtn" style="background:#21262d; flex:1; margin-bottom:0; padding:10px;">Spara Logg</button>
+    <button id="clearLogBtn" style="background:#21262d; flex:1; margin-bottom:0; padding:10px;">Rensa</button>
+</div>
+
+<div class="log-window" id="logOutput">Väntar...</div>
+
+<script>
+    // --- UI ---
+    const ui = {
+        status: document.getElementById('connStatus'),
+        log: document.getElementById('logOutput'),
+        speed: document.getElementById('valSpeed'),
+        watt: document.getElementById('valWatt'),
+        rpm: document.getElementById('valRpm'),
+        hr: document.getElementById('valHr'),
+        time: document.getElementById('valTime'),
+        dist: document.getElementById('valDist'),
+        connectBtn: document.getElementById('connectBtn'),
+        startSeqBtn: document.getElementById('startSeqBtn'),
+        stopBtn: document.getElementById('stopBtn'),
+        progContainer: document.getElementById('progContainer'),
+        progBar: document.getElementById('progBar'),
+        progText: document.getElementById('progText')
+    };
+
+    let iconsoleWriteChar = null; // FFF2
+    let readInterval = null;
+    let fullLog = [];
+    
+    // --- EXAKT SEKVENS FRÅN DIN LOGG ---
+    const SEQ = [
+        { name: "PING (A0)", bytes: [0xF0, 0xA0, 0x01, 0x01, 0x92] },
+        { name: "MODE (A3)", bytes: [0xF0, 0xA3, 0x01, 0x01, 0x01, 0x96] },
+        { name: "CONFIG (A4)", bytes: [0xF0, 0xA4, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xA0] },
+        { name: "START (A5)", bytes: [0xF0, 0xA5, 0x01, 0x01, 0x02, 0x99] }
+    ];
+    // READ-kommandot
+    const CMD_READ = [0xF0, 0xA2, 0x01, 0x01, 0x94]; 
+
+    // --- LOGGNING ---
+    function log(msg, type = 'info') {
+        const time = new Date().toLocaleTimeString().split(' ')[0];
+        const line = `[${time}] ${msg}`;
+        fullLog.push(line);
+        const div = document.createElement('div');
+        div.textContent = line;
+        div.className = 'l-' + type;
+        ui.log.appendChild(div);
+        ui.log.scrollTop = ui.log.scrollHeight;
+    }
+
+    document.getElementById('clearLogBtn').onclick = () => { ui.log.innerHTML = ''; fullLog = []; };
+    document.getElementById('dlLogBtn').onclick = () => {
+        const blob = new Blob([fullLog.join('\n')], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = "gymstick_v21_log.txt";
+        a.click();
+    };
+
+    // --- ANSLUTNING ---
+    ui.connectBtn.onclick = async () => {
+        try {
+            ui.status.textContent = "Söker...";
+            const device = await navigator.bluetooth.requestDevice({
+                filters: [{ services: ['fitness_machine'] }],
+                optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb']
+            });
+
+            device.addEventListener('gattserverdisconnected', onDisconnected);
+            log(`Ansluter till ${device.name}...`, 'info');
+            
+            const server = await device.gatt.connect();
+            const service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
+            
+            const notifyChar = await service.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
+            await notifyChar.startNotifications();
+            notifyChar.addEventListener('characteristicvaluechanged', handleData);
+            
+            iconsoleWriteChar = await service.getCharacteristic('0000fff2-0000-1000-8000-00805f9b34fb');
+            
+            log("Ansluten till iConsole (FFF0).", 'info');
+            ui.status.textContent = "Ansluten";
+            ui.connectBtn.style.display = 'none';
+            ui.startSeqBtn.style.display = 'block';
+
+        } catch (e) {
+            log("Fel: " + e, 'err');
+        }
+    };
+
+    function onDisconnected() {
+        log("Frånkopplad!", 'err');
+        ui.status.textContent = "Frånkopplad";
+        ui.connectBtn.style.display = 'block';
+        ui.connectBtn.disabled = false;
+        ui.startSeqBtn.style.display = 'none';
+        ui.progContainer.style.display = 'none';
+        ui.stopBtn.style.display = 'none';
+        if (readInterval) clearInterval(readInterval);
+    }
+
+    // --- SEKVENS ---
+    ui.startSeqBtn.onclick = async () => {
+        ui.startSeqBtn.style.display = 'none';
+        ui.stopBtn.style.display = 'block';
+        ui.progContainer.style.display = 'block';
+        
+        log("--- KÖR LOGG-SEKVENS ---", 'info');
+        
+        for (let i = 0; i < SEQ.length; i++) {
+            const step = SEQ[i];
+            const pct = Math.round(((i) / SEQ.length) * 100);
+            updateProgress(pct, `Skickar ${step.name}...`);
+            
+            await send(step.bytes, step.name);
+            
+            // Vänta 500ms mellan varje steg (som i loggen)
+            await delay(500);
+        }
+
+        updateProgress(100, "Startar Läsning...");
+        log("Sekvens klar. Startar polling...", 'info');
+        ui.progBar.style.backgroundColor = "#00ff00";
+        
+        if (readInterval) clearInterval(readInterval);
+        readInterval = setInterval(() => {
+            send(CMD_READ, "READ");
+        }, 1000);
+    };
+
+    ui.stopBtn.onclick = () => {
+        if (readInterval) clearInterval(readInterval);
+        log("Stoppad.", 'err');
+        updateProgress(0, "Stoppad");
+    };
+
+    function updateProgress(pct, text) {
+        ui.progBar.style.width = pct + '%';
+        ui.progText.textContent = text;
+    }
+
+    function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+    async function send(bytes, name) {
+        if (!iconsoleWriteChar) return;
+        try {
+            if (name !== "READ") {
+                const hex = bytes.map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
+                log(`TX [${name}]: ${hex}`, 'tx');
+            }
+            await iconsoleWriteChar.writeValue(new Uint8Array(bytes));
+        } catch (e) { log("Sändfel: " + e, 'err'); }
+    }
+
+    // --- DATA ---
+    function handleData(event) {
+        const data = new Uint8Array(event.target.value.buffer);
+        
+        // Logga inte B0-svar (ACK)
+        if (data[0] === 0xF0 && (data[1] & 0xF0) === 0xB0) return;
+
+        // Om det är DATA (F0 B2 ...)
+        if (data.length >= 20 && data[0] === 0xF0 && data[1] === 0xB2) {
+            parsePacket(data);
+        } else {
+            const hex = Array.from(data).map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
+            log(`RX: ${hex}`, 'rx');
+        }
+    }
+
+    function parsePacket(data) {
+        // "Minus 1"-formeln
+        const getVal = (h, l) => {
+            const high = data[h] - 1;
+            const low = data[l] - 1;
+            return (100 * high) + low;
         };
 
-        let device, server, service, writeChar, notifyChar;
-        let pollingInterval;
+        const speed = getVal(6, 7) / 10;
+        const rpm = getVal(8, 9);
+        const dist = getVal(10, 11) / 10;
+        const watt = getVal(16, 17) / 10;
+        const hr = getVal(14, 15);
+        
+        let timeSecs = data[5] - 1; 
+        let timeMins = data[4] - 1;
+        if (timeMins < 0) timeMins = 0;
+        if (timeSecs < 0) timeSecs = 0;
 
-        const connectBtn = document.getElementById('connectBtn');
-        const disconnectBtn = document.getElementById('disconnectBtn');
-        const statusDiv = document.getElementById('status');
+        ui.speed.textContent = speed.toFixed(1);
+        ui.watt.textContent = watt.toFixed(0);
+        ui.rpm.textContent = rpm;
+        ui.hr.textContent = hr;
+        ui.dist.textContent = dist.toFixed(2);
+        ui.time.textContent = `${timeMins}:${timeSecs.toString().padStart(2,'0')}`;
+    }
 
-        connectBtn.addEventListener('click', connect);
-        disconnectBtn.addEventListener('click', disconnect);
+</script>
 
-        async function connect() {
-            try {
-                statusDiv.innerText = "Söker efter cykel...";
-                
-                // 1. Sök efter enhet
-                device = await navigator.bluetooth.requestDevice({
-                    filters: [{ services: [SERVICE_UUID] }],
-                    optionalServices: [SERVICE_UUID]
-                });
-
-                statusDiv.innerText = "Ansluter till GATT Server...";
-                server = await device.gatt.connect();
-
-                statusDiv.innerText = "Hämtar Service...";
-                service = await server.getPrimaryService(SERVICE_UUID);
-
-                statusDiv.innerText = "Hämtar Characteristics...";
-                writeChar = await service.getCharacteristic(WRITE_UUID);
-                notifyChar = await service.getCharacteristic(NOTIFY_UUID);
-
-                // 2. Börja lyssna på svar
-                await notifyChar.startNotifications();
-                notifyChar.addEventListener('characteristicvaluechanged', handleData);
-
-                statusDiv.innerText = "Utför handslag...";
-                statusDiv.className = "success";
-
-                // 3. Utför det hemliga handslaget
-                await sendCommand(COMMANDS.PING);
-                await sleep(100);
-                await sendCommand(COMMANDS.INIT_A0);
-                await sleep(100);
-                await sendCommand(COMMANDS.STATUS);
-                await sleep(100);
-                await sendCommand(COMMANDS.INIT_A3);
-                await sleep(100);
-                await sendCommand(COMMANDS.INIT_A4);
-                await sleep(200);
-                await sendCommand(COMMANDS.START);
-                
-                statusDiv.innerText = "Ansluten! Läser data...";
-                connectBtn.disabled = true;
-                disconnectBtn.disabled = false;
-
-                // 4. Starta loop som frågar efter data varje sekund
-                startPolling();
-
-            } catch (error) {
-                console.error(error);
-                statusDiv.innerText = "Fel: " + error;
-                statusDiv.className = "error";
-            }
-        }
-
-        function disconnect() {
-            if (device && device.gatt.connected) {
-                device.gatt.disconnect();
-            }
-            clearInterval(pollingInterval);
-            statusDiv.innerText = "Frånkopplad.";
-            connectBtn.disabled = false;
-            disconnectBtn.disabled = true;
-        }
-
-        async function sendCommand(bytes) {
-            let buffer = new Uint8Array(bytes);
-            await writeChar.writeValue(buffer);
-        }
-
-        function startPolling() {
-            pollingInterval = setInterval(() => {
-                if (device && device.gatt.connected) {
-                    sendCommand(COMMANDS.READ);
-                }
-            }, 1000); // Polla varje sekund
-        }
-
-        // Hjälpfunktion för att pausa
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
-        }
-
-        // 5. Tolka datan från cykeln
-        function handleData(event) {
-            const value = event.target.value;
-            const bytes = new Uint8Array(value.buffer);
-
-            // Kolla om det är ett datasvar (börjar ofta på F0 B2)
-            // Vi använder formeln: 100 * (byte - 1) + (nästa_byte - 1)
-            if (bytes.length > 10) { 
-                
-                // RPM ligger på byte 8 och 9 (index 0-baserat)
-                let rpm = 100 * (bytes[8] - 1) + (bytes[9] - 1);
-                
-                // Hastighet ligger på byte 6 och 7
-                let speedRaw = 100 * (bytes[6] - 1) + (bytes[7] - 1);
-                let speed = speedRaw / 10; // Dela med 10 för km/h
-
-                // Watt ligger på byte 16 och 17
-                let watt = 0;
-                if(bytes.length > 17) {
-                    watt = 100 * (bytes[16] - 1) + (bytes[17] - 1);
-                }
-
-                // Uppdatera skärmen
-                document.getElementById('rpm').innerText = rpm;
-                document.getElementById('speed').innerText = speed.toFixed(1);
-                document.getElementById('watt').innerText = watt;
-            }
-        }
-    </script>
 </body>
 </html>
