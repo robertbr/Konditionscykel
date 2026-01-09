@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gymstick "Log Replica" v21</title>
+    <title>Gymstick "The Log" v22</title>
     <style>
         :root {
             --bg-color: #0d1117;
@@ -125,7 +125,7 @@
 
 <div class="dashboard">
     <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:5px;">
-        <strong>Gymstick "Log Replica" v21</strong>
+        <strong>Gymstick "The Log" v22</strong>
         <span id="connStatus">Ej ansluten</span>
     </div>
 
@@ -136,7 +136,7 @@
         <div class="progress-text" id="progText">Väntar...</div>
     </div>
 
-    <button id="startSeqBtn">2. STARTA LOGG-SEKVENSEN (v21)</button>
+    <button id="startSeqBtn">2. STARTA SEKVENS (Enligt Logg)</button>
     <button id="stopBtn">NÖDSTOPP</button>
 
     <div class="data-grid">
@@ -197,14 +197,15 @@
     let readInterval = null;
     let fullLog = [];
     
-    // --- EXAKT SEKVENS FRÅN DIN LOGG ---
+    // --- KOMMANDON FRÅN LOGGEN (FACIT) ---
     const SEQ = [
-        { name: "PING (A0)", bytes: [0xF0, 0xA0, 0x01, 0x01, 0x92] },
-        { name: "MODE (A3)", bytes: [0xF0, 0xA3, 0x01, 0x01, 0x01, 0x96] },
-        { name: "CONFIG (A4)", bytes: [0xF0, 0xA4, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xA0] },
-        { name: "START (A5)", bytes: [0xF0, 0xA5, 0x01, 0x01, 0x02, 0x99] }
+        { name: "PING (A0)",    bytes: [0xF0, 0xA0, 0x01, 0x01, 0x92], expect: 0xB0 },
+        { name: "MODE (A3)",    bytes: [0xF0, 0xA3, 0x01, 0x01, 0x01, 0x96], expect: 0xB3 },
+        { name: "CONFIG (A4)",  bytes: [0xF0, 0xA4, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xA0], expect: 0xB4 },
+        { name: "START (A5)",   bytes: [0xF0, 0xA5, 0x01, 0x01, 0x02, 0x99], expect: 0xB5 }
     ];
-    // READ-kommandot
+    
+    let currentStep = 0;
     const CMD_READ = [0xF0, 0xA2, 0x01, 0x01, 0x94]; 
 
     // --- LOGGNING ---
@@ -224,7 +225,7 @@
         const blob = new Blob([fullLog.join('\n')], { type: 'text/plain' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = "gymstick_v21_log.txt";
+        a.download = "gymstick_v22_log.txt";
         a.click();
     };
 
@@ -270,34 +271,37 @@
         if (readInterval) clearInterval(readInterval);
     }
 
-    // --- SEKVENS ---
+    // --- SEKVENS STYRNING (Smart) ---
     ui.startSeqBtn.onclick = async () => {
         ui.startSeqBtn.style.display = 'none';
         ui.stopBtn.style.display = 'block';
         ui.progContainer.style.display = 'block';
         
-        log("--- KÖR LOGG-SEKVENS ---", 'info');
-        
-        for (let i = 0; i < SEQ.length; i++) {
-            const step = SEQ[i];
-            const pct = Math.round(((i) / SEQ.length) * 100);
-            updateProgress(pct, `Skickar ${step.name}...`);
+        log("--- STARTAR SMART SEKVENS ---", 'info');
+        currentStep = 0;
+        sendNextStep();
+    };
+
+    function sendNextStep() {
+        if (currentStep >= SEQ.length) {
+            // Klar!
+            updateProgress(100, "Startar Läsning...");
+            log("Sekvens klar. Startar polling...", 'info');
+            ui.progBar.style.backgroundColor = "#00ff00";
             
-            await send(step.bytes, step.name);
-            
-            // Vänta 500ms mellan varje steg (som i loggen)
-            await delay(500);
+            if (readInterval) clearInterval(readInterval);
+            readInterval = setInterval(() => {
+                send(CMD_READ, "READ");
+            }, 1000);
+            return;
         }
 
-        updateProgress(100, "Startar Läsning...");
-        log("Sekvens klar. Startar polling...", 'info');
-        ui.progBar.style.backgroundColor = "#00ff00";
+        const step = SEQ[currentStep];
+        const pct = Math.round(((currentStep) / SEQ.length) * 100);
+        updateProgress(pct, `Skickar ${step.name}... (Väntar på svar)`);
         
-        if (readInterval) clearInterval(readInterval);
-        readInterval = setInterval(() => {
-            send(CMD_READ, "READ");
-        }, 1000);
-    };
+        send(step.bytes, step.name);
+    }
 
     ui.stopBtn.onclick = () => {
         if (readInterval) clearInterval(readInterval);
@@ -309,8 +313,6 @@
         ui.progBar.style.width = pct + '%';
         ui.progText.textContent = text;
     }
-
-    function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
     async function send(bytes, name) {
         if (!iconsoleWriteChar) return;
@@ -326,16 +328,30 @@
     // --- DATA ---
     function handleData(event) {
         const data = new Uint8Array(event.target.value.buffer);
+        const hex = Array.from(data).map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
         
-        // Logga inte B0-svar (ACK)
-        if (data[0] === 0xF0 && (data[1] & 0xF0) === 0xB0) return;
+        // Kolla om det är ett svar på nuvarande steg
+        if (currentStep < SEQ.length) {
+            const expectedAck = SEQ[currentStep].expect; // T.ex. 0xB0 för A0
+            // Svaret brukar vara F0 B0 ...
+            // Så data[1] & 0xF0 ska vara B0? Nej, data[1] är B0.
+            
+            // Loggen visade: SND F0 A0... RCV F0 B0...
+            if (data[0] === 0xF0 && data[1] === expectedAck) {
+                log(`ACK Mottaget: ${hex}`, 'rx');
+                currentStep++;
+                // Vänta lite innan nästa för säkerhets skull (som loggen visade)
+                setTimeout(sendNextStep, 200);
+                return;
+            }
+        }
 
         // Om det är DATA (F0 B2 ...)
         if (data.length >= 20 && data[0] === 0xF0 && data[1] === 0xB2) {
             parsePacket(data);
         } else {
-            const hex = Array.from(data).map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
-            log(`RX: ${hex}`, 'rx');
+            // Ignorera "Read"-svar i loggen för att spara plats, men logga allt annat
+            if (data[1] !== 0xB2) log(`RX: ${hex}`, 'rx');
         }
     }
 
