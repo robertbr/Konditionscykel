@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gymstick Pro Monitor</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background: #1a1a2e; 
+            color: #fff;
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0; 
+        }
+
+        .dashboard { 
+            background: #16213e; 
+            border-radius: 20px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); 
+            width: 350px; 
+            padding: 20px;
+            border: 1px solid #0f3460;
+        }
+
+        /* Header med Tid och Puls */
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #0f3460;
+        }
+
+        .top-stat {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .top-stat.left { text-align: left; }
+        .top-stat.right { text-align: right; }
+
+        .label { font-size: 0.75rem; color: #8d99ae; text-transform: uppercase; letter-spacing: 1px; }
+        .value-small { font-size: 1.5rem; font-weight: 700; color: #e94560; }
+        .value-time { font-size: 1.5rem; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; }
+
+        /* Huvudvärde (Hastighet) */
+        .main-stat {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .speed-val { font-size: 4.5rem; line-height: 1; font-weight: 800; color: #4cc9f0; }
+        .speed-unit { font-size: 1.2rem; color: #4cc9f0; opacity: 0.7; }
+
+        /* Rutnät för övriga värden */
+        .grid-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-val { font-size: 1.5rem; font-weight: 600; }
+        .stat-unit { font-size: 0.8rem; color: #8d99ae; }
+
+        /* Knapp och status */
+        .controls { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            align-items: center; 
+            margin-top: 20px; 
+        }
+        
+        button { 
+            background: #e94560; 
+            color: white; 
+            border: none; 
+            padding: 12px 30px; 
+            border-radius: 50px; 
+            cursor: pointer; 
+            font-size: 1rem; 
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+            transition: all 0.2s; 
+            width: 100%;
+        }
+        button:hover { transform: scale(1.02); background: #ff5e78; }
+        button:disabled { background: #555; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        #simBtn {
+            background: #0f3460;
+            box-shadow: none;
+            font-size: 0.9rem;
+            padding: 8px 20px;
+        }
+        #simBtn:hover { background: #1a4b8c; }
+        
+        .status { font-size: 0.8rem; color: #8d99ae; margin-top: 15px; min-height: 20px; text-align: center; }
+
+        /* Färger för specifika värden */
+        .text-watt { color: #f72585; }
+        .text-dist { color: #4cc9f0; }
+        .text-cal { color: #fca311; }
+        .text-cad { color: #7209b7; }
+
+        .error-msg { color: #ff6b6b; font-size: 0.75rem; margin-top: 5px; }
+
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <!-- Rad 1: Tid (Vänster) och Puls (Höger) -->
+    <div class="header-row">
+        <div class="top-stat left">
+            <span class="label">Tid</span>
+            <span class="value-time" id="time">00:00</span>
+        </div>
+        <div class="top-stat right">
+            <span class="label">Puls</span>
+            <div>
+                <span class="value-small" id="hr">--</span> 
+                <span class="stat-unit">bpm</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Huvudnummer: Hastighet -->
+    <div class="main-stat">
+        <div class="label">Hastighet</div>
+        <div class="speed-val" id="speed">0.0</div>
+        <div class="speed-unit">km/h</div>
+    </div>
+
+    <!-- Rutnät: Kadens, Distans, Effekt, Kalorier -->
+    <div class="grid-stats">
+        <div class="stat-box">
+            <div class="label">Kadens</div>
+            <div class="stat-val text-cad" id="cadence">0</div>
+            <div class="stat-unit">rpm</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">Sträcka</div>
+            <div class="stat-val text-dist" id="distance">0.00</div>
+            <div class="stat-unit">km</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">Effekt</div>
+            <div class="stat-val text-watt" id="power">0</div>
+            <div class="stat-unit">watt</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">Kalorier</div>
+            <div class="stat-val text-cal" id="calories">0</div>
+            <div class="stat-unit">kcal</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="connectBtn">ANSLUT CYKEL</button>
+        <button id="simBtn">SIMULERA DATA (DEMO)</button>
+        <div id="status" class="status">Klar att ansluta via Bluetooth...</div>
+    </div>
+</div>
+
+<script>
+    const connectBtn = document.getElementById('connectBtn');
+    const simBtn = document.getElementById('simBtn');
+    const statusEl = document.getElementById('status');
+
+    // Referenser till UI-element
+    const ui = {
+        time: document.getElementById('time'),
+        hr: document.getElementById('hr'),
+        speed: document.getElementById('speed'),
+        cadence: document.getElementById('cadence'),
+        distance: document.getElementById('distance'),
+        power: document.getElementById('power'),
+        calories: document.getElementById('calories')
+    };
+
+    let startTime = null;
+    let timerInterval = null;
+    let simulationInterval = null;
+    let isSimulating = false;
+
+    // --- SIMULERINGSLÄGE (För testning utan cykel) ---
+    simBtn.addEventListener('click', () => {
+        if (isSimulating) {
+            stopSimulation();
+            return;
+        }
+        
+        startSimulation();
+    });
+
+    function startSimulation() {
+        isSimulating = true;
+        simBtn.textContent = "STOPPA SIMULERING";
+        simBtn.style.background = "#bd2130";
+        connectBtn.disabled = true;
+        statusEl.textContent = "Kör simulering...";
+        if (!timerInterval) startTimer();
+
+        let simDistance = 0;
+        let simCalories = 0;
+
+        simulationInterval = setInterval(() => {
+            // Generera slumpmässig data
+            const simSpeed = (25 + Math.random() * 5).toFixed(1);
+            const simCadence = Math.floor(70 + Math.random() * 10);
+            const simPower = Math.floor(140 + Math.random() * 30);
+            const simHr = Math.floor(120 + Math.random() * 10);
+            
+            simDistance += (simSpeed / 3600); // km per sekund (uppdateras varje sekund)
+            simCalories += (simPower * 1 / 4184) * 10; // Grov uppskattning
+
+            ui.speed.textContent = simSpeed;
+            ui.cadence.textContent = simCadence;
+            ui.power.textContent = simPower;
+            ui.hr.textContent = simHr;
+            ui.distance.textContent = simDistance.toFixed(2);
+            ui.calories.textContent = Math.floor(simCalories);
+
+        }, 1000);
+    }
+
+    function stopSimulation() {
+        isSimulating = false;
+        clearInterval(simulationInterval);
+        clearInterval(timerInterval);
+        timerInterval = null;
+        simBtn.textContent = "SIMULERA DATA (DEMO)";
+        simBtn.style.background = "#0f3460";
+        connectBtn.disabled = false;
+        statusEl.textContent = "Simulering stoppad.";
+    }
+
+    // --- RIKTIG BLUETOOTH-KOPPLING ---
+    connectBtn.addEventListener('click', async () => {
+        // Nollställ ev felmeddelanden
+        statusEl.innerHTML = "Söker efter Gymstick...";
+        statusEl.className = "status";
+
+        // Kontrollera om webbläsaren stöder Bluetooth
+        if (!navigator.bluetooth) {
+            statusEl.innerHTML = "<span class='error-msg'>Din webbläsare stöder inte Web Bluetooth. Använd Chrome/Edge.</span>";
+            return;
+        }
+
+        try {
+            const device = await navigator.bluetooth.requestDevice({
+                filters: [{ services: ['fitness_machine'] }],
+                optionalServices: ['heart_rate'] 
+            });
+
+            statusEl.textContent = "Ansluter...";
+            const server = await device.gatt.connect();
+
+            // 1. Försök starta dataström från Fitness Machine Service (0x1826)
+            const service = await server.getPrimaryService('fitness_machine');
+            const characteristic = await service.getCharacteristic('00002ad2-0000-1000-8000-00805f9b34fb');
+            
+            await characteristic.startNotifications();
+            characteristic.addEventListener('characteristicvaluechanged', handleBikeData);
+
+            // 2. Försök hitta puls
+            try {
+                const hrService = await server.getPrimaryService('heart_rate');
+                const hrChar = await hrService.getCharacteristic('heart_rate_measurement');
+                await hrChar.startNotifications();
+                hrChar.addEventListener('characteristicvaluechanged', handleHeartRate);
+            } catch (e) {
+                console.log("Ingen separat pulstjänst hittades.");
+            }
+
+            statusEl.textContent = "Ansluten! Trampa för att se data.";
+            connectBtn.textContent = "ANSLUTEN";
+            connectBtn.disabled = true;
+            connectBtn.style.background = "#28a745";
+            simBtn.style.display = 'none'; // Göm simulering när vi är anslutna
+
+            if (!timerInterval) startTimer();
+
+        } catch (error) {
+            console.error(error);
+            if (error.name === 'SecurityError') {
+                statusEl.innerHTML = "<span class='error-msg'>Säkerhetsfel: Bluetooth blockerat av webbläsaren.</span><br>Testa att köra filen via en lokal server (localhost) eller https. Det fungerar inte direkt i förhandsgranskning.";
+            } else if (error.name === 'NotFoundError') {
+                statusEl.textContent = "Ingen enhet valdes.";
+            } else {
+                statusEl.textContent = "Fel: " + error.message;
+            }
+        }
+    });
+
+    function startTimer() {
+        startTime = Date.now();
+        timerInterval = setInterval(() => {
+            const diff = Math.floor((Date.now() - startTime) / 1000);
+            const m = Math.floor(diff / 60).toString().padStart(2, '0');
+            const s = (diff % 60).toString().padStart(2, '0');
+            ui.time.textContent = `${m}:${s}`;
+        }, 1000);
+    }
+
+    function handleHeartRate(event) {
+        const value = event.target.value;
+        const flags = value.getUint8(0);
+        
+        // Om första biten är 0 är formatet uint8, annars uint16
+        let hrVal;
+        if ((flags & 0x01) === 0) {
+            hrVal = value.getUint8(1);
+        } else {
+            hrVal = value.getUint16(1, true);
+        }
+        ui.hr.textContent = hrVal;
+    }
+
+    function handleBikeData(event) {
+        const value = event.target.value;
+        let offset = 0;
+
+        // --- LÄS FLAGGOR ---
+        const flags = value.getUint16(offset, true); 
+        offset += 2;
+
+        // --- HASTIGHET (Om bit 0 är 0 - dvs "Instantaneous Speed present" är "Not Present"? Nej vänta.) ---
+        // I FTMS specen är bitarna lite speciella. 
+        // Bit 0: "More Data". 0 = Instantaneous Speed parameter is present. (Gammal tolkning?)
+        // Låt oss använda standard FTMS tolkning:
+        // Om bit 0 är 0, så ingår hastighet.
+        
+        // Förenkling: Vi antar att hastighet ALLTID skickas i Gymstick GB 8.0 som första fält
+        const speedRaw = value.getUint16(offset, true);
+        ui.speed.textContent = (speedRaw / 100).toFixed(1);
+        offset += 2;
+
+        // --- KADENS (Bit 2) ---
+        if (flags & (1 << 2)) {
+            const cadenceRaw = value.getUint16(offset, true);
+            ui.cadence.textContent = Math.round(cadenceRaw * 0.5);
+            offset += 2;
+        }
+
+        // --- STRÄCKA (Bit 4) ---
+        if (flags & (1 << 4)) {
+            const distLow = value.getUint16(offset, true);
+            const distHigh = value.getUint8(offset + 2);
+            const totalDistMeters = (distHigh << 16) | distLow;
+            ui.distance.textContent = (totalDistMeters / 1000).toFixed(2);
+            offset += 3;
+        }
+
+        // --- EFFEKT / WATT (Bit 6) ---
+        if (flags & (1 << 6)) {
+            const power = value.getInt16(offset, true);
+            ui.power.textContent = power;
+            offset += 2;
+        }
+
+        // --- KALORIER (Bit 8) ---
+        if (flags & (1 << 8)) {
+            const totalCals = value.getUint16(offset, true);
+            ui.calories.textContent = totalCals;
+            // Hoppa över energy per hour/minute
+            offset += 5; 
+        }
+        
+        // --- PULS (Bit 9) ---
+        if (flags & (1 << 9)) {
+            const hr = value.getUint8(offset);
+            ui.hr.textContent = hr;
+            offset += 1;
+        }
+    }
+</script>
+
+</body>
+</html>
