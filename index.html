@@ -3,233 +3,365 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gymstick "The Log" v22</title>
+    <title>Gymstick Pro Monitor</title>
     <style>
         :root {
-            --bg-color: #0d1117;
-            --card-bg: #161b22;
-            --text-main: #c9d1d9;
-            --border-color: #30363d;
-            --accent: #58a6ff;
-            --accent-green: #238636;
-            --accent-red: #da3633;
-            --accent-wait: #d29922;
+            --bg-color: #1a1a2e;
+            --card-bg: #16213e;
+            --border-color: #0f3460;
+            --text-main: #fff;
+            --text-dim: #8d99ae;
+            --accent-primary: #e94560;
+            --accent-secondary: #4cc9f0;
+            --accent-speed: #23d5ab;
+            --accent-cadence: #7209b7;
+            --accent-watt: #f72585;
+            --accent-cal: #fca311;
+            --accent-res: #ffd166;
         }
 
         body { 
-            font-family: 'Segoe UI', monospace; 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
             background: var(--bg-color); 
             color: var(--text-main);
-            padding: 10px;
-            display: flex;
+            display: flex; 
             flex-direction: column;
-            align-items: center;
-            margin: 0;
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         .dashboard { 
             background: var(--card-bg); 
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 15px;
+            border-radius: 20px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); 
             width: 100%;
-            max-width: 600px;
-            margin-bottom: 15px;
-            box-sizing: border-box;
-        }
-
-        .data-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            max-width: 450px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
             margin-bottom: 20px;
         }
-        .data-box {
-            background: #0d1117;
-            border: 1px solid var(--border-color);
-            padding: 10px;
+
+        /* --- HEADER (Tid | Motstånd | Puls) --- */
+        .header-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .top-stat { display: flex; flex-direction: column; }
+        .top-stat.left { text-align: left; }
+        .top-stat.center { text-align: center; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
+        .top-stat.right { text-align: right; }
+
+        .label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; font-weight: 600;}
+        .value-small { font-size: 1.6rem; font-weight: 700; color: var(--accent-primary); }
+        .value-res { font-size: 1.8rem; font-weight: 800; color: var(--accent-res); line-height: 1; }
+        .value-time { font-size: 1.6rem; font-weight: 700; color: var(--text-main); font-variant-numeric: tabular-nums; }
+
+        /* --- HUVUDVÄRDE (Watt) --- */
+        .main-stat { text-align: center; margin: 30px 0; }
+        .main-val { font-size: 5.5rem; line-height: 0.9; font-weight: 800; color: var(--accent-watt); text-shadow: 0 0 20px rgba(247, 37, 133, 0.3); }
+        .main-unit { font-size: 1.2rem; color: var(--accent-watt); opacity: 0.8; font-weight: 700; letter-spacing: 2px; margin-top: 5px; display: block; }
+
+        /* --- RUTNÄT --- */
+        .grid-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-box {
+            background: rgba(15, 52, 96, 0.5);
+            padding: 15px;
+            border-radius: 15px;
             text-align: center;
-            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s;
         }
-        .data-val { font-size: 1.8rem; font-weight: bold; color: var(--text-main); }
-        .data-lbl { font-size: 0.7rem; color: #8b949e; text-transform: uppercase; }
+        
+        .stat-val { font-size: 2rem; font-weight: 700; line-height: 1.1; }
+        .stat-unit { font-size: 0.8rem; color: var(--text-dim); margin-top: 2px; font-weight: 600;}
 
+        /* --- KNAPPAR --- */
+        .controls { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        
         button { 
-            background: var(--accent-green); 
-            color: white; 
+            background: var(--accent-secondary); 
+            color: #000; 
             border: none; 
-            padding: 15px; 
-            border-radius: 4px;
-            font-weight: bold; 
+            padding: 14px 30px; 
+            border-radius: 50px; 
             cursor: pointer; 
-            font-size: 1rem;
+            font-size: 1rem; 
+            font-weight: 800;
+            text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(76, 201, 240, 0.3);
+            transition: all 0.2s; 
             width: 100%;
-            margin-bottom: 10px;
         }
-        button:hover { opacity: 0.9; }
-        button:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; }
-
-        #connectBtn { background: var(--accent); }
-        #startSeqBtn { background: var(--accent-wait); display: none; }
-        #stopBtn { background: var(--accent-red); display: none; }
-
+        button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(76, 201, 240, 0.5); }
+        button:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; box-shadow: none; }
+        
+        .btn-secondary { background: transparent; border: 2px solid var(--border-color); color: var(--text-dim); box-shadow: none; }
+        .btn-secondary:hover { background: var(--border-color); color: #fff; transform: translateY(-1px); }
+        
+        /* --- STATUS & LOADING --- */
         .progress-container {
             width: 100%;
-            background: #30363d;
-            height: 24px;
-            border-radius: 12px;
-            margin-bottom: 15px;
+            background: #0f182b;
+            height: 6px;
+            border-radius: 3px;
+            margin-top: 15px;
+            margin-bottom: 5px;
             position: relative;
             display: none;
             overflow: hidden;
         }
         .progress-bar {
             height: 100%;
-            background: var(--accent-green);
+            background: var(--accent-res);
             width: 0%;
-            transition: width 0.3s;
+            transition: width 0.3s ease-out;
         }
-        .progress-text {
-            position: absolute;
-            width: 100%;
-            text-align: center;
-            top: 2px;
-            font-size: 0.8rem;
-            color: white;
-            font-weight: bold;
-            text-shadow: 0 0 3px black;
-        }
+        .status-text { font-size: 0.8rem; color: var(--text-dim); min-height: 20px; text-align: center; margin-bottom: 10px; }
 
-        .log-window {
+        /* --- FÄRGER --- */
+        .text-watt { color: var(--accent-watt); }
+        .text-dist { color: var(--accent-secondary); }
+        .text-cal { color: var(--accent-cal); }
+        .text-cad { color: var(--accent-cadence); }
+        .text-speed { color: var(--accent-speed); }
+        .text-res { color: var(--accent-res); }
+
+        /* --- ANALYS DELEN --- */
+        .analysis-section {
             width: 100%;
-            max-width: 600px;
-            height: 300px;
-            background: #0d1117;
+            max-width: 800px;
+            background: var(--card-bg);
+            border-radius: 20px;
             border: 1px solid var(--border-color);
-            overflow-y: scroll;
-            font-family: monospace;
-            font-size: 11px;
-            padding: 10px;
-            white-space: pre-wrap;
-            box-sizing: border-box;
+            padding: 25px;
+            display: none; 
+            margin-top: 20px;
         }
-        
-        .l-tx { color: #58a6ff; }
-        .l-rx { color: #3fb950; font-weight: bold; }
-        .l-err { color: #f85149; }
-        .l-info { color: #8b949e; }
+        .analysis-section.visible { display: block; }
+
+        .analysis-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
+        select { background: var(--bg-color); color: white; border: 1px solid var(--border-color); padding: 8px; border-radius: 8px; }
+
+        .totals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .total-card { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; font-size: 0.9rem; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
+        .total-card b { display: block; font-size: 1.4rem; margin-bottom: 4px; color: #fff; }
+
+        /* GRAF */
+        .chart-container { 
+            width: 100%; height: 300px; 
+            background: rgba(0,0,0,0.2); 
+            border-radius: 15px; 
+            position: relative; 
+            margin-bottom: 25px; 
+            padding: 10px; 
+            box-sizing: border-box; 
+            border: 1px solid var(--border-color);
+        }
+        svg { width: 100%; height: 100%; }
+        polyline { fill: none; stroke-width: 3; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-linejoin: round; }
+
+        /* TABELL */
+        .table-wrapper { overflow-x: auto; max-height: 400px; border-radius: 10px; border: 1px solid var(--border-color); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: right; }
+        th, td { padding: 12px 15px; border-bottom: 1px solid var(--border-color); }
+        th { text-align: right; color: var(--text-dim); background: #121a2e; position: sticky; top: 0; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;}
+        th:first-child, td:first-child { text-align: left; }
+        tr:last-child td { border-bottom: none; }
+
+        .action-btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 25px; }
+        .file-input-wrapper { position: relative; overflow: hidden; display: inline-block; flex: 1; }
+        .file-input-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; }
 
     </style>
 </head>
 <body>
 
+<!-- HUVUDPANEL -->
 <div class="dashboard">
-    <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:5px;">
-        <strong>Gymstick "The Log" v22</strong>
-        <span id="connStatus">Ej ansluten</span>
+    <!-- Header -->
+    <div class="header-row">
+        <div class="top-stat left">
+            <span class="label">Tid</span>
+            <span class="value-time" id="time">00:00</span>
+        </div>
+        <div class="top-stat center">
+            <span class="label">Motstånd</span>
+            <span class="value-res" id="resistance">--</span>
+        </div>
+        <div class="top-stat right">
+            <span class="label">Puls</span>
+            <div>
+                <span class="value-small" id="hr">--</span> 
+                <span class="stat-unit">bpm</span>
+            </div>
+        </div>
     </div>
 
-    <button id="connectBtn">1. ANSLUT</button>
-    
+    <!-- Main -->
+    <div class="main-stat">
+        <div class="label">EFFEKT</div>
+        <div class="main-val" id="power">0</div>
+        <span class="main-unit">WATT</span>
+    </div>
+
+    <!-- Grid -->
+    <div class="grid-stats">
+        <div class="stat-box">
+            <div class="label">Hastighet</div>
+            <div class="stat-val text-speed" id="speed">0.0</div>
+            <div class="stat-unit">km/h</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">Sträcka</div>
+            <div class="stat-val text-dist" id="distance">0.00</div>
+            <div class="stat-unit">km</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">Kadens</div>
+            <div class="stat-val text-cad" id="cadence">0</div>
+            <div class="stat-unit">rpm</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">Kalorier</div>
+            <div class="stat-val text-cal" id="calories">0</div>
+            <div class="stat-unit">kcal</div>
+        </div>
+    </div>
+
+    <!-- Controls -->
     <div class="progress-container" id="progContainer">
         <div class="progress-bar" id="progBar"></div>
-        <div class="progress-text" id="progText">Väntar...</div>
     </div>
+    <div class="status-text" id="status">Klar att ansluta...</div>
 
-    <button id="startSeqBtn">2. STARTA SEKVENS (Enligt Logg)</button>
-    <button id="stopBtn">NÖDSTOPP</button>
-
-    <div class="data-grid">
-        <div class="data-box">
-            <div class="data-lbl">Hastighet</div>
-            <div class="data-val" style="color: #23d5ab" id="valSpeed">0.0</div>
-        </div>
-        <div class="data-box">
-            <div class="data-lbl">Effekt (Watt)</div>
-            <div class="data-val" style="color: #f72585" id="valWatt">0</div>
-        </div>
-        <div class="data-box">
-            <div class="data-lbl">RPM</div>
-            <div class="data-val" style="color: #7209b7" id="valRpm">0</div>
-        </div>
-        <div class="data-box">
-            <div class="data-lbl">Puls</div>
-            <div class="data-val" style="color: #fca311" id="valHr">0</div>
-        </div>
-        <div class="data-box">
-            <div class="data-lbl">Tid</div>
-            <div class="data-val" id="valTime">00:00</div>
-        </div>
-        <div class="data-box">
-            <div class="data-lbl">Distans (km)</div>
-            <div class="data-val" id="valDist">0.0</div>
-        </div>
+    <div class="controls">
+        <button id="connectBtn">ANSLUT CYKEL</button>
+        <button id="toggleAnalysisBtn" class="btn-secondary">VISA HISTORIK & DATA</button>
     </div>
 </div>
 
-<div style="width:100%; max-width:600px; display:flex; gap:10px; margin-bottom:5px;">
-    <button id="dlLogBtn" style="background:#21262d; flex:1; margin-bottom:0; padding:10px;">Spara Logg</button>
-    <button id="clearLogBtn" style="background:#21262d; flex:1; margin-bottom:0; padding:10px;">Rensa</button>
-</div>
+<!-- ANALYS & HISTORIK -->
+<div class="analysis-section" id="analysisSection">
+    <div class="analysis-header">
+        <span style="font-size:1.2rem; font-weight:bold;">Din Träningshistorik</span>
+        <select id="resolutionSelect">
+            <option value="10">Upplösning: 10s</option>
+            <option value="30">Upplösning: 30s</option>
+            <option value="60" selected>Upplösning: 1 min</option>
+            <option value="300">Upplösning: 5 min</option>
+        </select>
+    </div>
 
-<div class="log-window" id="logOutput">Väntar...</div>
+    <div class="totals-grid">
+        <div class="total-card text-dist">Total Sträcka<br><b id="lifeDistance">0.0 km</b></div>
+        <div class="total-card text-res">Antal Pass<br><b id="sessionCount">0</b></div>
+        <div class="total-card text-watt">Snitt (Detta Pass)<br><b id="avgWatt">0 W</b></div>
+    </div>
+
+    <div class="chart-container">
+        <div style="position:absolute; top:10px; left:15px; font-size:11px; color:#aaa; font-weight:600;">
+            <span style="color:var(--accent-watt)">― Watt</span> &nbsp;&nbsp; 
+            <span style="color:var(--accent-primary)">-- Puls</span>
+        </div>
+        <svg id="chartSvg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+    </div>
+
+    <div class="table-wrapper">
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th>Tid</th>
+                    <th>Watt</th>
+                    <th>Km/h</th>
+                    <th>Puls</th>
+                    <th>RPM</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="action-btns">
+        <button class="btn-secondary" id="endSessionBtn" style="flex:1">Spara Pass</button>
+        <button class="btn-secondary" id="exportJsonBtn" style="flex:1">Exportera JSON</button>
+        
+        <div class="file-input-wrapper btn-secondary" style="flex:1">
+            <button class="btn-secondary" style="width:100%; pointer-events:none; border:none;">Importera</button>
+            <input type="file" id="importJsonInput" accept=".json">
+        </div>
+        
+        <button class="btn-secondary" onclick="if(confirm('Rensa all historik?')){localStorage.clear();location.reload();}" style="flex:0 0 auto; color:#ff6b6b; border-color:#ff6b6b;">X</button>
+    </div>
+</div>
 
 <script>
-    // --- UI ---
+    // --- UI REFERENSER ---
     const ui = {
-        status: document.getElementById('connStatus'),
-        log: document.getElementById('logOutput'),
-        speed: document.getElementById('valSpeed'),
-        watt: document.getElementById('valWatt'),
-        rpm: document.getElementById('valRpm'),
-        hr: document.getElementById('valHr'),
-        time: document.getElementById('valTime'),
-        dist: document.getElementById('valDist'),
         connectBtn: document.getElementById('connectBtn'),
-        startSeqBtn: document.getElementById('startSeqBtn'),
-        stopBtn: document.getElementById('stopBtn'),
+        status: document.getElementById('status'),
         progContainer: document.getElementById('progContainer'),
         progBar: document.getElementById('progBar'),
-        progText: document.getElementById('progText')
+        analysisSection: document.getElementById('analysisSection'),
+        toggleAnalysisBtn: document.getElementById('toggleAnalysisBtn'),
+        // Datafält
+        speed: document.getElementById('speed'),
+        watt: document.getElementById('power'),
+        cadence: document.getElementById('cadence'),
+        hr: document.getElementById('hr'),
+        time: document.getElementById('time'),
+        dist: document.getElementById('distance'),
+        cal: document.getElementById('calories'),
+        res: document.getElementById('resistance'),
+        // Analys
+        lifeDist: document.getElementById('lifeDistance'),
+        sessCount: document.getElementById('sessionCount'),
+        avgWatt: document.getElementById('avgWatt'),
+        table: document.getElementById('dataTable').querySelector('tbody'),
+        chart: document.getElementById('chartSvg'),
+        resSelect: document.getElementById('resolutionSelect')
     };
 
-    let iconsoleWriteChar = null; // FFF2
-    let readInterval = null;
-    let fullLog = [];
+    // --- VARIABLER ---
+    let iconsoleWrite = null; 
+    let pollInterval = null;
+    let startTime = null; // För vår interna logg
+    let sessionData = []; // Nuvarande passdata
     
-    // --- KOMMANDON FRÅN LOGGEN (FACIT) ---
+    // Protokollsekvens (Facit från din logg)
     const SEQ = [
-        { name: "PING (A0)",    bytes: [0xF0, 0xA0, 0x01, 0x01, 0x92], expect: 0xB0 },
-        { name: "MODE (A3)",    bytes: [0xF0, 0xA3, 0x01, 0x01, 0x01, 0x96], expect: 0xB3 },
-        { name: "CONFIG (A4)",  bytes: [0xF0, 0xA4, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xA0], expect: 0xB4 },
-        { name: "START (A5)",   bytes: [0xF0, 0xA5, 0x01, 0x01, 0x02, 0x99], expect: 0xB5 }
+        { name: "Ping",   bytes: [0xF0, 0xA0, 0x01, 0x01, 0x92], expect: 0xB0 },
+        { name: "Mode",   bytes: [0xF0, 0xA3, 0x01, 0x01, 0x01, 0x96], expect: 0xB3 },
+        { name: "Config", bytes: [0xF0, 0xA4, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xA0], expect: 0xB4 },
+        { name: "Start",  bytes: [0xF0, 0xA5, 0x01, 0x01, 0x02, 0x99], expect: 0xB5 }
     ];
-    
-    let currentStep = 0;
-    const CMD_READ = [0xF0, 0xA2, 0x01, 0x01, 0x94]; 
+    let seqIndex = 0;
+    const READ_CMD = [0xF0, 0xA2, 0x01, 0x01, 0x94];
 
-    // --- LOGGNING ---
-    function log(msg, type = 'info') {
-        const time = new Date().toLocaleTimeString().split(' ')[0];
-        const line = `[${time}] ${msg}`;
-        fullLog.push(line);
-        const div = document.createElement('div');
-        div.textContent = line;
-        div.className = 'l-' + type;
-        ui.log.appendChild(div);
-        ui.log.scrollTop = ui.log.scrollHeight;
-    }
-
-    document.getElementById('clearLogBtn').onclick = () => { ui.log.innerHTML = ''; fullLog = []; };
-    document.getElementById('dlLogBtn').onclick = () => {
-        const blob = new Blob([fullLog.join('\n')], { type: 'text/plain' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = "gymstick_v22_log.txt";
-        a.click();
+    // Ladda historik
+    let history = JSON.parse(localStorage.getItem('gymstick_history_v1')) || {
+        totalDist: 0,
+        sessions: []
     };
+    updateGlobalStats();
 
-    // --- ANSLUTNING ---
+    // --- ANSLUTNING & SEKVENS ---
     ui.connectBtn.onclick = async () => {
         try {
             ui.status.textContent = "Söker...";
@@ -238,148 +370,263 @@
                 optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb']
             });
 
-            device.addEventListener('gattserverdisconnected', onDisconnected);
-            log(`Ansluter till ${device.name}...`, 'info');
+            device.addEventListener('gattserverdisconnected', onDisconnect);
+            ui.status.textContent = "Ansluter...";
             
             const server = await device.gatt.connect();
             const service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
             
+            // Setup Lyssning
             const notifyChar = await service.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
             await notifyChar.startNotifications();
             notifyChar.addEventListener('characteristicvaluechanged', handleData);
             
-            iconsoleWriteChar = await service.getCharacteristic('0000fff2-0000-1000-8000-00805f9b34fb');
+            // Setup Skrivning
+            iconsoleWrite = await service.getCharacteristic('0000fff2-0000-1000-8000-00805f9b34fb');
             
-            log("Ansluten till iConsole (FFF0).", 'info');
-            ui.status.textContent = "Ansluten";
-            ui.connectBtn.style.display = 'none';
-            ui.startSeqBtn.style.display = 'block';
+            // Starta Handskakning
+            ui.connectBtn.disabled = true;
+            ui.connectBtn.textContent = "KONFIGURERAR...";
+            ui.progContainer.style.display = 'block';
+            startSequence();
 
         } catch (e) {
-            log("Fel: " + e, 'err');
+            console.error(e);
+            ui.status.textContent = "Fel: " + e.message;
         }
     };
 
-    function onDisconnected() {
-        log("Frånkopplad!", 'err');
-        ui.status.textContent = "Frånkopplad";
-        ui.connectBtn.style.display = 'block';
-        ui.connectBtn.disabled = false;
-        ui.startSeqBtn.style.display = 'none';
-        ui.progContainer.style.display = 'none';
-        ui.stopBtn.style.display = 'none';
-        if (readInterval) clearInterval(readInterval);
+    function startSequence() {
+        seqIndex = 0;
+        sendNextStep();
     }
 
-    // --- SEKVENS STYRNING (Smart) ---
-    ui.startSeqBtn.onclick = async () => {
-        ui.startSeqBtn.style.display = 'none';
-        ui.stopBtn.style.display = 'block';
-        ui.progContainer.style.display = 'block';
-        
-        log("--- STARTAR SMART SEKVENS ---", 'info');
-        currentStep = 0;
-        sendNextStep();
-    };
-
-    function sendNextStep() {
-        if (currentStep >= SEQ.length) {
+    async function sendNextStep() {
+        if (seqIndex >= SEQ.length) {
             // Klar!
-            updateProgress(100, "Startar Läsning...");
-            log("Sekvens klar. Startar polling...", 'info');
-            ui.progBar.style.backgroundColor = "#00ff00";
+            ui.status.textContent = "KÖR! (Läser data...)";
+            ui.connectBtn.textContent = "ANSLUTEN";
+            ui.connectBtn.style.background = "#28a745";
+            ui.connectBtn.style.color = "#fff";
+            ui.progBar.style.width = "100%";
+            setTimeout(() => { ui.progContainer.style.display = 'none'; }, 1000);
             
-            if (readInterval) clearInterval(readInterval);
-            readInterval = setInterval(() => {
-                send(CMD_READ, "READ");
-            }, 1000);
+            // Starta loop
+            if (pollInterval) clearInterval(pollInterval);
+            pollInterval = setInterval(() => send(READ_CMD), 1000);
+            
+            // Ny session
+            sessionData = [];
+            startTime = Date.now();
             return;
         }
 
-        const step = SEQ[currentStep];
-        const pct = Math.round(((currentStep) / SEQ.length) * 100);
-        updateProgress(pct, `Skickar ${step.name}... (Väntar på svar)`);
+        const step = SEQ[seqIndex];
+        const pct = ((seqIndex) / SEQ.length) * 100;
+        ui.progBar.style.width = pct + "%";
+        ui.status.textContent = `Initierar: ${step.name}...`;
         
-        send(step.bytes, step.name);
+        await send(step.bytes);
+        // Vi väntar på svar i handleData innan vi går vidare
     }
 
-    ui.stopBtn.onclick = () => {
-        if (readInterval) clearInterval(readInterval);
-        log("Stoppad.", 'err');
-        updateProgress(0, "Stoppad");
-    };
-
-    function updateProgress(pct, text) {
-        ui.progBar.style.width = pct + '%';
-        ui.progText.textContent = text;
+    async function send(bytes) {
+        if (!iconsoleWrite) return;
+        try { await iconsoleWrite.writeValue(new Uint8Array(bytes)); } 
+        catch (e) { console.log(e); }
     }
 
-    async function send(bytes, name) {
-        if (!iconsoleWriteChar) return;
-        try {
-            if (name !== "READ") {
-                const hex = bytes.map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
-                log(`TX [${name}]: ${hex}`, 'tx');
-            }
-            await iconsoleWriteChar.writeValue(new Uint8Array(bytes));
-        } catch (e) { log("Sändfel: " + e, 'err'); }
+    function onDisconnect() {
+        ui.status.textContent = "Frånkopplad";
+        ui.connectBtn.disabled = false;
+        ui.connectBtn.textContent = "ANSLUT CYKEL";
+        ui.connectBtn.style.background = ""; 
+        if (pollInterval) clearInterval(pollInterval);
+        ui.progContainer.style.display = 'none';
+        seqIndex = 0;
     }
 
-    // --- DATA ---
+    // --- DATA HANTERING (The Magic) ---
     function handleData(event) {
         const data = new Uint8Array(event.target.value.buffer);
-        const hex = Array.from(data).map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
         
-        // Kolla om det är ett svar på nuvarande steg
-        if (currentStep < SEQ.length) {
-            const expectedAck = SEQ[currentStep].expect; // T.ex. 0xB0 för A0
-            // Svaret brukar vara F0 B0 ...
-            // Så data[1] & 0xF0 ska vara B0? Nej, data[1] är B0.
-            
-            // Loggen visade: SND F0 A0... RCV F0 B0...
-            if (data[0] === 0xF0 && data[1] === expectedAck) {
-                log(`ACK Mottaget: ${hex}`, 'rx');
-                currentStep++;
-                // Vänta lite innan nästa för säkerhets skull (som loggen visade)
-                setTimeout(sendNextStep, 200);
+        // 1. Hantera Sekvens-svar (ACK)
+        if (seqIndex < SEQ.length) {
+            if (data[0] === 0xF0 && data[1] === SEQ[seqIndex].expect) {
+                seqIndex++;
+                setTimeout(sendNextStep, 300); // Liten paus för säkerhet
                 return;
             }
         }
 
-        // Om det är DATA (F0 B2 ...)
+        // 2. Hantera Riktig Data (F0 B2 ...)
         if (data.length >= 20 && data[0] === 0xF0 && data[1] === 0xB2) {
-            parsePacket(data);
-        } else {
-            // Ignorera "Read"-svar i loggen för att spara plats, men logga allt annat
-            if (data[1] !== 0xB2) log(`RX: ${hex}`, 'rx');
+            parseAndDisplay(data);
         }
     }
 
-    function parsePacket(data) {
+    function parseAndDisplay(data) {
         // "Minus 1"-formeln
-        const getVal = (h, l) => {
-            const high = data[h] - 1;
-            const low = data[l] - 1;
-            return (100 * high) + low;
-        };
+        const val = (h, l) => 100 * (data[h] - 1) + (data[l] - 1);
 
-        const speed = getVal(6, 7) / 10;
-        const rpm = getVal(8, 9);
-        const dist = getVal(10, 11) / 10;
-        const watt = getVal(16, 17) / 10;
-        const hr = getVal(14, 15);
-        
-        let timeSecs = data[5] - 1; 
-        let timeMins = data[4] - 1;
-        if (timeMins < 0) timeMins = 0;
-        if (timeSecs < 0) timeSecs = 0;
+        const speed = val(6, 7) / 10;
+        const rpm = val(8, 9);
+        const dist = val(10, 11) / 10;
+        const cal = val(12, 13);
+        const hr = val(14, 15);
+        const watt = val(16, 17) / 10;
+        const level = data[18] - 1; // Motståndsnivå!
 
+        // Tid (från cykeln)
+        let tMin = data[4] - 1;
+        let tSec = data[5] - 1;
+        if(tMin < 0) tMin = 0; if(tSec < 0) tSec = 0;
+
+        // Uppdatera UI
         ui.speed.textContent = speed.toFixed(1);
         ui.watt.textContent = watt.toFixed(0);
-        ui.rpm.textContent = rpm;
+        ui.cadence.textContent = rpm;
         ui.hr.textContent = hr;
-        ui.dist.textContent = dist.toFixed(2);
-        ui.time.textContent = `${timeMins}:${timeSecs.toString().padStart(2,'0')}`;
+        ui.dist.textContent = dist.toFixed(1);
+        ui.cal.textContent = cal;
+        ui.res.textContent = level;
+        ui.time.textContent = `${tMin}:${tSec.toString().padStart(2,'0')}`;
+
+        // Logga för analys
+        logPoint(speed, watt, hr, rpm, level);
+        
+        // Uppdatera total livstid (om distans ökat)
+        // Enkel fix: Vi litar på cykelns total för passet och lägger till diff
+        // Men för säkerhet, spara bara passet vid avslut.
+    }
+
+    // --- ANALYS & HISTORIK LOGIK ---
+    function logPoint(speed, watt, hr, rpm, level) {
+        if (!startTime) return;
+        const elapsed = (Date.now() - startTime) / 1000;
+        
+        sessionData.push({
+            t: elapsed,
+            s: speed,
+            w: watt,
+            h: hr,
+            r: rpm,
+            l: level
+        });
+
+        // Uppdatera snitt i realtid
+        const avgW = sessionData.reduce((a,b)=>a+b.w,0) / sessionData.length;
+        ui.avgWatt.textContent = Math.round(avgW) + " W";
+
+        if (ui.analysisSection.classList.contains('visible') && Math.floor(elapsed)%5===0) {
+            updateCharts();
+        }
+    }
+
+    function updateCharts() {
+        if (sessionData.length < 2) return;
+        const res = parseInt(ui.resSelect.value);
+        
+        // Sampling
+        const buckets = [];
+        sessionData.forEach(p => {
+            const idx = Math.floor(p.t / res);
+            if(!buckets[idx]) buckets[idx] = {c:0, w:0, h:0, s:0, r:0, t:idx*res};
+            buckets[idx].c++;
+            buckets[idx].w += p.w;
+            buckets[idx].h += p.h;
+            buckets[idx].s += p.s;
+            buckets[idx].r += p.r;
+        });
+
+        const valid = buckets.filter(b=>b);
+        
+        // Rita Tabell
+        ui.table.innerHTML = valid.slice().reverse().map(b => `
+            <tr>
+                <td>${formatTime(b.t)}</td>
+                <td class="text-watt">${Math.round(b.w/b.c)}</td>
+                <td class="text-speed">${(b.s/b.c).toFixed(1)}</td>
+                <td>${Math.round(b.h/b.c)}</td>
+                <td class="text-cad">${Math.round(b.r/b.c)}</td>
+            </tr>
+        `).join('');
+
+        // Rita Graf
+        const maxW = Math.max(...valid.map(b=>b.w/b.c)) || 100;
+        const maxH = Math.max(...valid.map(b=>b.h/b.c)) || 100;
+        let pW="", pH="";
+        valid.forEach((b, i) => {
+            const x = (i / (valid.length-1)) * 100;
+            pW += `${x},${100 - ((b.w/b.c)/ (maxW*1.2) * 100)} `;
+            pH += `${x},${100 - ((b.h/b.c)/ (maxH*1.2) * 100)} `;
+        });
+        ui.chart.innerHTML = `
+            <polyline points="${pW}" stroke="#f72585" />
+            <polyline points="${pH}" stroke="#e94560" stroke-dasharray="4" opacity="0.7"/>
+        `;
+    }
+
+    // --- KNAPPAR ---
+    ui.toggleAnalysisBtn.onclick = () => {
+        ui.analysisSection.classList.toggle('visible');
+        updateCharts();
+    };
+    
+    ui.resSelect.onchange = updateCharts;
+
+    document.getElementById('endSessionBtn').onclick = () => {
+        if(sessionData.length === 0) return alert("Ingen data att spara.");
+        if(!confirm("Avsluta och spara passet?")) return;
+        
+        const dist = parseFloat(ui.dist.textContent);
+        const avgW = parseInt(ui.avgWatt.textContent);
+        
+        history.sessions.push({
+            date: new Date().toISOString(),
+            dist: dist,
+            avgWatt: avgW,
+            duration: sessionData[sessionData.length-1].t,
+            data: sessionData
+        });
+        history.totalDist += dist;
+        
+        localStorage.setItem('gymstick_history_v1', JSON.stringify(history));
+        updateGlobalStats();
+        alert("Pass sparat!");
+        
+        // Reset
+        sessionData = [];
+        startTime = Date.now();
+    };
+
+    function updateGlobalStats() {
+        ui.lifeDist.textContent = history.totalDist.toFixed(1) + " km";
+        ui.sessCount.textContent = history.sessions.length;
+    }
+
+    document.getElementById('exportJsonBtn').onclick = () => {
+        const a = document.createElement('a');
+        a.href = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(history));
+        a.download = 'gymstick_history.json';
+        a.click();
+    };
+
+    document.getElementById('importJsonInput').onchange = (e) => {
+        const r = new FileReader();
+        r.onload = (evt) => {
+            try {
+                history = JSON.parse(evt.target.result);
+                localStorage.setItem('gymstick_history_v1', JSON.stringify(history));
+                updateGlobalStats();
+                alert("Historik inläst!");
+            } catch(x){ alert("Fel filformat"); }
+        };
+        r.readAsText(e.target.files[0]);
+    };
+
+    function formatTime(s) {
+        return `${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2,'0')}`;
     }
 
 </script>
