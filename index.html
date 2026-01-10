@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gymstick Pro Monitor v10.0</title>
+    <title>Gymstick Pro Monitor v10.1</title>
     <style>
         :root {
-            /* --- LIGHT MODE (DEFAULT) --- */
+            /* --- LIGHT MODE VARIABLER --- */
             --bg-color: #f0f2f5;
             --panel-bg: #ffffff;
             --border-color: #e4e6eb;
@@ -31,7 +31,7 @@
             --btn-text: #050505;
         }
 
-        /* --- DARK MODE --- */
+        /* --- DARK MODE (DEFAULT VIA JS LOGIK) --- */
         body.dark-mode {
             --bg-color: #0f1115; /* Neutral mörk */
             --panel-bg: #181a1f;
@@ -145,7 +145,6 @@
         .btn-stop { background: var(--c-watt); box-shadow: 0 4px 12px rgba(213, 0, 0, 0.25); display: none; }
 
         /* --- HÖGER PANEL --- */
-        /* Punkt 1: Header på en rad */
         .right-header { 
             display: flex; gap: 15px; align-items: center; margin-bottom: 5px; 
             background: var(--btn-bg); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);
@@ -164,7 +163,6 @@
         .config-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; margin-bottom: 2px; }
         .config-title { font-weight: 800; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; text-transform: uppercase; }
         
-        /* Punkt 3: Checkboxar bredvid varandra */
         .config-opts { display: flex; gap: 8px; font-size: 0.75rem; color: var(--text-dim); font-weight: 600; }
         .chk { transform: scale(1.1); cursor: pointer; }
         
@@ -187,17 +185,15 @@
         .btn-gear { background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.9rem; padding: 0 5px; }
         .btn-gear:hover { color: var(--text-main); }
 
-        /* GRAF (Punkt 2: Stora axlar) */
+        /* GRAF */
         .graph-wrapper {
             flex: 1; min-height: 300px; background: var(--graph-bg); border-radius: 12px;
             border: 1px solid var(--border-color); position: relative; overflow: hidden; cursor: grab;
-            /* Punkt 2: Rejäl padding för axlar */
             padding: 10px 50px 30px 50px; 
         }
         .graph-wrapper:active { cursor: grabbing; }
         svg { width: 100%; height: 100%; display: block; overflow: visible; }
         
-        /* Punkt 4: Modern font */
         .axis-text { font-size: 20px; font-family: 'Segoe UI', sans-serif; font-weight: 700; dominant-baseline: middle; }
         .axis-text-x { font-size: 12px; fill: var(--text-dim); text-anchor: middle; font-weight: 600;}
         .grid-line { stroke: var(--grid-line); stroke-width: 1; }
@@ -205,6 +201,8 @@
         .graph-line { fill: none; stroke-width: 2; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
         .graph-line-dashed { stroke-dasharray: 4,4; } 
 
+        .footer-stats { display: flex; justify-content: space-between; color: var(--text-dim); font-size: 0.75rem; margin-top: 5px; border-top: 1px solid var(--border-color); padding-top: 10px;}
+        .footer-val { color: var(--text-main); font-weight: bold; }
         .file-input-wrapper { position: relative; overflow: hidden; display: inline-block; width: 100%; height: 100%;}
         .file-input-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
 
@@ -327,12 +325,12 @@
     <!-- HÖGER: ANALYS -->
     <div class="panel panel-right">
         
-        <!-- Punkt 1: Allt på en rad -->
+        <!-- Header -->
         <div class="right-header">
             <span class="header-title">GYMSTICK GB 8.0</span>
             <span id="connStatus" class="header-status">FRÅNKOPPLAD</span>
             <div style="flex:1"></div>
-            <button class="theme-toggle" id="themeBtn" title="Byt Tema">☀</button>
+            <button class="theme-toggle" id="themeBtn" title="Byt Tema">☾</button>
             <select id="graphRes" class="main-select">
                 <option value="1">1 sek</option>
                 <option value="2" selected>2 sek</option>
@@ -353,6 +351,11 @@
             <svg id="chartSvg" viewBox="0 0 1000 400" preserveAspectRatio="none"></svg>
         </div>
 
+        <div class="footer-stats">
+            <div>Totalt: <span class="footer-val c-dist" id="lifeDist">0.000 km</span></div>
+            <div>Tid: <span class="footer-val" id="lifeTime">0h 0m</span></div>
+            <div>Pass: <span class="footer-val" id="sessCount">0</span></div>
+        </div>
     </div>
 </div>
 
@@ -360,10 +363,13 @@
 <div class="modal" id="statsModal">
     <div class="modal-content">
         <div class="modal-header">
-            <h2 style="margin:0; letter-spacing:1px;">STATISTIK</h2>
+            <!-- Flyttad Radera-knapp -->
+            <div style="display:flex; align-items:center; gap:15px;">
+                <h2 style="margin:0; letter-spacing:1px;">STATISTIK</h2>
+                <button id="btnDeleteAll" class="btn-ctrl" style="width:auto; border-color:#ff3d00; color:#ff3d00; font-size:0.7rem; padding:6px 12px;">RADERA ALLT</button>
+            </div>
             <div>
                 <button onclick="showPowerCurve()" class="btn-ctrl" style="margin-right:10px; width:auto; border-color:var(--border-color);">VISA EFFEKTKURVA</button>
-                <button id="btnDeleteAll" class="btn-ctrl" style="width:auto; border-color:#ff3d00; color:#ff3d00; margin-right:10px;">RADERA ALLT</button>
                 <button onclick="document.getElementById('statsModal').classList.remove('open')" class="btn-ctrl" style="width:auto; border-color:var(--border-color);">STÄNG</button>
             </div>
         </div>
@@ -459,7 +465,6 @@
         progFill: document.getElementById('progFill'),
         statusText: document.getElementById('statusText'),
         themeBtn: document.getElementById('themeBtn'),
-        // Värden
         speed: document.getElementById('valSpeed'),
         watt: document.getElementById('valWatt'),
         cad: document.getElementById('valCad'),
@@ -470,12 +475,10 @@
         res: document.getElementById('valRes'),
         btnResUp: document.getElementById('btnResUp'),
         btnResDown: document.getElementById('btnResDown'),
-        // Analys
         chart: document.getElementById('chartSvg'),
         graphWrapper: document.getElementById('graphContainer'),
         graphRes: document.getElementById('graphRes'),
         configGrid: document.getElementById('configGrid'),
-        // Stats
         statsBtn: document.getElementById('statsBtn'),
         statsModal: document.getElementById('statsModal'),
         totalTop: document.getElementById('totalTop'),
@@ -485,17 +488,23 @@
         fMonth: document.getElementById('filterMonth'),
         fRes: document.getElementById('filterRes'),
         btnDeleteAll: document.getElementById('btnDeleteAll'),
-        // Single
         singleModal: document.getElementById('singleModal'),
         singleChart: document.getElementById('singleChart'),
         singleTitle: document.getElementById('singleTitle'),
         singleGraphWrapper: document.getElementById('singleGraphWrapper'),
-        // Power Curve
         powerModal: document.getElementById('powerModal'),
-        powerBody: document.getElementById('powerBody')
+        powerBody: document.getElementById('powerBody'),
+        lifeDist: document.getElementById('lifeDist'),
+        lifeTime: document.getElementById('lifeTime'),
+        sessCount: document.getElementById('sessCount')
     };
 
-    // --- TEMA ---
+    // --- TEMA INIT (Default Dark) ---
+    // Om inget tema är sparat, sätt till 'dark'.
+    if (localStorage.getItem('gymstick_theme') === null) {
+        localStorage.setItem('gymstick_theme', 'dark');
+    }
+    
     let isDark = localStorage.getItem('gymstick_theme') === 'dark';
     if(isDark) document.body.classList.add('dark-mode');
     ui.themeBtn.textContent = isDark ? '☾' : '☀';
@@ -506,6 +515,26 @@
         localStorage.setItem('gymstick_theme', isDark ? 'dark' : 'light');
         ui.themeBtn.textContent = isDark ? '☾' : '☀';
     };
+
+    // --- SETTINGS (PERSISTENCE) ---
+    // Standardvärden
+    let settings = {
+        graphRes: 2,
+        metrics: {
+            w: { show: true, rows: 1, auto: true, min: 0, max: 400, avgs:[60, 600, -1] },
+            s: { show: true, rows: 1, auto: true, min: 0, max: 40, avgs:[60, 600, -1] },
+            c: { show: true, rows: 1, auto: true, min: 0, max: 120, avgs:[60, 600, -1] },
+            h: { show: true, rows: 1, auto: true, min: 0, max: 180, avgs:[60, 600, -1] }
+        }
+    };
+    
+    // Ladda inställningar
+    const savedSettings = JSON.parse(localStorage.getItem('gymstick_settings'));
+    if(savedSettings) settings = { ...settings, ...savedSettings };
+
+    function saveSettings() {
+        localStorage.setItem('gymstick_settings', JSON.stringify(settings));
+    }
 
     // --- VARIABLER ---
     let iconsoleWrite = null;
@@ -518,27 +547,24 @@
     let lastPktTime = 0;
 
     let graphState = {
-        scrollOffset: 0, 
-        zoomLevel: 1.0, 
-        zoomLevelY: 1.0, 
-        isDragging: false,
-        lastMouseX: 0,
-        data: [],
-        yAxisState: {} 
+        scrollOffset: 0, zoomLevel: 1.0, zoomLevelY: 1.0, 
+        isDragging: false, lastMouseX: 0, data: [], yAxisState: {} 
     };
 
     const SEQ = [
         { bytes: [0xF0, 0xA0, 0x01, 0x01, 0x92], expect: 0xB0 },
         { bytes: [0xF0, 0xA3, 0x01, 0x01, 0x01, 0x96], expect: 0xB3 },
-        { bytes: [0xF0, 0xA4, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xA0], expect: 0xB4 },
+        { bytes: [0xF0, 0xA4, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xA0], expect: 0xB4 },
         { bytes: [0xF0, 0xA5, 0x01, 0x01, 0x02, 0x99], expect: 0xB5 }
     ];
     let seqIndex = 0;
     const READ_CMD = [0xF0, 0xA2, 0x01, 0x01, 0x94];
     const STOP_CMD = [0xF0, 0xA5, 0x01, 0x01, 0x04, 0x9B];
 
-    let history = JSON.parse(localStorage.getItem('gymstick_v6_history')) || { sessions: [], totalDist: 0, totalTime: 0 };
-    
+    let history = JSON.parse(localStorage.getItem('gymstick_v6_history')) || { sessions: [], totalDist: 0, totalTime: 0, settings: settings };
+    // Om settings finns i history, använd dem (vid import)
+    if(history.settings) settings = history.settings;
+
     // --- HELPER FUNKTIONER ---
     function formatDurationLong(sec) {
         const d = Math.floor(sec / 86400);
@@ -569,7 +595,20 @@
         return `${m}:${s.toString().padStart(2,'0')}`;
     }
     
-    function saveHistory() { localStorage.setItem('gymstick_v6_history', JSON.stringify(history)); }
+    function saveHistoryFile() { 
+        // Spara settings i history objektet också
+        history.settings = settings;
+        localStorage.setItem('gymstick_v6_history', JSON.stringify(history)); 
+    }
+    
+    function updateHistoryUI(currDist = 0) {
+        const totD = history.totalDist + currDist;
+        ui.lifeDist.textContent = totD.toFixed(3) + " km";
+        ui.sessCount.textContent = history.sessions.length;
+        ui.lifeTime.textContent = formatDurationLong(history.totalTime);
+    }
+    updateHistoryUI();
+
 
     // --- CONFIG ---
     const TIME_OPTS = [
@@ -578,34 +617,35 @@
         {v:60, t:'1 m'}, {v:120, t:'2 m'}, {v:300, t:'5 m'},
         {v:600, t:'10 m'}, {v:1800, t:'30 m'}, {v:3600, t:'1 h'}, {v:-1, t:'Tot'}
     ];
-    const DEF_SELS = [60, 600, -1];
     
     const METRICS = [
-        { key: 'w', title: 'EFFEKT', color: 'var(--c-watt)', defMax:400 },
-        { key: 's', title: 'HASTIGHET', color: 'var(--c-speed)', defMax:40 },
-        { key: 'c', title: 'KADENS', color: 'var(--c-cad)', defMax:120 },
-        { key: 'h', title: 'PULS', color: 'var(--c-hr)', defMax:180 }
+        { key: 'w', title: 'EFFEKT', color: 'var(--c-watt)' },
+        { key: 's', title: 'HASTIGHET', color: 'var(--c-speed)' },
+        { key: 'c', title: 'KADENS', color: 'var(--c-cad)' },
+        { key: 'h', title: 'PULS', color: 'var(--c-hr)' }
     ];
 
     function initConfigGrid() {
         ui.configGrid.innerHTML = '';
         METRICS.forEach(m => {
-            graphState.yAxisState[m.key] = { curMax: m.defMax, curMin: 0 };
+            // Läs inställning
+            const s = settings.metrics[m.key];
+            graphState.yAxisState[m.key] = { curMax: s.max, curMin: s.min };
 
             const card = document.createElement('div');
-            card.className = 'config-card single-mode';
-            card.style.borderLeft = `4px solid ${m.color}`; // Tydligare kant
+            card.className = s.rows > 1 ? 'config-card' : 'config-card single-mode';
+            card.style.borderLeft = `4px solid ${m.color}`; 
             
             const hdr = document.createElement('div');
             hdr.className = 'config-header';
             hdr.innerHTML = `
                 <span class="config-title" style="color:${m.color}">
-                    <input type="checkbox" id="chk_${m.key}" checked class="chk"> ${m.title}
+                    <input type="checkbox" id="chk_${m.key}" class="chk" ${s.show?'checked':''}> ${m.title}
                     <button class="btn-gear" onclick="toggleAxisSettings('${m.key}')">⚙</button>
                 </span>
                 <div class="config-opts">
-                    <label><input type="checkbox" data-key="${m.key}" data-rows="2"> 2</label>
-                    <label><input type="checkbox" data-key="${m.key}" data-rows="3"> 3</label>
+                    <label><input type="checkbox" data-key="${m.key}" data-rows="2" ${s.rows>=2?'checked':''}> 2</label>
+                    <label><input type="checkbox" data-key="${m.key}" data-rows="3" ${s.rows===3?'checked':''}> 3</label>
                 </div>
             `;
             card.appendChild(hdr);
@@ -615,16 +655,28 @@
             axisPanel.innerHTML = `
                 <div class="as-row"><strong style="color:${m.color}">${m.title} SKALA</strong></div>
                 <div class="as-row">
-                    <label><input type="checkbox" checked id="auto_${m.key}"> Auto</label>
+                    <label><input type="checkbox" id="auto_${m.key}" ${s.auto?'checked':''}> Auto</label>
                 </div>
                 <div class="as-row">
-                    <span>Max:</span> <input type="number" id="max_${m.key}" value="${m.defMax}" class="as-inp">
+                    <span>Max:</span> <input type="number" id="max_${m.key}" value="${s.max}" class="as-inp">
                 </div>
                 <div class="as-row">
-                    <span>Min:</span> <input type="number" id="min_${m.key}" value="0" class="as-inp">
+                    <span>Min:</span> <input type="number" id="min_${m.key}" value="${s.min}" class="as-inp">
                 </div>
             `;
             card.appendChild(axisPanel);
+
+            // Listeners för axel-inställningar för att spara
+            axisPanel.querySelectorAll('input').forEach(inp => {
+                inp.onchange = () => {
+                    const k = m.key;
+                    settings.metrics[k].auto = document.getElementById(`auto_${k}`).checked;
+                    settings.metrics[k].max = parseFloat(document.getElementById(`max_${k}`).value);
+                    settings.metrics[k].min = parseFloat(document.getElementById(`min_${k}`).value);
+                    saveSettings();
+                    renderMainGraph();
+                };
+            });
 
             const avgCont = document.createElement('div');
             avgCont.className = 'avg-container';
@@ -633,7 +685,9 @@
             for(let i=0; i<3; i++) {
                 const row = document.createElement('div');
                 row.className = 'avg-row';
-                if(i > 0) row.style.display = 'none';
+                // Visa rader baserat på settings
+                if(i === 1 && s.rows < 2) row.style.display = 'none';
+                if(i === 2 && s.rows < 3) row.style.display = 'none';
                 
                 const sel = document.createElement('select');
                 sel.className = 'tiny-select';
@@ -641,12 +695,17 @@
                     const o = document.createElement('option');
                     o.value = opt.v;
                     o.textContent = opt.t;
-                    if(opt.v === DEF_SELS[i]) o.selected = true;
+                    if(opt.v == s.avgs[i]) o.selected = true; // Ladda sparat val (använd == för 'graph')
                     sel.appendChild(o);
                 });
                 sel.dataset.metric = m.key;
                 sel.dataset.idx = i;
-                sel.onchange = updateAverages;
+                // Spara val vid ändring
+                sel.onchange = (e) => {
+                    settings.metrics[m.key].avgs[i] = e.target.value;
+                    saveSettings();
+                    updateAverages();
+                };
 
                 const val = document.createElement('span');
                 val.className = 'avg-val';
@@ -664,6 +723,7 @@
             const inputs = hdr.querySelectorAll('input[type=checkbox][data-rows]');
             inputs.forEach(inp => {
                 inp.onchange = (e) => {
+                    const k = e.target.dataset.key;
                     const r = parseInt(e.target.dataset.rows);
                     const isChecked = e.target.checked;
                     const otherInp = hdr.querySelector(`input[data-rows="${r===3?2:3}"]`);
@@ -675,12 +735,22 @@
                     avgCont.children[1].style.display = (chk2 || chk3) ? 'flex' : 'none';
                     avgCont.children[2].style.display = chk3 ? 'flex' : 'none';
                     
-                    if(chk2 || chk3) card.classList.remove('single-mode');
-                    else card.classList.add('single-mode');
+                    if(chk2 || chk3) {
+                        card.classList.remove('single-mode');
+                        settings.metrics[k].rows = chk3 ? 3 : 2;
+                    } else {
+                        card.classList.add('single-mode');
+                        settings.metrics[k].rows = 1;
+                    }
+                    saveSettings();
                 };
             });
-            document.getElementById(`chk_${m.key}`).onchange = renderMainGraph;
-            document.getElementById(`auto_${m.key}`).onchange = renderMainGraph;
+            // Main check
+            document.getElementById(`chk_${m.key}`).onchange = (e) => {
+                settings.metrics[m.key].show = e.target.checked;
+                saveSettings();
+                renderMainGraph();
+            };
         });
     }
 
@@ -690,9 +760,19 @@
     };
 
     // --- NU KAN VI KÖRA INITIALISERING ---
+    // Sätt graf-upplösning från sparad setting
+    ui.graphRes.value = settings.graphRes;
+    ui.graphRes.onchange = (e) => {
+        settings.graphRes = parseInt(e.target.value);
+        saveSettings();
+        renderMainGraph();
+        updateAverages();
+    };
+
     initConfigGrid();
     graphState.data = []; 
-    drawCombinedGraph(ui.chart, [], false);
+    // Wait slightly to ensure DOM
+    setTimeout(() => drawCombinedGraph(ui.chart, [], false), 50);
 
     document.getElementById('toggleLayout').onclick = () => {
         document.getElementById('mainContainer').classList.toggle('full-mode');
@@ -872,7 +952,7 @@
 
     function drawCombinedGraph(svg, data, isStatic) {
         const active = [];
-        // HÄR VAR FELET: initConfigGrid måste köras innan dessa anropas
+        // Checkboxes check
         if(document.getElementById('chk_w') && document.getElementById('chk_w').checked) active.push(METRICS[0]);
         if(document.getElementById('chk_s') && document.getElementById('chk_s').checked) active.push(METRICS[1]);
         if(document.getElementById('chk_c') && document.getElementById('chk_c').checked) active.push(METRICS[2]);
@@ -887,8 +967,8 @@
         svg.setAttribute("preserveAspectRatio", "none");
         svg.innerHTML = '';
         
-        // Return if no checkboxes found yet
-        if(active.length === 0 && document.getElementById('chk_w') === null) return;
+        // Return if no checkboxes found yet or empty selection
+        if(active.length === 0) return;
 
         const resolution = parseInt(ui.graphRes.value);
         const windowSize = 120 * resolution * graphState.zoomLevel;
@@ -1052,7 +1132,12 @@
     setupGestures(ui.graphWrapper, false);
     setupGestures(ui.singleGraphWrapper, true); 
 
-    ui.graphRes.onchange = renderMainGraph;
+    ui.graphRes.onchange = (e) => {
+        settings.graphRes = parseInt(e.target.value);
+        saveSettings();
+        updateAverages(); 
+        drawCombinedGraph(ui.chart, sessionData, false); 
+    };
 
     ui.stopBtn.onclick = async () => {
         if(confirm("Avsluta pass?")) {
@@ -1068,7 +1153,7 @@
             });
             history.totalDist += dist;
             history.totalTime += dur;
-            saveHistory();
+            saveHistoryFile();
             onDisconnect();
         }
     };
@@ -1082,9 +1167,9 @@
         else if(deleteConfirmCount === 2) ui.btnDeleteAll.textContent = "VERKLIGEN?";
         else {
             localStorage.clear();
-            history = { sessions: [], totalDist: 0, totalTime: 0 };
+            history = { sessions: [], totalDist: 0, totalTime: 0, settings: settings };
             renderStats();
-            // updateHistoryUI borttagen - uppdateras inte här
+            updateHistoryUI();
             ui.btnDeleteAll.textContent = "RADERAT";
             setTimeout(() => { 
                 ui.btnDeleteAll.textContent = "RADERA ALLT"; 
@@ -1246,7 +1331,22 @@
     document.getElementById('importFile').onchange = (e) => {
         const r = new FileReader();
         r.onload = (ev) => {
-            try { history = JSON.parse(ev.target.result); saveHistory(); alert("Uppladdad!"); } catch(x){alert("Fel");}
+            try { 
+                history = JSON.parse(ev.target.result);
+                // Spara settings vid import om det finns
+                if(history.settings) settings = history.settings;
+                
+                saveHistoryFile();
+                alert("Uppladdad!");
+                // Initiera om grid med nya settings
+                initConfigGrid();
+                // Rita om om data finns
+                if(history.sessions.length > 0) {
+                     graphState.data = history.sessions[history.sessions.length-1].data;
+                     drawCombinedGraph(ui.chart, graphState.data, true);
+                }
+                updateHistoryUI();
+            } catch(x){console.log(x); alert("Fel");}
         };
         r.readAsText(e.target.files[0]);
     };
