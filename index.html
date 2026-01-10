@@ -3,35 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gymstick Pro Monitor v9.2</title>
+    <title>Gymstick Pro Monitor v10.0</title>
     <style>
         :root {
-            --bg-color: #121212;
-            --panel-bg: #1b1b1b;
-            --border-color: #2d2d2d;
-            --text-main: #e0e0e0;
-            --text-dim: #888;
+            /* --- LIGHT MODE (DEFAULT) --- */
+            --bg-color: #f0f2f5;
+            --panel-bg: #ffffff;
+            --border-color: #e4e6eb;
+            --text-main: #1c1e21;
+            --text-dim: #65676b;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             
-            /* Färger */
+            --graph-bg: #f7f8fa;
+            --grid-line: #e4e6eb;
+            --grid-line-strong: #d0d2d6;
+
+            /* Pigga Färger */
+            --c-speed: #00c853;  /* Skarp Grön */
+            --c-watt: #d50000;   /* Djup Röd/Rosa */
+            --c-cad: #6200ea;    /* Lila */
+            --c-hr: #ff6d00;     /* Orange */
+            --c-dist: #2962ff;   /* Blå */
+            --c-cal: #ffd600;    /* Gul/Guld */
+            --c-res: #37474f;    /* Mörkgrå */
+            
+            --btn-bg: #e4e6eb;
+            --btn-text: #050505;
+        }
+
+        /* --- DARK MODE --- */
+        body.dark-mode {
+            --bg-color: #0f1115; /* Neutral mörk */
+            --panel-bg: #181a1f;
+            --border-color: #2a2d35;
+            --text-main: #e0e0e0;
+            --text-dim: #9ca3af;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            
+            --graph-bg: #131519;
+            --grid-line: #2a2d35;
+            --grid-line-strong: #3f424a;
+
+            /* Neon Färger */
             --c-speed: #00e676;
-            --c-watt: #f50057;
-            --c-cad: #d500f9;
-            --c-hr: #ff3d00;
-            --c-dist: #2979ff;
-            --c-cal: #ff9100;
-            --c-res: #ffd600;
+            --c-watt: #ff4081;
+            --c-cad: #e040fb;
+            --c-hr: #ff6e40;
+            --c-dist: #448aff;
+            --c-cal: #ffab00;
+            --c-res: #cfd8dc;
+            
+            --btn-bg: #2a2d35;
+            --btn-text: #e0e0e0;
         }
 
         html { font-size: 14px; }
         * { box-sizing: border-box; }
 
         body { 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
             background: var(--bg-color); 
             color: var(--text-main);
             margin: 0; padding: 15px;
             height: 100vh;
             display: flex; flex-direction: column; overflow: hidden;
+            transition: background 0.3s, color 0.3s;
         }
 
         /* LAYOUT */
@@ -57,117 +93,125 @@
         .panel {
             background: var(--panel-bg); border-radius: 16px; border: 1px solid var(--border-color);
             padding: 20px; display: flex; flex-direction: column; gap: 15px; overflow-y: hidden;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            box-shadow: var(--shadow);
             position: relative;
+            transition: background 0.3s, border-color 0.3s;
         }
         .scroll-y { overflow-y: auto; }
 
         /* --- VÄNSTER PANEL --- */
         .header-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; text-align: center; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; align-items: center; }
-        .h-item h3 { margin: 0; font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
-        .val-mid { font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+        .h-item h3 { margin: 0; font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+        .val-mid { font-size: 1.5rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.2; }
         
         .res-ctrl { display: flex; align-items: center; justify-content: center; gap: 5px; }
         .btn-round {
             width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border-color);
-            background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; display:grid; place-items:center; font-size: 1.2rem; line-height: 1; transition: 0.2s;
+            background: var(--btn-bg); color: var(--text-main); cursor: pointer; display:grid; place-items:center; font-size: 1.2rem; line-height: 1; transition: 0.2s;
         }
-        .btn-round:hover { background: #333; border-color: #555; }
+        .btn-round:hover { filter: brightness(0.9); }
 
         .watt-display { text-align: center; margin: 5px 0 0 0; }
-        .watt-num { font-size: 5rem; font-weight: 800; line-height: 0.9; color: var(--c-watt); text-shadow: 0 0 30px rgba(245, 0, 87, 0.2); }
-        .watt-lbl { font-size: 1rem; font-weight: 700; color: var(--c-watt); opacity: 0.8; letter-spacing: 3px; }
+        .watt-num { font-size: 5rem; font-weight: 900; line-height: 0.9; color: var(--c-watt); letter-spacing: -2px; }
+        .watt-lbl { font-size: 1rem; font-weight: 800; color: var(--c-watt); opacity: 0.8; letter-spacing: 3px; }
 
         .live-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
         .live-card { 
-            background: rgba(20, 20, 35, 0.6); padding: 10px; border-radius: 12px; 
+            background: var(--bg-color); padding: 10px; border-radius: 12px; 
             text-align: center; display: flex; flex-direction: column; justify-content: center; 
             border: 1px solid var(--border-color);
         }
-        .live-lbl { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 2px; font-weight: 600; }
-        .live-val { font-size: 2rem; font-weight: 700; line-height: 1; }
+        .live-lbl { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 2px; font-weight: 700; }
+        .live-val { font-size: 2rem; font-weight: 800; line-height: 1; }
 
-        .progress-box { height: 6px; background: #111; margin-top: 10px; border-radius: 3px; overflow: hidden; display: none; }
+        .progress-box { height: 6px; background: var(--border-color); margin-top: 10px; border-radius: 3px; overflow: hidden; display: none; }
         .progress-fill { height: 100%; background: var(--c-speed); width: 0%; transition: width 0.3s; }
 
         /* KNAPPAR */
         .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto; }
         .btn-ctrl {
-            background: transparent; border: 1px solid var(--border-color); color: var(--text-dim);
-            padding: 10px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 600;
+            background: var(--btn-bg); border: 1px solid var(--border-color); color: var(--text-dim);
+            padding: 10px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 700;
             text-transform: uppercase; transition: 0.2s;
         }
-        .btn-ctrl:hover { background: var(--border-color); color: #fff; }
+        .btn-ctrl:hover { background: var(--border-color); color: var(--text-main); }
 
         .btn-main {
             grid-column: span 2; background: var(--c-dist); color: #fff; border: none; padding: 14px; border-radius: 8px;
-            font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 1rem;
-            box-shadow: 0 4px 15px rgba(41, 121, 255, 0.3); transition: transform 0.1s;
+            font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 1rem;
+            box-shadow: 0 4px 12px rgba(41, 98, 255, 0.25); transition: transform 0.1s;
         }
         .btn-main:hover { transform: translateY(-1px); filter: brightness(1.1); }
-        .btn-stop { background: var(--c-watt); box-shadow: 0 4px 15px rgba(245, 0, 87, 0.3); display: none; }
+        .btn-stop { background: var(--c-watt); box-shadow: 0 4px 12px rgba(213, 0, 0, 0.25); display: none; }
 
         /* --- HÖGER PANEL --- */
-        .right-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .header-title { color: var(--text-dim); letter-spacing: 2px; font-weight: 700; font-size: 0.9rem; }
-        .header-status { font-size: 0.7rem; color: #555; font-weight: bold; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px;}
-
-        .graph-controls { display: flex; justify-content: flex-end; gap: 10px; align-items: center; margin-bottom: 10px; }
-        select.main-select { background: #333; color: #fff; border: 1px solid #555; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; }
+        /* Punkt 1: Header på en rad */
+        .right-header { 
+            display: flex; gap: 15px; align-items: center; margin-bottom: 5px; 
+            background: var(--btn-bg); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);
+        }
+        .header-title { color: var(--text-main); font-weight: 900; font-size: 0.9rem; white-space: nowrap; margin-right: auto;}
+        .header-status { font-size: 0.7rem; color: var(--text-dim); font-weight: bold; text-transform: uppercase;}
+        
+        .theme-toggle { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 0 5px; line-height: 1;}
+        select.main-select { background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer;}
 
         .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
         .config-card {
-            background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: 10px;
+            background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 10px;
             padding: 8px; display: flex; flex-direction: column; gap: 4px; transition: all 0.2s; position: relative;
         }
-        .config-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #333; padding-bottom: 4px; margin-bottom: 2px; }
-        .config-title { font-weight: bold; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; text-transform: uppercase; }
-        .config-opts { display: flex; flex-direction: column; gap: 2px; font-size: 0.7rem; color: #666; }
+        .config-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; margin-bottom: 2px; }
+        .config-title { font-weight: 800; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; text-transform: uppercase; }
+        
+        /* Punkt 3: Checkboxar bredvid varandra */
+        .config-opts { display: flex; gap: 8px; font-size: 0.75rem; color: var(--text-dim); font-weight: 600; }
         .chk { transform: scale(1.1); cursor: pointer; }
         
         .avg-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; min-height: 20px;}
-        .avg-val { font-weight: bold; font-family: monospace; font-size: 0.9rem; }
-        select.tiny-select { background: #222; color: #aaa; border: 1px solid #444; font-size: 0.7rem; padding: 0px; width: 60px; border-radius: 4px; cursor: pointer; }
+        .avg-val { font-weight: bold; font-family: monospace; font-size: 0.9rem; color: var(--text-main); }
+        select.tiny-select { background: var(--panel-bg); color: var(--text-dim); border: 1px solid var(--border-color); font-size: 0.7rem; padding: 0px; width: 60px; border-radius: 4px; cursor: pointer; }
         
         .single-mode .avg-row:first-child .avg-val { font-size: 1.8rem; line-height: 1; }
         .single-mode .avg-row:first-child { height: auto; margin-top: 5px; }
-        .single-mode select.tiny-select { font-size: 0.75rem; width: auto; background: transparent; border: none; }
+        .single-mode select.tiny-select { font-size: 0.75rem; width: auto; background: transparent; border: none; font-weight: 600;}
 
         /* AXEL INSTÄLLNINGAR */
         .axis-settings {
-            display: none; position: absolute; top: 30px; right: 5px; background: #1a1a2e; border: 1px solid #555;
-            padding: 10px; z-index: 10; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); width: 160px;
+            display: none; position: absolute; top: 30px; right: 5px; background: var(--panel-bg); border: 1px solid var(--border-color);
+            padding: 10px; z-index: 10; border-radius: 8px; box-shadow: var(--shadow); width: 160px;
         }
         .axis-settings.show { display: block; }
         .as-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 0.8rem;}
-        .as-inp { width: 45px; background: #000; border: 1px solid #444; color: #fff; font-family: monospace; padding: 2px;}
-        .btn-gear { background: transparent; border: none; color: #666; cursor: pointer; font-size: 0.9rem; padding: 0 5px; }
-        .btn-gear:hover { color: #fff; }
+        .as-inp { width: 45px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); font-family: monospace; padding: 2px;}
+        .btn-gear { background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.9rem; padding: 0 5px; }
+        .btn-gear:hover { color: var(--text-main); }
 
-        /* GRAF */
+        /* GRAF (Punkt 2: Stora axlar) */
         .graph-wrapper {
-            flex: 1; min-height: 300px; background: #12121a; border-radius: 12px;
+            flex: 1; min-height: 300px; background: var(--graph-bg); border-radius: 12px;
             border: 1px solid var(--border-color); position: relative; overflow: hidden; cursor: grab;
+            /* Punkt 2: Rejäl padding för axlar */
+            padding: 10px 50px 30px 50px; 
         }
         .graph-wrapper:active { cursor: grabbing; }
         svg { width: 100%; height: 100%; display: block; overflow: visible; }
         
-        .axis-text { font-size: 10px; font-family: 'Consolas', monospace; font-weight: bold; dominant-baseline: middle; }
-        .axis-text-x { font-size: 12px; fill: #fff; text-anchor: middle; font-weight: bold;}
-        .grid-line { stroke: #2a2a3a; stroke-width: 1; }
-        .grid-line-strong { stroke: #444; stroke-width: 1; }
+        /* Punkt 4: Modern font */
+        .axis-text { font-size: 20px; font-family: 'Segoe UI', sans-serif; font-weight: 700; dominant-baseline: middle; }
+        .axis-text-x { font-size: 12px; fill: var(--text-dim); text-anchor: middle; font-weight: 600;}
+        .grid-line { stroke: var(--grid-line); stroke-width: 1; }
+        .grid-line-strong { stroke: var(--grid-line-strong); stroke-width: 1; }
         .graph-line { fill: none; stroke-width: 2; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
         .graph-line-dashed { stroke-dasharray: 4,4; } 
 
-        .footer-stats { display: flex; justify-content: space-between; color: var(--text-dim); font-size: 0.75rem; margin-top: 5px; border-top: 1px solid var(--border-color); padding-top: 10px;}
-        .footer-val { color: var(--text-main); font-weight: bold; }
         .file-input-wrapper { position: relative; overflow: hidden; display: inline-block; width: 100%; height: 100%;}
         .file-input-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
 
         /* STATISTIK MODAL */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 100;
+            background: rgba(0,0,0,0.5); z-index: 100; backdrop-filter: blur(5px);
             display: none; justify-content: center; padding: 20px; 
         }
         .modal.open { display: flex; }
@@ -175,29 +219,30 @@
             background: var(--panel-bg); width: 100%; max-width: 1100px;
             border-radius: 16px; border: 1px solid var(--border-color);
             display: flex; flex-direction: column; overflow: hidden; max-height: 100%;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
         }
-        .modal-header { padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: #1a1a2e;}
+        .modal-header { padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--bg-color);}
         .modal-body { flex: 1; overflow-y: auto; padding: 20px; }
         
-        .section-header { font-size: 1rem; color: var(--text-dim); border-bottom: 2px solid var(--border-color); padding-bottom: 5px; margin: 25px 0 15px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+        .section-header { font-size: 0.9rem; color: var(--text-dim); border-bottom: 2px solid var(--border-color); padding-bottom: 5px; margin: 25px 0 15px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
         .stats-filter { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;}
         
         .total-grid-top { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
         .total-grid-bot { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
         
-        .stat-card-small { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid var(--border-color); }
-        .sc-val { font-size: 1.4rem; font-weight: 700; color: #fff; display: block; margin-bottom: 2px; }
-        .sc-lbl { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; }
+        .stat-card-small { background: var(--bg-color); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid var(--border-color); }
+        .sc-val { font-size: 1.4rem; font-weight: 800; color: var(--text-main); display: block; margin-bottom: 2px; }
+        .sc-lbl { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; }
 
         .session-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        .session-table th { text-align: right; padding: 10px; border-bottom: 2px solid var(--border-color); cursor: pointer; color: var(--text-dim); text-transform: uppercase; font-size: 0.75rem; user-select: none; }
-        .session-table th:hover { color: #fff; }
-        .session-table td { padding: 12px 10px; border-bottom: 1px solid var(--border-color); color: #ccc; text-align: right; }
+        .session-table th { text-align: right; padding: 10px; border-bottom: 2px solid var(--border-color); cursor: pointer; color: var(--text-dim); text-transform: uppercase; font-size: 0.75rem; user-select: none; font-weight: 700;}
+        .session-table th:hover { color: var(--text-main); }
+        .session-table td { padding: 12px 10px; border-bottom: 1px solid var(--border-color); color: var(--text-main); text-align: right; font-variant-numeric: tabular-nums; }
         .session-table tr { cursor: pointer; transition: 0.2s; }
-        .session-table tr:hover { background: rgba(255,255,255,0.05); }
+        .session-table tr:hover { background: var(--bg-color); }
         .sort-icon { font-size: 0.8em; margin-left: 4px; display: inline-block; width: 10px;}
         
-        .zone-analysis { margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.9rem; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;}
+        .zone-analysis { margin-top: 10px; padding: 10px; background: var(--bg-color); border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.9rem; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;}
         .zone-res { font-weight: bold; color: var(--c-speed); margin-left: auto;}
 
         /* Färgklasser */
@@ -282,13 +327,12 @@
     <!-- HÖGER: ANALYS -->
     <div class="panel panel-right">
         
+        <!-- Punkt 1: Allt på en rad -->
         <div class="right-header">
             <span class="header-title">GYMSTICK GB 8.0</span>
             <span id="connStatus" class="header-status">FRÅNKOPPLAD</span>
-        </div>
-
-        <div class="graph-controls">
-            <span style="font-size:0.8rem; color:#888;">Upplösning:</span>
+            <div style="flex:1"></div>
+            <button class="theme-toggle" id="themeBtn" title="Byt Tema">☀</button>
             <select id="graphRes" class="main-select">
                 <option value="1">1 sek</option>
                 <option value="2" selected>2 sek</option>
@@ -309,11 +353,6 @@
             <svg id="chartSvg" viewBox="0 0 1000 400" preserveAspectRatio="none"></svg>
         </div>
 
-        <div class="footer-stats">
-            <div>Totalt: <span class="footer-val c-dist" id="lifeDist">0.000 km</span></div>
-            <div>Tid: <span class="footer-val" id="lifeTime">0h 0m</span></div>
-            <div>Pass: <span class="footer-val" id="sessCount">0</span></div>
-        </div>
     </div>
 </div>
 
@@ -321,11 +360,11 @@
 <div class="modal" id="statsModal">
     <div class="modal-content">
         <div class="modal-header">
-            <h2 style="margin:0; letter-spacing:1px; color:#fff;">STATISTIK</h2>
+            <h2 style="margin:0; letter-spacing:1px;">STATISTIK</h2>
             <div>
-                <button onclick="showPowerCurve()" class="btn-ctrl" style="margin-right:10px; width:auto; border-color:#555;">VISA EFFEKTKURVA</button>
+                <button onclick="showPowerCurve()" class="btn-ctrl" style="margin-right:10px; width:auto; border-color:var(--border-color);">VISA EFFEKTKURVA</button>
                 <button id="btnDeleteAll" class="btn-ctrl" style="width:auto; border-color:#ff3d00; color:#ff3d00; margin-right:10px;">RADERA ALLT</button>
-                <button onclick="document.getElementById('statsModal').classList.remove('open')" class="btn-ctrl" style="width:auto; border-color:#555;">STÄNG</button>
+                <button onclick="document.getElementById('statsModal').classList.remove('open')" class="btn-ctrl" style="width:auto; border-color:var(--border-color);">STÄNG</button>
             </div>
         </div>
         <div class="modal-body">
@@ -369,7 +408,7 @@
     <div class="modal-content" style="max-width:95%; height:95%;">
         <div class="modal-header">
             <h3 style="margin:0" id="singleTitle">PASS</h3>
-            <button onclick="document.getElementById('singleModal').classList.remove('open')" class="btn-ctrl" style="width:auto; border-color:#555;">X</button>
+            <button onclick="document.getElementById('singleModal').classList.remove('open')" class="btn-ctrl" style="width:auto; border-color:var(--border-color);">X</button>
         </div>
         <div class="modal-body" style="display:flex; flex-direction:column;">
             
@@ -383,10 +422,10 @@
                     <option value="h">Puls</option><option value="w">Watt</option><option value="s">Fart</option><option value="c">Kadens</option>
                 </select>
                 <span>var mellan</span>
-                <input type="number" id="zoneMinS" value="100" style="width:50px; background:#000; border:1px solid #444; color:#fff;">
+                <input type="number" id="zoneMinS" value="100" style="width:50px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-main);">
                 <span>och</span>
-                <input type="number" id="zoneMaxS" value="150" style="width:50px; background:#000; border:1px solid #444; color:#fff;">
-                <button onclick="calculateZoneSingle()" style="background:#333; color:#fff; border:1px solid #555; cursor:pointer;">Sök</button>
+                <input type="number" id="zoneMaxS" value="150" style="width:50px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-main);">
+                <button onclick="calculateZoneSingle()" style="background:var(--btn-bg); color:var(--text-main); border:1px solid var(--border-color); cursor:pointer;">Sök</button>
                 <span id="zoneResultS" class="zone-res"></span>
             </div>
         </div>
@@ -398,10 +437,10 @@
     <div class="modal-content" style="max-width:600px; max-height:80%;">
         <div class="modal-header">
             <h3 style="margin:0">EFFEKTKURVA (Peak Power)</h3>
-            <button onclick="document.getElementById('powerModal').classList.remove('open')" class="btn-ctrl" style="width:auto; border-color:#555;">X</button>
+            <button onclick="document.getElementById('powerModal').classList.remove('open')" class="btn-ctrl" style="width:auto; border-color:var(--border-color);">X</button>
         </div>
         <div class="modal-body">
-            <p style="color:#888; font-size:0.8rem;">Högsta snitteffekt för olika tidsintervall.</p>
+            <p style="color:var(--text-dim); font-size:0.8rem;">Högsta snitteffekt för olika tidsintervall.</p>
             <table class="session-table" id="powerTable">
                 <thead><tr><th>Tid</th><th>Detta Pass (W)</th><th>Rekord (W)</th></tr></thead>
                 <tbody id="powerBody"></tbody>
@@ -419,6 +458,7 @@
         progBox: document.getElementById('progBox'),
         progFill: document.getElementById('progFill'),
         statusText: document.getElementById('statusText'),
+        themeBtn: document.getElementById('themeBtn'),
         // Värden
         speed: document.getElementById('valSpeed'),
         watt: document.getElementById('valWatt'),
@@ -435,9 +475,6 @@
         graphWrapper: document.getElementById('graphContainer'),
         graphRes: document.getElementById('graphRes'),
         configGrid: document.getElementById('configGrid'),
-        lifeDist: document.getElementById('lifeDist'),
-        lifeTime: document.getElementById('lifeTime'),
-        sessCount: document.getElementById('sessCount'),
         // Stats
         statsBtn: document.getElementById('statsBtn'),
         statsModal: document.getElementById('statsModal'),
@@ -456,6 +493,18 @@
         // Power Curve
         powerModal: document.getElementById('powerModal'),
         powerBody: document.getElementById('powerBody')
+    };
+
+    // --- TEMA ---
+    let isDark = localStorage.getItem('gymstick_theme') === 'dark';
+    if(isDark) document.body.classList.add('dark-mode');
+    ui.themeBtn.textContent = isDark ? '☾' : '☀';
+    
+    ui.themeBtn.onclick = () => {
+        isDark = !isDark;
+        if(isDark) document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode');
+        localStorage.setItem('gymstick_theme', isDark ? 'dark' : 'light');
+        ui.themeBtn.textContent = isDark ? '☾' : '☀';
     };
 
     // --- VARIABLER ---
@@ -519,13 +568,6 @@
         const s = Math.floor(sec % 60);
         return `${m}:${s.toString().padStart(2,'0')}`;
     }
-
-    function updateHistoryUI(currDist = 0) {
-        const totD = history.totalDist + currDist;
-        ui.lifeDist.textContent = totD.toFixed(3) + " km";
-        ui.sessCount.textContent = history.sessions.length;
-        ui.lifeTime.textContent = formatDurationLong(history.totalTime);
-    }
     
     function saveHistory() { localStorage.setItem('gymstick_v6_history', JSON.stringify(history)); }
 
@@ -545,7 +587,6 @@
         { key: 'h', title: 'PULS', color: 'var(--c-hr)', defMax:180 }
     ];
 
-    // --- PLACERA INIT-FUNKTIONER HÄR ---
     function initConfigGrid() {
         ui.configGrid.innerHTML = '';
         METRICS.forEach(m => {
@@ -553,7 +594,7 @@
 
             const card = document.createElement('div');
             card.className = 'config-card single-mode';
-            card.style.borderLeft = `3px solid ${m.color}`;
+            card.style.borderLeft = `4px solid ${m.color}`; // Tydligare kant
             
             const hdr = document.createElement('div');
             hdr.className = 'config-header';
@@ -650,7 +691,6 @@
 
     // --- NU KAN VI KÖRA INITIALISERING ---
     initConfigGrid();
-    updateHistoryUI();
     graphState.data = []; 
     drawCombinedGraph(ui.chart, [], false);
 
@@ -685,8 +725,7 @@
 
     function onDisconnect() {
         ui.connStatus.textContent = "FRÅNKOPPLAD";
-        ui.connStatus.style.background = "#333";
-        ui.connStatus.style.color = "#888";
+        ui.connStatus.style.color = "var(--text-dim)";
         ui.connectBtn.style.display = 'block';
         ui.stopBtn.style.display = 'none';
         ui.progBox.style.display = 'none';
@@ -705,7 +744,6 @@
             ui.statusText.textContent = "";
             ui.progBox.style.display = 'none';
             ui.connStatus.textContent = "ANSLUTEN";
-            ui.connStatus.style.background = "rgba(0,255,0,0.2)";
             ui.connStatus.style.color = "var(--c-speed)";
             ui.stopBtn.style.display = 'block';
             
@@ -722,7 +760,7 @@
         }
         const step = SEQ[seqIndex];
         ui.progFill.style.width = ((seqIndex / SEQ.length) * 100) + "%";
-        ui.statusText.textContent = "Init: " + step.name;
+        ui.statusText.textContent = "Initierar...";
         await send(step.bytes);
     }
 
@@ -841,7 +879,7 @@
         if(document.getElementById('chk_h') && document.getElementById('chk_h').checked) active.push(METRICS[3]);
 
         const W = 1000, H = 400;
-        const padT = 20, padB = 40, padL = 60, padR = 60;
+        const padT = 20, padB = 40, padL = 80, padR = 80;
         const drawW = W - padL - padR;
         const drawH = H - padT - padB;
 
@@ -956,11 +994,11 @@
             }
 
             const isLeft = (idx < 2);
-            const xText = isLeft ? (idx === 0 ? 10 : 50) : (idx === 2 ? W - 50 : W - 10);
+            const xText = isLeft ? (idx === 0 ? 10 : 70) : (idx === 2 ? W - 70 : W - 10);
             const anchor = isLeft ? "start" : "end";
             
             const tMax = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            tMax.setAttribute("x", xText); tMax.setAttribute("y", padT + 5);
+            tMax.setAttribute("x", xText); tMax.setAttribute("y", padT + 10);
             tMax.setAttribute("text-anchor", anchor);
             tMax.setAttribute("fill", m.color);
             tMax.setAttribute("class", "axis-text");
@@ -968,7 +1006,7 @@
             svg.appendChild(tMax);
             
             const tMin = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            tMin.setAttribute("x", xText); tMin.setAttribute("y", H - padB - 5);
+            tMin.setAttribute("x", xText); tMin.setAttribute("y", H - padB - 10);
             tMin.setAttribute("text-anchor", anchor);
             tMin.setAttribute("fill", m.color);
             tMin.setAttribute("class", "axis-text");
@@ -1046,7 +1084,7 @@
             localStorage.clear();
             history = { sessions: [], totalDist: 0, totalTime: 0 };
             renderStats();
-            updateHistoryUI();
+            // updateHistoryUI borttagen - uppdateras inte här
             ui.btnDeleteAll.textContent = "RADERAT";
             setTimeout(() => { 
                 ui.btnDeleteAll.textContent = "RADERA ALLT"; 
@@ -1122,13 +1160,13 @@
             <div class="stat-card-small"><span class="sc-val c-dist">${tDist.toFixed(1)} km</span><span class="sc-lbl">Distans</span></div>
             <div class="stat-card-small"><span class="sc-val">${formatDurationLong(tTime)}</span><span class="sc-lbl">Tid</span></div>
             <div class="stat-card-small"><span class="sc-val c-cal">${tCal}</span><span class="sc-lbl">Kalorier</span></div>
-            <div class="stat-card-small"><span class="sc-val">${filtered.length}</span><span class="sc-lbl">Pass</span></div>
+            <div class="stat-card-small"><span class="sc-val">${filtered.length}</span><span class="sc-lbl">Träningspass</span></div>
         `;
         ui.totalBot.innerHTML = `
-            <div class="stat-card-small"><span class="sc-val c-speed">${avgF(sSpd)}</span><span class="sc-lbl">Fart</span></div>
-            <div class="stat-card-small"><span class="sc-val c-watt">${avg(sWatt)}</span><span class="sc-lbl">Watt</span></div>
-            <div class="stat-card-small"><span class="sc-val c-cad">${avg(sCad)}</span><span class="sc-lbl">Kadens</span></div>
-            <div class="stat-card-small"><span class="sc-val c-hr">${avg(sHr)}</span><span class="sc-lbl">Puls</span></div>
+            <div class="stat-card-small"><span class="sc-val c-speed">${avgF(sSpd)}</span><span class="sc-lbl">Medelfart</span></div>
+            <div class="stat-card-small"><span class="sc-val c-watt">${avg(sWatt)}</span><span class="sc-lbl">Medelwatt</span></div>
+            <div class="stat-card-small"><span class="sc-val c-cad">${avg(sCad)}</span><span class="sc-lbl">Medelkadens</span></div>
+            <div class="stat-card-small"><span class="sc-val c-hr">${avg(sHr)}</span><span class="sc-lbl">Medelpuls</span></div>
         `;
 
         const arrow = sortAsc ? ' ↑' : ' ↓';
