@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gymstick Pro Monitor v10.3</title>
+    <title>Gymstick Pro Monitor v11.1</title>
     <style>
         :root {
             /* --- LIGHT MODE VARIABLER --- */
@@ -19,21 +19,20 @@
             --grid-line-strong: #d0d2d6;
 
             /* Pigga Färger */
-            --c-speed: #00c853;  /* Skarp Grön */
-            --c-watt: #d50000;   /* Djup Röd/Rosa */
-            --c-cad: #6200ea;    /* Lila */
-            --c-hr: #ff6d00;     /* Orange */
-            --c-dist: #2962ff;   /* Blå */
-            --c-cal: #ffd600;    /* Gul/Guld */
-            --c-res: #fbc02d;    /* Mörkare Gul (för vit bakgrund) */
+            --c-speed: #00c853;
+            --c-watt: #d50000;
+            --c-cad: #6200ea;
+            --c-hr: #ff6d00;
+            --c-dist: #2962ff;
+            --c-cal: #ffd600;
+            --c-res: #fbc02d;
             
             --btn-bg: #e4e6eb;
-            --btn-text: #050505;
         }
 
-        /* --- DARK MODE (DEFAULT VIA JS LOGIK) --- */
+        /* --- DARK MODE --- */
         body.dark-mode {
-            --bg-color: #0f1115; /* Neutral mörk */
+            --bg-color: #0f1115;
             --panel-bg: #181a1f;
             --border-color: #2a2d35;
             --text-main: #e0e0e0;
@@ -51,17 +50,16 @@
             --c-hr: #ff6e40;
             --c-dist: #448aff;
             --c-cal: #ffab00;
-            --c-res: #ffd600;    /* Neon Gul */
+            --c-res: #ffd600;
             
             --btn-bg: #2a2d35;
-            --btn-text: #e0e0e0;
         }
 
         html { font-size: 14px; }
         * { box-sizing: border-box; }
 
         body { 
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
             background: var(--bg-color); 
             color: var(--text-main);
             margin: 0; padding: 15px;
@@ -99,7 +97,7 @@
         }
         .scroll-y { overflow-y: auto; }
 
-        /* --- VÄNSTER PANEL --- */
+        /* VÄNSTER PANEL */
         .header-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; text-align: center; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; align-items: center; }
         .h-item h3 { margin: 0; font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
         .val-mid { font-size: 1.5rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.2; }
@@ -144,7 +142,7 @@
         .btn-main:hover { transform: translateY(-1px); filter: brightness(1.1); }
         .btn-stop { background: var(--c-watt); box-shadow: 0 4px 12px rgba(213, 0, 0, 0.25); display: none; }
 
-        /* --- HÖGER PANEL --- */
+        /* HÖGER PANEL */
         .right-header { 
             display: flex; gap: 15px; align-items: center; margin-bottom: 5px; 
             background: var(--btn-bg); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);
@@ -201,12 +199,21 @@
         .graph-line { fill: none; stroke-width: 2; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
         .graph-line-dashed { stroke-dasharray: 4,4; } 
 
+        /* Zoom Switcher */
+        .zoom-switch {
+            position: absolute; top: 10px; right: 10px; background: var(--panel-bg);
+            border: 1px solid var(--border-color); border-radius: 8px; display: flex; overflow: hidden;
+            z-index: 5;
+        }
+        .zoom-opt { padding: 5px 10px; font-size: 0.7rem; font-weight: 700; cursor: pointer; color: var(--text-dim); }
+        .zoom-opt.active { background: var(--btn-bg); color: var(--text-main); }
+
         .footer-stats { display: flex; justify-content: space-between; color: var(--text-dim); font-size: 0.75rem; margin-top: 5px; border-top: 1px solid var(--border-color); padding-top: 10px;}
         .footer-val { color: var(--text-main); font-weight: bold; }
         .file-input-wrapper { position: relative; overflow: hidden; display: inline-block; width: 100%; height: 100%;}
         .file-input-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
 
-        /* STATISTIK MODAL */
+        /* MODAL */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); z-index: 100; backdrop-filter: blur(5px);
@@ -348,7 +355,17 @@
         </div>
 
         <div class="graph-wrapper" id="graphContainer">
+            <div class="zoom-switch">
+                <div class="zoom-opt active" id="zX" onclick="setZoomMode('x')">↔ TID (X)</div>
+                <div class="zoom-opt" id="zY" onclick="setZoomMode('y')">↕ VÄRDE (Y)</div>
+            </div>
             <svg id="chartSvg" viewBox="0 0 1000 400" preserveAspectRatio="none"></svg>
+        </div>
+
+        <div class="footer-stats">
+            <div>Totalt: <span class="footer-val c-dist" id="lifeDist">0.000 km</span></div>
+            <div>Tid: <span class="footer-val" id="lifeTime">0h 0m</span></div>
+            <div>Pass: <span class="footer-val" id="sessCount">0</span></div>
         </div>
     </div>
 </div>
@@ -357,13 +374,12 @@
 <div class="modal" id="statsModal">
     <div class="modal-content">
         <div class="modal-header">
-            <!-- Flyttad Radera-knapp -->
             <div style="display:flex; align-items:center; gap:15px;">
                 <h2 style="margin:0; letter-spacing:1px;">STATISTIK</h2>
                 <button id="btnDeleteAll" class="btn-ctrl" style="width:auto; border-color:#ff3d00; color:#ff3d00; font-size:0.7rem; padding:6px 12px;">RADERA ALLT</button>
             </div>
             <div>
-                <button onclick="showPowerCurve()" class="btn-ctrl" style="margin-right:10px; width:auto; border-color:var(--border-color);">VISA EFFEKTKURVA</button>
+                <button onclick="showPowerCurve()" class="btn-ctrl" style="margin-right:10px; width:auto; border-color:var(--border-color);">EFFEKTKURVA</button>
                 <button onclick="document.getElementById('statsModal').classList.remove('open')" class="btn-ctrl" style="width:auto; border-color:var(--border-color);">STÄNG</button>
             </div>
         </div>
@@ -391,7 +407,7 @@
                             <th onclick="sortSess('dur')">Tid <span id="sort_dur"></span></th>
                             <th onclick="sortSess('cal')">Kalorier <span id="sort_cal"></span></th>
                             <th onclick="sortSess('speed')">MEDELFART <span id="sort_speed"></span></th>
-                            <th onclick="sortSess('watt')">MEDELWATT <span id="sort_watt"></span></th>
+                            <th onclick="sortSess('watt')">MEDELEFFEKT <span id="sort_watt"></span></th>
                             <th onclick="sortSess('cad')">MEDELKADENS <span id="sort_cad"></span></th>
                             <th onclick="sortSess('hr')">MEDELPULS <span id="sort_hr"></span></th>
                         </tr>
@@ -412,10 +428,15 @@
         </div>
         <div class="modal-body" style="display:flex; flex-direction:column;">
             
-            <div class="graph-wrapper" style="flex:1; min-height:0; margin-bottom:10px;" id="singleGraphWrapper">
+            <div class="graph-wrapper" style="flex:1; min-height:0; margin-bottom:10px; position:relative;" id="singleGraphWrapper">
+                <div class="zoom-switch">
+                    <div class="zoom-opt active" id="zXs" onclick="setZoomMode('x', true)">↔ TID (X)</div>
+                    <div class="zoom-opt" id="zYs" onclick="setZoomMode('y', true)">↕ VÄRDE (Y)</div>
+                </div>
                 <svg id="singleChart" width="100%" height="100%"></svg>
             </div>
             
+            <!-- Zon Analys -->
             <div class="zone-analysis" id="singleZoneBox">
                 <span>Visa tid där:</span>
                 <select id="zoneMetricS" class="main-select" style="padding:4px">
@@ -428,6 +449,17 @@
                 <button onclick="calculateZoneSingle()" style="background:var(--btn-bg); color:var(--text-main); border:1px solid var(--border-color); cursor:pointer;">Sök</button>
                 <span id="zoneResultS" class="zone-res"></span>
             </div>
+
+            <!-- Custom Avg -->
+            <div class="zone-analysis" style="margin-top:5px;">
+                <span>Beräkna Medeltal (Effekt) mellan:</span>
+                <input type="text" id="avgStart" placeholder="0:00:00" style="width:70px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-main);">
+                <span>och</span>
+                <input type="text" id="avgEnd" placeholder="0:00:00" style="width:70px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-main);">
+                <button onclick="calculateCustomAvg()" style="background:var(--btn-bg); color:var(--text-main); border:1px solid var(--border-color); cursor:pointer;">Beräkna</button>
+                <span id="avgResultS" class="zone-res" style="color:var(--c-watt)"></span>
+            </div>
+
         </div>
     </div>
 </div>
@@ -436,11 +468,11 @@
 <div class="modal" id="powerModal">
     <div class="modal-content" style="max-width:600px; max-height:80%;">
         <div class="modal-header">
-            <h3 style="margin:0">EFFEKTKURVA (Peak Power)</h3>
+            <h3 style="margin:0">EFFEKTKURVA</h3>
             <button onclick="document.getElementById('powerModal').classList.remove('open')" class="btn-ctrl" style="width:auto; border-color:var(--border-color);">X</button>
         </div>
         <div class="modal-body">
-            <p style="color:var(--text-dim); font-size:0.8rem;">Högsta snitteffekt för olika tidsintervall.</p>
+            <p style="color:var(--text-dim); font-size:0.8rem;">Högsta medeleffekt för olika tidsintervall.</p>
             <table class="session-table" id="powerTable">
                 <thead><tr><th>Tid</th><th>Detta Pass (W)</th><th>Rekord (W)</th></tr></thead>
                 <tbody id="powerBody"></tbody>
@@ -490,85 +522,27 @@
         powerBody: document.getElementById('powerBody'),
         lifeDist: document.getElementById('lifeDist'),
         lifeTime: document.getElementById('lifeTime'),
-        sessCount: document.getElementById('sessCount')
+        sessCount: document.getElementById('sessCount'),
+        zX: document.getElementById('zX'),
+        zY: document.getElementById('zY'),
+        zXs: document.getElementById('zXs'),
+        zYs: document.getElementById('zYs'),
+        avgStart: document.getElementById('avgStart'),
+        avgEnd: document.getElementById('avgEnd'),
+        avgResultS: document.getElementById('avgResultS')
     };
-
-    // --- TEMA INIT (Default Dark) ---
-    // Om inget tema är sparat, sätt till 'dark'.
-    if (localStorage.getItem('gymstick_theme') === null) {
-        localStorage.setItem('gymstick_theme', 'dark');
-    }
-    
-    let isDark = localStorage.getItem('gymstick_theme') === 'dark';
-    if(isDark) document.body.classList.add('dark-mode');
-    ui.themeBtn.textContent = isDark ? '☾' : '☀';
-    
-    ui.themeBtn.onclick = () => {
-        isDark = !isDark;
-        if(isDark) document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode');
-        localStorage.setItem('gymstick_theme', isDark ? 'dark' : 'light');
-        ui.themeBtn.textContent = isDark ? '☾' : '☀';
-    };
-
-    // --- SETTINGS (PERSISTENCE) ---
-    // Standardvärden
-    let settings = {
-        graphRes: 2,
-        metrics: {
-            w: { show: true, rows: 1, auto: true, min: 0, max: 400, avgs:[60, 600, -1] },
-            s: { show: true, rows: 1, auto: true, min: 0, max: 40, avgs:[60, 600, -1] },
-            c: { show: true, rows: 1, auto: true, min: 0, max: 120, avgs:[60, 600, -1] },
-            h: { show: true, rows: 1, auto: true, min: 0, max: 180, avgs:[60, 600, -1] }
-        }
-    };
-    
-    // Ladda inställningar
-    const savedSettings = JSON.parse(localStorage.getItem('gymstick_settings'));
-    if(savedSettings) settings = { ...settings, ...savedSettings };
-
-    function saveSettings() {
-        localStorage.setItem('gymstick_settings', JSON.stringify(settings));
-    }
-
-    // --- VARIABLER ---
-    let iconsoleWrite = null;
-    let pollInterval = null;
-    let currentResistance = 1;
-    let sessionData = []; 
-    let startTime = null;
-    let calcDist = 0;
-    let lastRawDist = -1;
-    let lastPktTime = 0;
-
-    let graphState = {
-        scrollOffset: 0, zoomLevel: 1.0, zoomLevelY: 1.0, 
-        isDragging: false, lastMouseX: 0, data: [], yAxisState: {} 
-    };
-
-    const SEQ = [
-        { bytes: [0xF0, 0xA0, 0x01, 0x01, 0x92], expect: 0xB0 },
-        { bytes: [0xF0, 0xA3, 0x01, 0x01, 0x01, 0x96], expect: 0xB3 },
-        { bytes: [0xF0, 0xA4, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xA0], expect: 0xB4 },
-        { bytes: [0xF0, 0xA5, 0x01, 0x01, 0x02, 0x99], expect: 0xB5 }
-    ];
-    let seqIndex = 0;
-    const READ_CMD = [0xF0, 0xA2, 0x01, 0x01, 0x94];
-    const STOP_CMD = [0xF0, 0xA5, 0x01, 0x01, 0x04, 0x9B];
-
-    let history = JSON.parse(localStorage.getItem('gymstick_v6_history')) || { sessions: [], totalDist: 0, totalTime: 0, settings: settings };
-    // Om settings finns i history, använd dem (vid import)
-    if(history.settings) settings = history.settings;
 
     // --- HELPER FUNKTIONER ---
     function formatDurationLong(sec) {
         const d = Math.floor(sec / 86400);
         const h = Math.floor((sec % 86400) / 3600);
         const m = Math.floor((sec % 3600) / 60);
-        let s = "";
-        if(d>0) s += d + " d ";
-        if(h>0) s += h + " h ";
-        s += m + " m"; 
-        return s;
+        const s = Math.floor(sec % 60);
+        let str = "";
+        if(d>0) str += d + " d "; if(h>0) str += h + " h "; 
+        if(m>0 || str.length>0) str += m + " min ";
+        str += s + " s";
+        return str;
     }
     
     function formatTimeSmart(totalSeconds) {
@@ -588,23 +562,86 @@
         const s = Math.floor(sec % 60);
         return `${m}:${s.toString().padStart(2,'0')}`;
     }
+
+    // --- TEMA INIT ---
+    if (localStorage.getItem('gymstick_theme') === null) {
+        localStorage.setItem('gymstick_theme', 'dark');
+    }
+    let isDark = localStorage.getItem('gymstick_theme') === 'dark';
+    if(isDark) document.body.classList.add('dark-mode');
+    ui.themeBtn.textContent = isDark ? '☾' : '☀';
     
+    ui.themeBtn.onclick = () => {
+        isDark = !isDark;
+        if(isDark) document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode');
+        localStorage.setItem('gymstick_theme', isDark ? 'dark' : 'light');
+        ui.themeBtn.textContent = isDark ? '☾' : '☀';
+    };
+
+    // --- SETTINGS ---
+    let settings = {
+        graphRes: 2,
+        metrics: {
+            w: { show: true, rows: 1, auto: true, min: 0, max: 400, avgs:[60, 600, -1] },
+            s: { show: true, rows: 1, auto: true, min: 0, max: 40, avgs:[60, 600, -1] },
+            c: { show: true, rows: 1, auto: true, min: 0, max: 120, avgs:[60, 600, -1] },
+            h: { show: true, rows: 1, auto: true, min: 0, max: 180, avgs:[60, 600, -1] }
+        }
+    };
+    const savedSettings = JSON.parse(localStorage.getItem('gymstick_settings'));
+    if(savedSettings) settings = { ...settings, ...savedSettings };
+
+    function saveSettings() { localStorage.setItem('gymstick_settings', JSON.stringify(settings)); }
+
+    // --- VARIABLER ---
+    let iconsoleWrite = null;
+    let pollInterval = null;
+    let currentResistance = 1;
+    let sessionData = []; 
+    let startTime = null;
+    let calcDist = 0;
+    let lastRawDist = -1;
+    let lastPktTime = 0;
+    
+    // Rollover Logic
+    let rolloverCount = 0;
+    let lastBikeTimeSec = -1;
+
+    let graphState = {
+        scrollOffset: 0, zoomLevel: 1.0, zoomLevelY: 1.0, 
+        isDragging: false, lastMouseX: 0, data: [], yAxisState: {},
+        zoomMode: 'x', yOffset: 0
+    };
+
+    const SEQ = [
+        { bytes: [0xF0, 0xA0, 0x01, 0x01, 0x92], expect: 0xB0 },
+        { bytes: [0xF0, 0xA3, 0x01, 0x01, 0x01, 0x96], expect: 0xB3 },
+        { bytes: [0xF0, 0xA4, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xA0], expect: 0xB4 },
+        { bytes: [0xF0, 0xA5, 0x01, 0x01, 0x02, 0x99], expect: 0xB5 }
+    ];
+    let seqIndex = 0;
+    const READ_CMD = [0xF0, 0xA2, 0x01, 0x01, 0x94];
+    const STOP_CMD = [0xF0, 0xA5, 0x01, 0x01, 0x04, 0x9B];
+
+    let history = JSON.parse(localStorage.getItem('gymstick_v6_history')) || { sessions: [], totalDist: 0, totalTime: 0, settings: settings };
+    if(history.settings) settings = history.settings;
+
     function saveHistoryFile() { 
-        // Spara settings i history objektet också
         history.settings = settings;
         localStorage.setItem('gymstick_v6_history', JSON.stringify(history)); 
     }
     
     function updateHistoryUI(currDist = 0) {
-        // UI Uppdateras endast i Stats, men vi kan ha dem här ifall vi vill visa i panel
+        const totD = history.totalDist + currDist;
+        ui.lifeDist.textContent = totD.toFixed(3) + " km";
+        ui.sessCount.textContent = history.sessions.length;
+        ui.lifeTime.textContent = formatDurationLong(history.totalTime);
     }
     updateHistoryUI();
 
-
-    // --- CONFIG ---
+    // --- CONFIG INIT ---
     const TIME_OPTS = [
-        {v:'graph', t:'Grafen'},
-        {v:5, t:'5s'}, {v:10, t:'10s'}, {v:30, t:'30s'},
+        {v:'graph', t:'Grafen'}, {v:5, t:'5 s'}, {v:10, t:'10 s'}, {v:30, t:'30 s'},
         {v:60, t:'1 m'}, {v:120, t:'2 m'}, {v:300, t:'5 m'},
         {v:600, t:'10 m'}, {v:1800, t:'30 m'}, {v:3600, t:'1 h'}, {v:-1, t:'Tot'}
     ];
@@ -619,7 +656,6 @@
     function initConfigGrid() {
         ui.configGrid.innerHTML = '';
         METRICS.forEach(m => {
-            // Läs inställning
             const s = settings.metrics[m.key];
             graphState.yAxisState[m.key] = { curMax: s.max, curMin: s.min };
 
@@ -645,19 +681,12 @@
             axisPanel.className = 'axis-settings';
             axisPanel.innerHTML = `
                 <div class="as-row"><strong style="color:${m.color}">${m.title} SKALA</strong></div>
-                <div class="as-row">
-                    <label><input type="checkbox" id="auto_${m.key}" ${s.auto?'checked':''}> Auto</label>
-                </div>
-                <div class="as-row">
-                    <span>Max:</span> <input type="number" id="max_${m.key}" value="${s.max}" class="as-inp">
-                </div>
-                <div class="as-row">
-                    <span>Min:</span> <input type="number" id="min_${m.key}" value="${s.min}" class="as-inp">
-                </div>
+                <div class="as-row"><label><input type="checkbox" id="auto_${m.key}" ${s.auto?'checked':''}> Auto</label></div>
+                <div class="as-row"><span>Max:</span> <input type="number" id="max_${m.key}" value="${s.max}" class="as-inp"></div>
+                <div class="as-row"><span>Min:</span> <input type="number" id="min_${m.key}" value="${s.min}" class="as-inp"></div>
             `;
             card.appendChild(axisPanel);
 
-            // Listeners för axel-inställningar för att spara
             axisPanel.querySelectorAll('input').forEach(inp => {
                 inp.onchange = () => {
                     const k = m.key;
@@ -676,7 +705,6 @@
             for(let i=0; i<3; i++) {
                 const row = document.createElement('div');
                 row.className = 'avg-row';
-                // Visa rader baserat på settings
                 if(i === 1 && s.rows < 2) row.style.display = 'none';
                 if(i === 2 && s.rows < 3) row.style.display = 'none';
                 
@@ -684,28 +712,16 @@
                 sel.className = 'tiny-select';
                 TIME_OPTS.forEach(opt => {
                     const o = document.createElement('option');
-                    o.value = opt.v;
-                    o.textContent = opt.t;
-                    if(opt.v == s.avgs[i]) o.selected = true; // Ladda sparat val (använd == för 'graph')
+                    o.value = opt.v; o.textContent = opt.t;
+                    if(opt.v == s.avgs[i]) o.selected = true;
                     sel.appendChild(o);
                 });
-                sel.dataset.metric = m.key;
-                sel.dataset.idx = i;
-                // Spara val vid ändring
-                sel.onchange = (e) => {
-                    settings.metrics[m.key].avgs[i] = e.target.value;
-                    saveSettings();
-                    updateAverages();
-                };
-
+                sel.dataset.metric = m.key; sel.dataset.idx = i;
+                sel.onchange = (e) => { settings.metrics[m.key].avgs[i] = e.target.value; saveSettings(); updateAverages(); };
+                
                 const val = document.createElement('span');
-                val.className = 'avg-val';
-                val.style.color = m.color;
-                val.textContent = '-';
-                val.id = `val_${m.key}_${i}`;
-
-                row.appendChild(sel);
-                row.appendChild(val);
+                val.className = 'avg-val'; val.style.color = m.color; val.textContent = '-'; val.id = `val_${m.key}_${i}`;
+                row.appendChild(sel); row.appendChild(val);
                 avgCont.appendChild(row);
             }
             card.appendChild(avgCont);
@@ -719,29 +735,16 @@
                     const isChecked = e.target.checked;
                     const otherInp = hdr.querySelector(`input[data-rows="${r===3?2:3}"]`);
                     if(isChecked && otherInp) otherInp.checked = false;
-                    
                     const chk2 = hdr.querySelector('input[data-rows="2"]').checked;
                     const chk3 = hdr.querySelector('input[data-rows="3"]').checked;
-                    
                     avgCont.children[1].style.display = (chk2 || chk3) ? 'flex' : 'none';
                     avgCont.children[2].style.display = chk3 ? 'flex' : 'none';
-                    
-                    if(chk2 || chk3) {
-                        card.classList.remove('single-mode');
-                        settings.metrics[k].rows = chk3 ? 3 : 2;
-                    } else {
-                        card.classList.add('single-mode');
-                        settings.metrics[k].rows = 1;
-                    }
+                    if(chk2 || chk3) { card.classList.remove('single-mode'); settings.metrics[k].rows = chk3 ? 3 : 2; }
+                    else { card.classList.add('single-mode'); settings.metrics[k].rows = 1; }
                     saveSettings();
                 };
             });
-            // Main check
-            document.getElementById(`chk_${m.key}`).onchange = (e) => {
-                settings.metrics[m.key].show = e.target.checked;
-                saveSettings();
-                renderMainGraph();
-            };
+            document.getElementById(`chk_${m.key}`).onchange = (e) => { settings.metrics[m.key].show = e.target.checked; saveSettings(); renderMainGraph(); };
         });
     }
 
@@ -750,83 +753,51 @@
         p.classList.toggle('show');
     };
 
-    // --- NU KAN VI KÖRA INITIALISERING ---
-    // Sätt graf-upplösning från sparad setting
     ui.graphRes.value = settings.graphRes;
-    ui.graphRes.onchange = (e) => {
-        settings.graphRes = parseInt(e.target.value);
-        saveSettings();
-        renderMainGraph();
-        updateAverages();
-    };
-
+    ui.graphRes.onchange = (e) => { settings.graphRes = parseInt(e.target.value); saveSettings(); renderMainGraph(); updateAverages(); };
     initConfigGrid();
     graphState.data = []; 
-    // Wait slightly to ensure DOM
     setTimeout(() => drawCombinedGraph(ui.chart, [], false), 50);
-
-    document.getElementById('toggleLayout').onclick = () => {
-        document.getElementById('mainContainer').classList.toggle('full-mode');
-    };
+    document.getElementById('toggleLayout').onclick = () => { document.getElementById('mainContainer').classList.toggle('full-mode'); };
 
     // --- BLUETOOTH ---
     ui.connectBtn.onclick = async () => {
         try {
             ui.statusText.textContent = "Söker enhet...";
-            const device = await navigator.bluetooth.requestDevice({
-                filters: [{ services: ['fitness_machine'] }],
-                optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb']
-            });
+            const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['fitness_machine'] }], optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb'] });
             device.addEventListener('gattserverdisconnected', onDisconnect);
-            
             const server = await device.gatt.connect();
             const service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
             const notifyChar = await service.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
             await notifyChar.startNotifications();
             notifyChar.addEventListener('characteristicvaluechanged', handleData);
-            
             iconsoleWrite = await service.getCharacteristic('0000fff2-0000-1000-8000-00805f9b34fb');
             
             ui.connectBtn.style.display = 'none';
             ui.progBox.style.display = 'block';
             startHandshake();
-
         } catch (e) { ui.statusText.textContent = "Fel: " + e.message; }
     };
 
     function onDisconnect() {
-        ui.connStatus.textContent = "FRÅNKOPPLAD";
-        ui.connStatus.style.color = "var(--text-dim)";
-        ui.connectBtn.style.display = 'block';
-        ui.stopBtn.style.display = 'none';
-        ui.progBox.style.display = 'none';
+        ui.connStatus.textContent = "FRÅNKOPPLAD"; ui.connStatus.style.color = "var(--text-dim)"; ui.connStatus.style.background = "transparent";
+        ui.connectBtn.style.display = 'block'; ui.stopBtn.style.display = 'none'; ui.progBox.style.display = 'none';
         if(pollInterval) clearInterval(pollInterval);
     }
-
-    async function send(bytes) {
-        if(!iconsoleWrite) return;
-        try { await iconsoleWrite.writeValue(new Uint8Array(bytes)); } catch(e){}
-    }
-
+    
+    async function send(bytes) { if(!iconsoleWrite) return; try { await iconsoleWrite.writeValue(new Uint8Array(bytes)); } catch(e){} }
     function startHandshake() { seqIndex = 0; sendNext(); }
-
     async function sendNext() {
         if (seqIndex >= SEQ.length) {
-            ui.statusText.textContent = "";
-            ui.progBox.style.display = 'none';
-            ui.connStatus.textContent = "ANSLUTEN";
-            ui.connStatus.style.color = "var(--c-speed)";
+            ui.statusText.textContent = ""; ui.progBox.style.display = 'none';
+            ui.connStatus.textContent = "ANSLUTEN"; ui.connStatus.style.background = "rgba(0,255,0,0.2)"; ui.connStatus.style.color = "var(--c-speed)";
             ui.stopBtn.style.display = 'block';
-            
             if (pollInterval) clearInterval(pollInterval);
             pollInterval = setInterval(() => send(READ_CMD), 1000);
-            
-            sessionData = [];
-            startTime = Date.now();
+            sessionData = []; startTime = Date.now();
             calcDist = 0; lastRawDist = -1; lastPktTime = Date.now();
-            
-            graphState.scrollOffset = 0;
-            graphState.data = sessionData;
+            rolloverCount = 0; lastBikeTimeSec = -1; 
+            graphState.scrollOffset = 0; graphState.data = sessionData;
             return;
         }
         const step = SEQ[seqIndex];
@@ -837,61 +808,53 @@
 
     function handleData(event) {
         const data = new Uint8Array(event.target.value.buffer);
-
-        if (seqIndex < SEQ.length) {
-            if (data[0] === 0xF0 && data[1] === SEQ[seqIndex].expect) {
-                seqIndex++;
-                setTimeout(sendNext, 200);
-                return;
-            }
-        }
+        if (seqIndex < SEQ.length) { if (data[0] === 0xF0 && data[1] === SEQ[seqIndex].expect) { seqIndex++; setTimeout(sendNext, 200); return; } }
 
         if (data.length >= 20 && data[0] === 0xF0 && data[1] === 0xB2) {
             const val = (h, l) => 100 * (data[h] - 1) + (data[l] - 1);
-
             const speed = val(6, 7) / 10;
             const rpm = val(8, 9);
             const rawDist = val(10, 11) / 10;
             const cal = val(12, 13);
             const hr = val(14, 15);
             const watt = val(16, 17) / 10;
-            const level = data[18] - 1; 
-            currentResistance = level;
-
+            const level = data[18] - 1; currentResistance = level;
+            
             let tMin = data[4] - 1; if(tMin<0) tMin=0;
             let tSec = data[5] - 1; if(tSec<0) tSec=0;
+            const currentBikeSec = tMin * 60 + tSec;
+
+            if (lastBikeTimeSec > -1) {
+                if ((lastBikeTimeSec - currentBikeSec) > 3000) {
+                    rolloverCount++;
+                }
+            }
+            lastBikeTimeSec = currentBikeSec;
+            
+            const totalSecDisplay = (rolloverCount * 6000) + currentBikeSec;
 
             const now = Date.now();
             const dt = (now - lastPktTime) / 1000;
             lastPktTime = now;
-
-            if (rawDist > lastRawDist && lastRawDist !== -1) {
-                calcDist = rawDist;
-            } else {
+            if (rawDist > lastRawDist && lastRawDist !== -1) calcDist = rawDist;
+            else {
                 if (speed > 0 && dt < 5) calcDist += (speed / 3600) * dt;
                 if (calcDist > rawDist + 0.099) calcDist = rawDist + 0.099;
                 if (calcDist < rawDist) calcDist = rawDist;
             }
             lastRawDist = rawDist;
 
-            ui.speed.textContent = speed.toFixed(1);
-            ui.watt.textContent = watt.toFixed(0);
-            ui.cad.textContent = rpm;
-            ui.hr.textContent = hr;
-            ui.cal.textContent = cal;
-            ui.res.textContent = level;
-            // Punkt 1: Smart Tid (4:29)
-            ui.time.textContent = formatTimeSmart(tMin*60 + tSec);
+            ui.speed.textContent = speed.toFixed(1); ui.watt.textContent = watt.toFixed(0);
+            ui.cad.textContent = rpm; ui.hr.textContent = hr; ui.cal.textContent = cal;
+            ui.res.textContent = level; 
+            ui.time.textContent = formatTimeSmart(totalSecDisplay);
             ui.dist.textContent = calcDist.toFixed(3);
 
             if(startTime) {
                 const elapsed = (Date.now() - startTime) / 1000;
                 sessionData.push({ t: elapsed, w: watt, s: speed, c: rpm, h: hr, l: level });
-                
                 updateAverages();
-                if (!graphState.isDragging && graphState.scrollOffset <= 1) {
-                    renderMainGraph(); 
-                }
+                if (!graphState.isDragging && graphState.scrollOffset <= 1) renderMainGraph(); 
             }
         }
     }
@@ -911,25 +874,19 @@
         if(sessionData.length === 0) return;
         const now = sessionData[sessionData.length-1].t;
         const graphResVal = parseInt(ui.graphRes.value);
-
         function calc(metric) {
             for(let i=0; i<3; i++) {
                 const sel = document.querySelector(`select[data-metric="${metric}"][data-idx="${i}"]`);
                 const disp = document.getElementById(`val_${metric}_${i}`);
                 if(!sel || !disp) continue;
-
                 let timeWin = sel.value;
-                if(timeWin === 'graph') timeWin = 120 * graphResVal * graphState.zoomLevel; 
-                else timeWin = parseInt(timeWin);
-                
+                if(timeWin === 'graph') timeWin = 120 * graphResVal * graphState.zoomLevel; else timeWin = parseInt(timeWin);
                 let sum = 0, count = 0;
                 const cutoff = (timeWin === -1) ? 0 : (now - timeWin);
-                
                 for(let j=sessionData.length-1; j>=0; j--) {
                     if(sessionData[j].t < cutoff) break;
                     if(metric === 'h' && sessionData[j][metric] === 0) continue;
-                    sum += sessionData[j][metric];
-                    count++;
+                    sum += sessionData[j][metric]; count++;
                 }
                 disp.textContent = count > 0 ? Math.round(sum/count) : '-';
             }
@@ -937,152 +894,95 @@
         calc('w'); calc('s'); calc('c'); calc('h');
     }
 
-    function renderMainGraph() {
-        drawCombinedGraph(ui.chart, sessionData, false);
-    }
-
+    function renderMainGraph() { drawCombinedGraph(ui.chart, sessionData, false); }
     function drawCombinedGraph(svg, data, isStatic) {
         const active = [];
-        // Checkboxes check
         if(document.getElementById('chk_w') && document.getElementById('chk_w').checked) active.push(METRICS[0]);
         if(document.getElementById('chk_s') && document.getElementById('chk_s').checked) active.push(METRICS[1]);
         if(document.getElementById('chk_c') && document.getElementById('chk_c').checked) active.push(METRICS[2]);
         if(document.getElementById('chk_h') && document.getElementById('chk_h').checked) active.push(METRICS[3]);
+        if(active.length === 0) { svg.innerHTML = ''; return; }
 
         const W = 1000, H = 400;
         const padT = 20, padB = 40, padL = 80, padR = 80;
-        const drawW = W - padL - padR;
         const drawH = H - padT - padB;
-
-        svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-        svg.setAttribute("preserveAspectRatio", "none");
-        svg.innerHTML = '';
+        svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("preserveAspectRatio", "none"); svg.innerHTML = '';
         
-        // Return if no checkboxes found yet or empty selection
-        if(active.length === 0) return;
-
         const resolution = parseInt(ui.graphRes.value);
         const windowSize = 120 * resolution * graphState.zoomLevel;
-        
         let endTime, startTimeView;
-        
         if (data.length > 0) {
             const latestTime = data[data.length-1].t;
-            if (isStatic) {
-                endTime = latestTime - graphState.scrollOffset;
-            } else {
+            if (isStatic) endTime = latestTime - graphState.scrollOffset;
+            else {
                 endTime = Math.max(windowSize, latestTime - (graphState.scrollOffset * resolution * 5));
                 if(endTime < windowSize) endTime = windowSize; 
             }
             startTimeView = endTime - windowSize;
-        } else {
-            startTimeView = 0; endTime = windowSize;
-        }
-
+        } else { startTimeView = 0; endTime = windowSize; }
         const visibleData = data.filter(p => p.t >= startTimeView && p.t <= endTime);
-
+        
         const timeSpan = windowSize;
         let step = 60;
-        if (timeSpan < 60) step = 10;
-        else if (timeSpan < 300) step = 30;
-        else if (timeSpan < 600) step = 60;
-        else if (timeSpan < 1800) step = 300;
-        else step = 600;
-
+        if (timeSpan < 60) step = 10; else if (timeSpan < 300) step = 30; else if (timeSpan < 600) step = 60; else if (timeSpan < 1800) step = 300; else step = 600;
         const firstTick = Math.ceil(startTimeView / step) * step;
 
         for (let t = firstTick; t <= endTime; t += step) {
-            const x = padL + ((t - startTimeView) / timeSpan) * drawW;
+            const x = padL + ((t - startTimeView) / timeSpan) * (W - padL - padR);
             if(x < padL || x > W - padR) continue;
-
             const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            line.setAttribute("x1", x); line.setAttribute("x2", x);
-            line.setAttribute("y1", padT); line.setAttribute("y2", H - padB);
-            line.setAttribute("class", "grid-line");
-            svg.appendChild(line);
-
+            line.setAttribute("x1", x); line.setAttribute("x2", x); line.setAttribute("y1", padT); line.setAttribute("y2", H - padB); line.setAttribute("class", "grid-line"); svg.appendChild(line);
             const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            txt.setAttribute("x", x); txt.setAttribute("y", H - 10);
-            txt.setAttribute("class", "axis-text-x");
-            txt.textContent = formatTimeSmart(t);
-            svg.appendChild(txt);
+            txt.setAttribute("x", x); txt.setAttribute("y", H - 10); txt.setAttribute("class", "axis-text-x"); txt.textContent = formatTimeSmart(t); svg.appendChild(txt);
         }
-        
         for(let i=0; i<=2; i++) {
             const y = padT + (drawH * i / 2);
             const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            line.setAttribute("x1", padL); line.setAttribute("x2", W - padR);
-            line.setAttribute("y1", y); line.setAttribute("y2", y);
-            line.setAttribute("class", "grid-line-strong");
-            svg.appendChild(line);
+            line.setAttribute("x1", padL); line.setAttribute("x2", W - padR); line.setAttribute("y1", y); line.setAttribute("y2", y); line.setAttribute("class", "grid-line-strong"); svg.appendChild(line);
         }
 
         active.forEach((m, idx) => {
             let maxVal = 100, minVal = 0;
             const isAuto = document.getElementById(`auto_${m.key}`).checked;
-
             if (isAuto && visibleData.length > 0) {
                 const vals = visibleData.map(d => d[m.key]);
-                let localMax = Math.max(...vals);
-                let localMin = Math.min(...vals);
-                if(localMax == -Infinity) localMax = m.defMax;
-                if(localMin == Infinity) localMin = 0;
-                
-                if(m.key==='h' && localMin===0) localMin=40;
-
+                let lMax = Math.max(...vals); let lMin = Math.min(...vals);
+                if(lMax == -Infinity) lMax = m.defMax; if(lMin == Infinity) lMin = 0;
+                if(m.key==='h' && lMin===0) lMin=40;
                 let s = graphState.yAxisState[m.key];
-                if (localMax > s.curMax) s.curMax = localMax * 1.1;
-                if (localMax < s.curMax * 0.8) s.curMax = s.curMax * 0.95;
-                if (localMin < s.curMin) s.curMin = localMin * 0.9;
-                if (localMin > s.curMin * 1.2 && s.curMin > 0) s.curMin = s.curMin * 1.05;
-                
+                if (lMax > s.curMax) s.curMax = lMax * 1.1; if (lMax < s.curMax * 0.8) s.curMax = s.curMax * 0.95;
+                if (lMin < s.curMin) s.curMin = lMin * 0.9; if (lMin > s.curMin * 1.2 && s.curMin > 0) s.curMin = s.curMin * 1.05;
                 if(s.curMax < m.defMax) s.curMax = m.defMax; 
-
                 maxVal = s.curMax; minVal = s.curMin;
             } else {
                 maxVal = parseFloat(document.getElementById(`max_${m.key}`).value);
                 minVal = parseFloat(document.getElementById(`min_${m.key}`).value);
             }
             
+            // Punkt 3: Y-Zoom
             maxVal = maxVal / graphState.zoomLevelY;
-            const range = maxVal - minVal;
+            // Punkt 3: Y-Offset (Pan)
+            const displayedMin = minVal + graphState.yOffset;
+            const displayedMax = maxVal + graphState.yOffset;
+            const range = displayedMax - displayedMin;
 
             if(visibleData.length > 1) {
                 let pts = "";
                 visibleData.forEach(d => {
-                    const x = padL + ((d.t - startTimeView) / timeSpan) * drawW;
+                    const x = padL + ((d.t - startTimeView) / timeSpan) * (W - padL - padR);
                     const val = d[m.key];
-                    const y = (H - padB) - ((val - minVal) / range * drawH);
-                    if (y >= padT - 10 && y <= H - padB + 10) pts += `${x},${y} `;
+                    const y = (H - padB) - ((val - displayedMin) / range * drawH);
+                    if (y >= padT - 100 && y <= H + 100) pts += `${x},${y} `;
                 });
-                
                 const poly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-                poly.setAttribute("points", pts);
-                poly.setAttribute("stroke", m.color);
-                poly.setAttribute("class", "graph-line");
-                if (m.key === 'h') poly.setAttribute("stroke-dasharray", "5,5"); 
-                svg.appendChild(poly);
+                poly.setAttribute("points", pts); poly.setAttribute("stroke", m.color); poly.setAttribute("class", "graph-line");
+                if (m.key === 'h') poly.setAttribute("stroke-dasharray", "5,5"); svg.appendChild(poly);
             }
-
-            const isLeft = (idx < 2);
-            const xText = isLeft ? (idx === 0 ? 10 : 70) : (idx === 2 ? W - 70 : W - 10);
-            const anchor = isLeft ? "start" : "end";
-            
+            const isLeft = (idx < 2); const xText = isLeft ? (idx === 0 ? 10 : 70) : (idx === 2 ? W - 70 : W - 10); const anchor = isLeft ? "start" : "end";
             const tMax = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            tMax.setAttribute("x", xText); tMax.setAttribute("y", padT + 10);
-            tMax.setAttribute("text-anchor", anchor);
-            tMax.setAttribute("fill", m.color);
-            tMax.setAttribute("class", "axis-text");
-            tMax.textContent = Math.round(maxVal);
-            svg.appendChild(tMax);
-            
+            tMax.setAttribute("x", xText); tMax.setAttribute("y", padT + 10); tMax.setAttribute("text-anchor", anchor); tMax.setAttribute("fill", m.color); tMax.setAttribute("class", "axis-text"); tMax.textContent = Math.round(displayedMax); svg.appendChild(tMax);
             const tMin = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            tMin.setAttribute("x", xText); tMin.setAttribute("y", H - padB - 10);
-            tMin.setAttribute("text-anchor", anchor);
-            tMin.setAttribute("fill", m.color);
-            tMin.setAttribute("class", "axis-text");
-            tMin.textContent = Math.round(minVal);
-            svg.appendChild(tMin);
+            tMin.setAttribute("x", xText); tMin.setAttribute("y", H - padB - 10); tMin.setAttribute("text-anchor", anchor); tMin.setAttribute("fill", m.color); tMin.setAttribute("class", "axis-text"); tMin.textContent = Math.round(displayedMin); svg.appendChild(tMin);
         });
     }
 
@@ -1090,124 +990,124 @@
         element.addEventListener('mousedown', e => {
             graphState.isDragging = true;
             graphState.lastMouseX = e.clientX;
+            graphState.lastMouseY = e.clientY;
             element.style.cursor = 'grabbing';
         });
-        window.addEventListener('mouseup', () => {
-            graphState.isDragging = false;
-            element.style.cursor = 'grab';
-        });
+        window.addEventListener('mouseup', () => { graphState.isDragging = false; element.style.cursor = 'grab'; });
         window.addEventListener('mousemove', e => {
             if (!graphState.isDragging) return;
             const dx = e.clientX - graphState.lastMouseX;
+            const dy = e.clientY - graphState.lastMouseY;
             graphState.lastMouseX = e.clientX;
-            const sensitivity = 0.5 * graphState.zoomLevel;
-            graphState.scrollOffset += dx * sensitivity * -1;
+            graphState.lastMouseY = e.clientY;
             
-            if(isSingle) drawCombinedGraph(ui.singleChart, graphState.data, true);
-            else renderMainGraph();
+            // Punkt 3: Zoom Mode Switch
+            if (graphState.zoomMode === 'x') {
+                const sensitivity = 0.5 * graphState.zoomLevel;
+                graphState.scrollOffset += dx * sensitivity * -1;
+            } else {
+                // Y Pan (Flytta värden upp/ner)
+                // En pixel musrörelse motsvarar X enheter på Y-axeln?
+                // Vi drar neråt -> Grafen ska uppåt -> värdena minskar?
+                // Nej, dra uppåt -> vi vill se högre värden -> offset ökar.
+                graphState.yOffset += dy * 0.5; 
+            }
+            if(isSingle) drawCombinedGraph(ui.singleChart, graphState.data, true); else renderMainGraph();
         });
         element.addEventListener('wheel', e => {
             e.preventDefault();
             const delta = Math.sign(e.deltaY);
-            if (e.shiftKey) {
-                if (delta > 0) graphState.zoomLevelY *= 0.9; else graphState.zoomLevelY *= 1.1;
-                if(graphState.zoomLevelY < 0.1) graphState.zoomLevelY = 0.1;
-            } else {
+            if (graphState.zoomMode === 'x') {
                 if (delta > 0) graphState.zoomLevel *= 1.1; else graphState.zoomLevel *= 0.9;
                 if (graphState.zoomLevel < 0.1) graphState.zoomLevel = 0.1;
+            } else {
+                // Y Zoom (Amplitude)
+                if (delta > 0) graphState.zoomLevelY *= 0.9; else graphState.zoomLevelY *= 1.1; // Invert logic for feel
+                if (graphState.zoomLevelY < 0.1) graphState.zoomLevelY = 0.1;
             }
-            if(isSingle) drawCombinedGraph(ui.singleChart, graphState.data, true);
-            else renderMainGraph();
+            if(isSingle) drawCombinedGraph(ui.singleChart, graphState.data, true); else renderMainGraph();
         });
     }
-    setupGestures(ui.graphWrapper, false);
-    setupGestures(ui.singleGraphWrapper, true); 
+    // Punkt 7: Switch listeners
+    window.setZoomMode = (mode, isSingle) => {
+        graphState.zoomMode = mode;
+        const p = isSingle ? 's' : '';
+        document.getElementById(`zX${p}`).classList.toggle('active', mode==='x');
+        document.getElementById(`zY${p}`).classList.toggle('active', mode==='y');
+    }
 
-    ui.graphRes.onchange = (e) => {
-        settings.graphRes = parseInt(e.target.value);
-        saveSettings();
-        updateAverages(); 
-        drawCombinedGraph(ui.chart, sessionData, false); 
-    };
-
-    ui.stopBtn.onclick = async () => {
-        if(confirm("Avsluta pass?")) {
-            await send(STOP_CMD);
-            const dist = parseFloat(ui.dist.textContent);
-            const cal = parseInt(ui.cal.textContent);
-            const dur = sessionData.length > 0 ? sessionData[sessionData.length-1].t : 0;
-            
-            history.sessions.push({
-                date: new Date().toISOString(),
-                dist: dist, dur: dur, cal: cal,
-                data: sessionData
-            });
-            history.totalDist += dist;
-            history.totalTime += dur;
-            saveHistoryFile();
-            onDisconnect();
+    // Custom Avg Logic
+    window.calculateCustomAvg = () => {
+        const startStr = document.getElementById('avgStart').value;
+        const endStr = document.getElementById('avgEnd').value;
+        if(!startStr || !endStr) return;
+        
+        function parseT(s) {
+            const parts = s.split(':').map(Number);
+            if(parts.length===3) return parts[0]*3600 + parts[1]*60 + parts[2];
+            if(parts.length===2) return parts[0]*60 + parts[1];
+            if(parts.length===1) return parts[0];
+            return 0;
         }
+        const t1 = parseT(startStr);
+        const t2 = parseT(endStr);
+        if(t2 <= t1) { ui.avgResultS.textContent = "Fel tid"; return; }
+        
+        let sumW = 0, count = 0;
+        // graphState.data contains the session data when modal is open
+        graphState.data.forEach(p => {
+             if(p.t >= t1 && p.t <= t2) { sumW += p.w; count++; }
+        });
+        const avg = count ? Math.round(sumW/count) : 0;
+        ui.avgResultS.textContent = avg + " W";
     };
 
+    setupGestures(ui.graphWrapper, false);
+    setupGestures(ui.singleGraphWrapper, true);
+    ui.graphRes.onchange = (e) => { settings.graphRes = parseInt(e.target.value); saveSettings(); updateAverages(); renderMainGraph(); };
+    ui.stopBtn.onclick = async () => { if(confirm("Avsluta pass?")) { await send(STOP_CMD); const d = parseFloat(ui.dist.textContent); const cal = parseInt(ui.cal.textContent); const dur = sessionData.length > 0 ? sessionData[sessionData.length-1].t : 0; history.sessions.push({ date: new Date().toISOString(), dist: d, dur: dur, cal: cal, data: sessionData }); history.totalDist += d; history.totalTime += dur; saveHistoryFile(); onDisconnect(); } };
     ui.statsBtn.onclick = () => { ui.statsModal.classList.add('open'); renderStats(); };
-
-    let deleteConfirmCount = 0;
     ui.btnDeleteAll.onclick = () => {
         deleteConfirmCount++;
-        if(deleteConfirmCount === 1) ui.btnDeleteAll.textContent = "SÄKER?";
-        else if(deleteConfirmCount === 2) ui.btnDeleteAll.textContent = "VERKLIGEN?";
-        else {
-            localStorage.clear();
-            history = { sessions: [], totalDist: 0, totalTime: 0, settings: settings };
-            renderStats();
-            updateHistoryUI();
-            ui.btnDeleteAll.textContent = "RADERAT";
-            setTimeout(() => { 
-                ui.btnDeleteAll.textContent = "RADERA ALLT"; 
-                deleteConfirmCount = 0; 
-            }, 2000);
-        }
+        if(deleteConfirmCount===1) ui.btnDeleteAll.textContent="SÄKER?";
+        else if(deleteConfirmCount===2) ui.btnDeleteAll.textContent="VERKLIGEN?";
+        else { localStorage.clear(); history={sessions:[],totalDist:0,totalTime:0,settings:settings}; renderStats(); updateHistoryUI(); ui.btnDeleteAll.textContent="RADERAT"; setTimeout(()=>{ui.btnDeleteAll.textContent="RADERA ALLT";deleteConfirmCount=0;},2000); }
     };
+    let deleteConfirmCount = 0;
 
+    // Punkt 2: Power Curve Windows
+    const PC_WINS = [1, 2, 5, 10, 20, 30, 60, 120, 300, 600, 900, 1200, 1800, 3600, 5400, 7200, 10800];
     window.showPowerCurve = () => {
-        const windows = [1, 2, 5, 10, 20, 30, 60, 120, 300, 600, 1200, 1800, 3600];
         const records = {};
-        
         history.sessions.forEach(sess => {
             const data = sess.data;
             if(!data || data.length < 2) return;
-            windows.forEach(win => {
+            PC_WINS.forEach(win => {
                 let maxAvg = 0;
                 for(let i=0; i < data.length - win; i++) {
-                    let sum = 0;
-                    for(let k=0; k<win; k++) sum += data[i+k].w;
-                    const avg = sum/win;
-                    if(avg > maxAvg) maxAvg = avg;
+                    let sum = 0; for(let k=0; k<win; k++) sum += data[i+k].w;
+                    const avg = sum/win; if(avg > maxAvg) maxAvg = avg;
                 }
                 if(!records[win] || maxAvg > records[win]) records[win] = maxAvg;
             });
         });
-        
-        ui.powerBody.innerHTML = windows.map(w => {
-            const timeLbl = w < 60 ? w+"s" : (w/60)+"m";
+        ui.powerBody.innerHTML = PC_WINS.map(w => {
+            let lbl = w+" s";
+            if(w>=60) lbl = (w/60)+" min";
+            if(w>=3600) lbl = (w/3600)+" h";
+            if(w===5400) lbl = "1 h 30 min";
             const rec = records[w] ? Math.round(records[w]) : "-";
-            return `<tr><td>${timeLbl}</td><td>-</td><td>${rec}</td></tr>`;
+            return `<tr><td>${lbl}</td><td>-</td><td>${rec}</td></tr>`;
         }).join('');
-        
         ui.powerModal.classList.add('open');
     }
 
-    let sortCol = 'date', sortAsc = false;
-
+    let sortCol='date', sortAsc=false;
     function renderStats() {
         const yF = ui.fYear.value;
         const years = [...new Set(history.sessions.map(s => new Date(s.date).getFullYear()))].sort().reverse();
-        if(ui.fYear.children.length === 1) {
-            years.forEach(y => ui.fYear.add(new Option(y, y)));
-            for(let i=1; i<=32; i++) ui.fRes.add(new Option("Innehåller Nivå " + i, i));
-            for(let i=0; i<12; i++) ui.fMonth.add(new Option(new Date(0,i).toLocaleString('sv',{month:'long'}), i));
-        }
-
+        if(ui.fYear.children.length === 1) years.forEach(y => ui.fYear.add(new Option(y, y)));
+        
         const mF = ui.fMonth.value;
         const rF = ui.fRes.value;
 
@@ -1223,9 +1123,7 @@
         filtered.forEach(s => {
             tDist += s.dist; tTime += s.dur; tCal += s.cal;
             s.data.forEach(p => {
-                sWatt+=p.w; sSpd+=p.s; sCad+=p.c;
-                if(p.h>0) sHr+=p.h;
-                pts++;
+                sWatt+=p.w; sSpd+=p.s; sCad+=p.c; if(p.h>0) sHr+=p.h; pts++;
             });
         });
         
@@ -1240,15 +1138,13 @@
         `;
         ui.totalBot.innerHTML = `
             <div class="stat-card-small"><span class="sc-val c-speed">${avgF(sSpd)}</span><span class="sc-lbl">Medelfart</span></div>
-            <div class="stat-card-small"><span class="sc-val c-watt">${avg(sWatt)}</span><span class="sc-lbl">Medelwatt</span></div>
+            <div class="stat-card-small"><span class="sc-val c-watt">${avg(sWatt)}</span><span class="sc-lbl">Medeleffekt</span></div>
             <div class="stat-card-small"><span class="sc-val c-cad">${avg(sCad)}</span><span class="sc-lbl">Medelkadens</span></div>
             <div class="stat-card-small"><span class="sc-val c-hr">${avg(sHr)}</span><span class="sc-lbl">Medelpuls</span></div>
         `;
 
         const arrow = sortAsc ? ' ↑' : ' ↓';
-        ['date','dur','dist','speed','watt','cad','hr','cal'].forEach(k => {
-            document.getElementById('sort_'+k).textContent = (sortCol === k) ? arrow : '';
-        });
+        ['date','dur','dist','speed','watt','cad','hr','cal'].forEach(k => document.getElementById('sort_'+k).textContent = (sortCol === k) ? arrow : '');
 
         filtered.sort((a,b) => {
             const getAvg = (s,k) => s.data.reduce((ac,v)=>ac+v[k],0)/s.data.length||0;
@@ -1295,23 +1191,9 @@
         const s = history.sessions[idx];
         ui.singleTitle.textContent = "PASS: " + new Date(s.date).toLocaleString();
         ui.singleModal.classList.add('open');
-        graphState.data = s.data;
-        graphState.scrollOffset = 0; 
+        graphState.data = s.data; graphState.scrollOffset = 0; graphState.yOffset = 0;
         setTimeout(() => { drawCombinedGraph(ui.singleChart, s.data, true); }, 100);
     };
-
-    window.calculateZoneSingle = () => {
-        if (!graphState.data) return;
-        const key = document.getElementById('zoneMetricS').value;
-        const min = parseFloat(document.getElementById('zoneMinS').value);
-        const max = parseFloat(document.getElementById('zoneMaxS').value);
-        let totalT = 0;
-        for(let i=1; i<graphState.data.length; i++) {
-             const p = graphState.data[i];
-             if(p[key]>=min && p[key]<=max) totalT += (p.t - graphState.data[i-1].t);
-        }
-        document.getElementById('zoneResultS').textContent = formatDurationLong(totalT);
-    }
 
     [ui.fYear, ui.fMonth, ui.fRes].forEach(el => el.onchange = renderStats);
 
