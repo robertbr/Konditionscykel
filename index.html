@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gymstick Pro Monitor v10.1</title>
+    <title>Gymstick Pro Monitor v10.2</title>
     <style>
         :root {
             /* --- LIGHT MODE VARIABLER --- */
@@ -350,12 +350,6 @@
         <div class="graph-wrapper" id="graphContainer">
             <svg id="chartSvg" viewBox="0 0 1000 400" preserveAspectRatio="none"></svg>
         </div>
-
-        <div class="footer-stats">
-            <div>Totalt: <span class="footer-val c-dist" id="lifeDist">0.000 km</span></div>
-            <div>Tid: <span class="footer-val" id="lifeTime">0h 0m</span></div>
-            <div>Pass: <span class="footer-val" id="sessCount">0</span></div>
-        </div>
     </div>
 </div>
 
@@ -554,7 +548,7 @@
     const SEQ = [
         { bytes: [0xF0, 0xA0, 0x01, 0x01, 0x92], expect: 0xB0 },
         { bytes: [0xF0, 0xA3, 0x01, 0x01, 0x01, 0x96], expect: 0xB3 },
-        { bytes: [0xF0, 0xA4, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xA0], expect: 0xB4 },
+        { bytes: [0xF0, 0xA4, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xA0], expect: 0xB4 },
         { bytes: [0xF0, 0xA5, 0x01, 0x01, 0x02, 0x99], expect: 0xB5 }
     ];
     let seqIndex = 0;
@@ -602,10 +596,7 @@
     }
     
     function updateHistoryUI(currDist = 0) {
-        const totD = history.totalDist + currDist;
-        ui.lifeDist.textContent = totD.toFixed(3) + " km";
-        ui.sessCount.textContent = history.sessions.length;
-        ui.lifeTime.textContent = formatDurationLong(history.totalTime);
+        // UI Uppdateras endast i Stats, men vi kan ha dem här ifall vi vill visa i panel
     }
     updateHistoryUI();
 
@@ -619,10 +610,10 @@
     ];
     
     const METRICS = [
-        { key: 'w', title: 'EFFEKT', color: 'var(--c-watt)' },
-        { key: 's', title: 'HASTIGHET', color: 'var(--c-speed)' },
-        { key: 'c', title: 'KADENS', color: 'var(--c-cad)' },
-        { key: 'h', title: 'PULS', color: 'var(--c-hr)' }
+        { key: 'w', title: 'EFFEKT', color: 'var(--c-watt)', defMax:400 },
+        { key: 's', title: 'HASTIGHET', color: 'var(--c-speed)', defMax:40 },
+        { key: 'c', title: 'KADENS', color: 'var(--c-cad)', defMax:120 },
+        { key: 'h', title: 'PULS', color: 'var(--c-hr)', defMax:180 }
     ];
 
     function initConfigGrid() {
