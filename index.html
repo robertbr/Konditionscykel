@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gymstick Pro Monitor v7.0</title>
+    <title>Gymstick Pro Monitor v8.0</title>
     <style>
         :root {
-            --bg-color: #151525;
-            --panel-bg: #1e1e2f;
-            --border-color: #2d2d44;
+            --bg-color: #121212;
+            --panel-bg: #1b1b1b;
+            --border-color: #2d2d2d;
             --text-main: #e0e0e0;
             --text-dim: #888;
             
@@ -34,23 +34,22 @@
             display: flex; flex-direction: column; overflow: hidden;
         }
 
-        /* LAYOUT */
+        /* LAYOUT (Punkt 3: Justerad bredd) */
         .main-container {
             display: grid; gap: 20px; flex: 1; overflow: hidden;
-            grid-template-columns: 400px 1fr;
+            grid-template-columns: 360px 1fr; /* Något smalare vänster, mer plats åt höger */
             grid-template-rows: 1fr;
             transition: all 0.3s ease;
         }
 
-        /* Punkt 4: Layout-switch (Full width) */
         .main-container.full-mode {
             grid-template-columns: 1fr;
-            max-width: 600px;
+            max-width: 500px;
             margin: 0 auto;
         }
         .main-container.full-mode .panel-right { display: none; }
 
-        @media (max-width: 1000px) {
+        @media (max-width: 900px) {
             .main-container { grid-template-columns: 1fr; grid-template-rows: auto 1fr; overflow-y: auto; }
             body { overflow-y: auto; height: auto; }
         }
@@ -87,18 +86,33 @@
         .live-lbl { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 2px; font-weight: 600; }
         .live-val { font-size: 2.2rem; font-weight: 700; line-height: 1; }
 
-        .btn-action {
-            background: var(--c-dist); color: #fff; border: none; padding: 16px; border-radius: 8px;
-            font-weight: 700; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 1rem;
-            margin-top: 10px; box-shadow: 0 4px 15px rgba(41, 121, 255, 0.3); transition: transform 0.1s;
-        }
-        .btn-action:hover { transform: translateY(-1px); filter: brightness(1.1); }
-        .btn-stop { background: var(--c-watt); box-shadow: 0 4px 15px rgba(245, 0, 87, 0.3); display: none; }
-        .btn-layout { background: transparent; border: 1px solid var(--border-color); color: var(--text-dim); padding: 10px; border-radius: 8px; cursor: pointer; margin-top: auto; }
-        .btn-layout:hover { background: var(--border-color); color: #fff; }
-
-        .progress-box { height: 6px; background: #111; margin-top: 15px; border-radius: 3px; overflow: hidden; display: none; }
+        .progress-box { height: 6px; background: #111; margin-top: 10px; border-radius: 3px; overflow: hidden; display: none; }
         .progress-fill { height: 100%; background: var(--c-speed); width: 0%; transition: width 0.3s; }
+
+        /* NYTT KNAPP-RUTNÄT (Punkt 2) */
+        .control-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: auto;
+        }
+        
+        .btn-ctrl {
+            background: transparent; border: 1px solid var(--border-color); color: var(--text-dim);
+            padding: 12px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 600;
+            text-transform: uppercase; transition: 0.2s;
+        }
+        .btn-ctrl:hover { background: var(--border-color); color: #fff; }
+
+        .btn-main {
+            grid-column: span 2; /* Full bredd */
+            background: var(--c-dist); color: #fff; border: none; padding: 16px; border-radius: 8px;
+            font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 1rem;
+            box-shadow: 0 4px 15px rgba(41, 121, 255, 0.3); transition: transform 0.1s;
+        }
+        .btn-main:hover { transform: translateY(-1px); filter: brightness(1.1); }
+        .btn-stop { background: var(--c-watt); box-shadow: 0 4px 15px rgba(245, 0, 87, 0.3); display: none; }
+
 
         /* HÖGER PANEL */
         .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 10px; }
@@ -109,7 +123,6 @@
         .config-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 2px; }
         .config-title { font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; text-transform: uppercase; }
         
-        /* Punkt 5: Checkboxar under varandra */
         .config-opts { display: flex; flex-direction: column; gap: 2px; font-size: 0.7rem; color: #666; }
         .chk { transform: scale(1.2); cursor: pointer; }
         
@@ -121,47 +134,56 @@
         .single-mode .avg-row:first-child { height: auto; margin-top: 8px; }
         .single-mode select.tiny-select { font-size: 0.8rem; width: auto; background: transparent; border: none; }
 
-        /* Punkt 2 & 3: Stacked Graphs Container */
+        /* AXEL INSTÄLLNINGAR */
+        .axis-settings {
+            display: none; position: absolute; top: 35px; right: 10px; background: #1a1a2e; border: 1px solid #555;
+            padding: 10px; z-index: 10; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); width: 180px;
+        }
+        .axis-settings.show { display: block; }
+        .as-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 0.8rem;}
+        .as-inp { width: 50px; background: #000; border: 1px solid #444; color: #fff; font-family: monospace; }
+        .btn-gear { background: transparent; border: none; color: #666; cursor: pointer; font-size: 1rem; padding: 0 5px; }
+        .btn-gear:hover { color: #fff; }
+
+        /* STACKADE GRAFER (Punkt 8 & 9) */
         .graphs-stack {
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            min-height: 0; /* Important for flex child scrolling */
+            gap: 15px; /* Punkt 8: Mellanrum */
+            min-height: 0;
             background: #101015;
             border-radius: 12px;
             border: 1px solid var(--border-color);
-            padding: 10px;
+            padding: 15px 40px 15px 15px; /* Höger padding minskad, vänster ökad för text */
             overflow: hidden;
             position: relative;
             cursor: grab;
         }
         .graphs-stack:active { cursor: grabbing; }
 
-        /* Individuell Graf-ruta */
         .graph-slot {
             flex: 1;
             position: relative;
             min-height: 0;
             border-bottom: 1px solid #222;
+            padding-bottom: 5px;
         }
-        .graph-slot:last-child { border-bottom: none; }
+        .graph-slot:last-child { border-bottom: none; padding-bottom: 0; }
+        
         svg { width: 100%; height: 100%; display: block; overflow: visible; }
         
-        /* Axlar */
-        .axis-text { font-size: 10px; font-family: 'Consolas', monospace; font-weight: normal; dominant-baseline: middle; text-shadow: 0 0 2px #000; }
+        /* Punkt 10: X-axel */
+        .axis-text { font-size: 11px; font-family: 'Consolas', monospace; font-weight: bold; fill: #666; dominant-baseline: middle; }
+        .axis-text-x { font-size: 12px; fill: #fff; text-anchor: middle; } /* Vit text */
         .grid-line { stroke: #2a2a3a; stroke-width: 1; }
         .graph-line { fill: none; stroke-width: 1.5; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 
         .graph-controls { display: flex; justify-content: flex-end; gap: 10px; align-items: center; }
         select.main-select { background: #333; color: #fff; border: 1px solid #555; padding: 6px 12px; border-radius: 6px; }
 
-        .footer-stats { display: flex; justify-content: space-between; color: var(--text-dim); font-size: 0.75rem; margin-top: 5px; border-top: 1px solid var(--border-color); padding-top: 10px;}
-        .footer-val { color: var(--text-main); font-weight: bold; }
-
-        .file-controls { display: flex; gap: 10px; margin-top: 10px; }
-        .btn-sec { flex: 1; padding: 12px; background: transparent; border: 1px solid var(--border-color); color: var(--text-dim); border-radius: 8px; cursor: pointer; transition: 0.2s; font-size: 0.8rem; text-transform: uppercase; font-weight: 600;}
-        .btn-sec:hover { background: var(--border-color); color: #fff; }
+        .file-input-wrapper { position: relative; overflow: hidden; display: inline-block; width: 100%; height: 100%;}
+        .file-input-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
 
         /* STATISTIK MODAL */
         .modal {
@@ -264,15 +286,22 @@
             </div>
         </div>
 
-        <div style="margin-top:auto">
-            <div class="progress-box" id="progBox"><div class="progress-fill" id="progFill"></div></div>
-            <div id="statusText" style="text-align:center; font-size:0.75rem; color:var(--text-dim); margin:8px 0;"></div>
-            
-            <div style="display:flex; gap:10px;">
-                <button class="btn-layout" id="toggleLayout" title="Visa/Dölj Grafer">◨ LAYOUT</button>
-                <button class="btn-action" style="margin-top:0" id="connectBtn">ANSLUT</button>
-                <button class="btn-action btn-stop" style="margin-top:0" id="stopBtn">AVSLUTA</button>
+        <!-- PROGRESS BAR -->
+        <div class="progress-box" id="progBox"><div class="progress-fill" id="progFill"></div></div>
+        <div id="statusText" style="text-align:center; font-size:0.75rem; color:var(--text-dim); margin:8px 0;"></div>
+
+        <!-- NY KNAPP-LAYOUT (Punkt 2) -->
+        <div class="control-grid">
+            <button class="btn-ctrl" id="exportBtn">Spara</button>
+            <div class="file-input-wrapper btn-ctrl" style="text-align:center;">
+                <span style="pointer-events:none;">Ladda upp</span>
+                <input type="file" id="importFile" accept=".json">
             </div>
+            <button class="btn-ctrl" id="toggleLayout">◨ Layout</button>
+            <button class="btn-ctrl" id="statsBtn" style="color:var(--c-speed); border-color:var(--c-speed);">Statistik</button>
+            
+            <button class="btn-main" id="connectBtn">ANSLUT</button>
+            <button class="btn-main btn-stop" id="stopBtn">AVSLUTA</button>
         </div>
     </div>
 
@@ -297,22 +326,9 @@
             <!-- Skapas dynamiskt -->
         </div>
 
-        <!-- Punkt 2 & 3: Stacked Graphs Container -->
+        <!-- Punkt 8: Stacked Graphs Container -->
         <div class="graphs-stack" id="graphContainer">
             <!-- SVG slots injected here -->
-        </div>
-
-        <div class="footer-stats">
-            <div>Totalt: <span class="footer-val c-dist" id="lifeDist">0.000 km</span></div>
-            <div>Tid: <span class="footer-val" id="lifeTime">0h 0m</span></div>
-            <div>Pass: <span class="footer-val" id="sessCount">0</span></div>
-        </div>
-
-        <div class="file-controls">
-            <button class="btn-sec" id="exportBtn">Spara</button>
-            <button class="btn-sec" onclick="document.getElementById('importFile').click()">Ladda upp</button>
-            <input type="file" id="importFile" style="display:none" accept=".json">
-            <button class="btn-sec" id="statsBtn" style="border-color: var(--c-speed); color:var(--c-speed);">STATISTIK</button>
         </div>
 
     </div>
@@ -325,8 +341,8 @@
             <h2 style="margin:0; letter-spacing:1px; color:#fff;">STATISTIK</h2>
             <div>
                 <!-- Punkt 12: Effektkurva knapp -->
-                <button onclick="showPowerCurve()" class="btn-sec" style="margin-right:10px; width:auto;">VISA EFFEKTKURVA</button>
-                <button onclick="document.getElementById('statsModal').classList.remove('open')" style="width:auto; padding:10px 20px; background:transparent; border:1px solid #555; color:#fff; cursor:pointer;">STÄNG</button>
+                <button onclick="showPowerCurve()" class="btn-ctrl" style="margin-right:10px; width:auto; border-color:#555;">VISA EFFEKTKURVA</button>
+                <button onclick="document.getElementById('statsModal').classList.remove('open')" class="btn-ctrl" style="width:auto; border-color:#555;">STÄNG</button>
             </div>
         </div>
         <div class="modal-body">
@@ -370,7 +386,7 @@
     <div class="modal-content" style="max-width:95%; height:95%;">
         <div class="modal-header">
             <h3 style="margin:0" id="singleTitle">PASS</h3>
-            <button onclick="document.getElementById('singleModal').classList.remove('open')" style="width:auto; padding:5px 15px; background:transparent; border:1px solid #555; color:#fff; cursor:pointer;">X</button>
+            <button onclick="document.getElementById('singleModal').classList.remove('open')" class="btn-ctrl" style="width:auto; border-color:#555;">X</button>
         </div>
         <div class="modal-body" style="display:flex; flex-direction:column;">
             
@@ -401,7 +417,7 @@
     <div class="modal-content" style="max-width:600px; max-height:80%;">
         <div class="modal-header">
             <h3 style="margin:0">EFFEKTKURVA (Peak Power)</h3>
-            <button onclick="document.getElementById('powerModal').classList.remove('open')" style="width:auto; padding:5px 15px; background:transparent; border:1px solid #555; color:#fff; cursor:pointer;">X</button>
+            <button onclick="document.getElementById('powerModal').classList.remove('open')" class="btn-ctrl" style="width:auto; border-color:#555;">X</button>
         </div>
         <div class="modal-body">
             <p style="color:#888; font-size:0.8rem;">Högsta snitteffekt för olika tidsintervall.</p>
@@ -437,9 +453,6 @@
         graphContainer: document.getElementById('graphContainer'),
         graphRes: document.getElementById('graphRes'),
         configGrid: document.getElementById('configGrid'),
-        lifeDist: document.getElementById('lifeDist'),
-        lifeTime: document.getElementById('lifeTime'),
-        sessCount: document.getElementById('sessCount'),
         // Stats
         statsBtn: document.getElementById('statsBtn'),
         statsModal: document.getElementById('statsModal'),
@@ -471,11 +484,12 @@
     // Graf-state
     let graphState = {
         scrollOffset: 0, 
-        zoomLevel: 1.0,  
+        zoomLevel: 1.0, 
+        zoomLevelY: 1.0, // Punkt 6: Y-zoom
         isDragging: false,
         lastMouseX: 0,
         data: [],
-        yAxisState: {} // För anti-jitter { key: {max, min} }
+        yAxisState: {} 
     };
 
     const SEQ = [
@@ -489,20 +503,21 @@
     const STOP_CMD = [0xF0, 0xA5, 0x01, 0x01, 0x04, 0x9B];
 
     let history = JSON.parse(localStorage.getItem('gymstick_v6_history')) || { sessions: [], totalDist: 0, totalTime: 0 };
-    updateHistoryUI();
+    // Rensa gammalt skräp om nödvändigt i framtiden
 
     // --- CONFIG ---
+    // Punkt 4: 'm' istället för 'min'
     const TIME_OPTS = [
         {v:'graph', t:'Grafen'},
         {v:5, t:'5s'}, {v:10, t:'10s'}, {v:30, t:'30s'},
-        {v:60, t:'1m'}, {v:120, t:'2m'}, {v:300, t:'5m'},
-        {v:600, t:'10m'}, {v:1800, t:'30m'}, {v:3600, t:'1h'}, {v:-1, t:'Tot'}
+        {v:60, t:'1 m'}, {v:120, t:'2 m'}, {v:300, t:'5 m'},
+        {v:600, t:'10 m'}, {v:1800, t:'30 m'}, {v:3600, t:'1 h'}, {v:-1, t:'Tot'}
     ];
     const DEF_SELS = [60, 600, -1];
     
-    // Punkt 11: Defaults ranges
+    // Punkt 11: Defaults (Watt 200)
     const METRICS = [
-        { key: 'w', title: 'EFFEKT', color: 'var(--c-watt)', defMax:400 },
+        { key: 'w', title: 'EFFEKT', color: 'var(--c-watt)', defMax:200 },
         { key: 's', title: 'HASTIGHET', color: 'var(--c-speed)', defMax:40 },
         { key: 'c', title: 'KADENS', color: 'var(--c-cad)', defMax:120 },
         { key: 'h', title: 'PULS', color: 'var(--c-hr)', defMax:180 }
@@ -523,6 +538,7 @@
             hdr.innerHTML = `
                 <span class="config-title" style="color:${m.color}">
                     <input type="checkbox" id="chk_${m.key}" checked class="chk"> ${m.title}
+                    <button class="btn-gear" onclick="toggleAxisSettings('${m.key}')">⚙</button>
                 </span>
                 <div class="config-opts">
                     <label><input type="checkbox" data-key="${m.key}" data-rows="2"> 2</label>
@@ -530,6 +546,23 @@
                 </div>
             `;
             card.appendChild(hdr);
+            
+            // Axis settings panel
+            const axisPanel = document.createElement('div');
+            axisPanel.className = 'axis-settings';
+            axisPanel.innerHTML = `
+                <div class="as-row"><strong style="color:${m.color}">${m.title} SKALA</strong></div>
+                <div class="as-row">
+                    <label><input type="checkbox" checked id="auto_${m.key}"> Auto</label>
+                </div>
+                <div class="as-row">
+                    <span>Max:</span> <input type="number" id="max_${m.key}" value="${m.defMax}" class="as-inp">
+                </div>
+                <div class="as-row">
+                    <span>Min:</span> <input type="number" id="min_${m.key}" value="0" class="as-inp">
+                </div>
+            `;
+            card.appendChild(axisPanel);
 
             const avgCont = document.createElement('div');
             avgCont.className = 'avg-container';
@@ -585,8 +618,15 @@
                 };
             });
             document.getElementById(`chk_${m.key}`).onchange = renderMainGraph;
+            document.getElementById(`auto_${m.key}`).onchange = renderMainGraph;
         });
     }
+
+    window.toggleAxisSettings = (key) => {
+        const p = document.querySelector(`#avgs_${key}`).parentElement.querySelector('.axis-settings');
+        p.classList.toggle('show');
+    };
+
     initConfigGrid();
 
     document.getElementById('toggleLayout').onclick = () => {
@@ -621,7 +661,7 @@
     function onDisconnect() {
         ui.connStatus.textContent = "FRÅNKOPPLAD";
         ui.connStatus.style.color = "#555";
-        ui.connectBtn.style.display = 'block';
+        ui.connectBtn.style.display = 'grid'; // Grid för main button
         ui.stopBtn.style.display = 'none';
         ui.progBox.style.display = 'none';
         if(pollInterval) clearInterval(pollInterval);
@@ -655,7 +695,7 @@
         }
         const step = SEQ[seqIndex];
         ui.progFill.style.width = ((seqIndex / SEQ.length) * 100) + "%";
-        ui.statusText.textContent = "Init: " + step.name;
+        ui.statusText.textContent = "Initierar...";
         await send(step.bytes);
     }
 
@@ -715,7 +755,6 @@
                 if (!graphState.isDragging && graphState.scrollOffset <= 1) {
                     renderMainGraph(); 
                 }
-                updateHistoryUI(calcDist);
             }
         }
     }
@@ -761,25 +800,22 @@
         calc('w'); calc('s'); calc('c'); calc('h');
     }
 
-    // --- STACKED GRAPH ENGINE ---
+    // --- STACKED GRAPH ENGINE (Punkt 9 & 10) ---
     function renderMainGraph() {
         drawStackedGraphs(ui.graphContainer, sessionData, false);
     }
 
     function drawStackedGraphs(container, data, isStatic) {
-        // Hitta aktiva
         const active = [];
         if(document.getElementById('chk_w').checked) active.push(METRICS[0]);
         if(document.getElementById('chk_s').checked) active.push(METRICS[1]);
         if(document.getElementById('chk_c').checked) active.push(METRICS[2]);
         if(document.getElementById('chk_h').checked) active.push(METRICS[3]);
 
-        // Rensa vid tomt
         if(active.length === 0 || !data || data.length < 2) { 
             container.innerHTML = ''; return; 
         }
 
-        // Tidsfönster logic
         const resolution = parseInt(ui.graphRes.value);
         const visibleSeconds = 120 * resolution * graphState.zoomLevel;
         const latestTime = data[data.length-1].t;
@@ -788,11 +824,9 @@
         let startTimeView = endTime - visibleSeconds;
         if(startTimeView < 0 && !isStatic) startTimeView = 0;
 
-        // Filtrera data
         const visibleData = data.filter(p => p.t >= startTimeView && p.t <= endTime);
         if(visibleData.length < 2) { container.innerHTML=''; return; }
 
-        // Rita X-axel (gemensam)
         const timeSpan = endTime - startTimeView;
         let step = 60;
         if (timeSpan < 60) step = 10;
@@ -802,8 +836,6 @@
         else step = 600;
         const firstTick = Math.ceil(startTimeView / step) * step;
 
-        // Skapa/Uppdatera slots
-        // För prestanda: Vi bygger om HTML varje gång.
         container.innerHTML = '';
         
         active.forEach((m, idx) => {
@@ -811,67 +843,74 @@
             slot.className = 'graph-slot';
             slot.style.height = (100 / active.length) + '%';
             
-            // SVG setup
+            // Fix distortion: Get precise height
+            // We use 1000 width, but HEIGHT must match pixel height to avoid text stretch
+            // Approximation: 100 units height, but we use vector-effect for line
+            const W = 1000, H = 100;
+
             const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-            // width/height sköts av CSS 100%
-            
-            // Dimensioner för ritande (virtuellt 1000x100 enheter för enkelhet)
-            // Vi använder viewbox="0 0 1000 100"
-            svg.setAttribute("viewBox", "0 0 1000 100");
+            svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
             svg.setAttribute("preserveAspectRatio", "none");
             
-            const W = 1000, H = 100;
-            
-            // Y-axel Logik (Punkt 8 & 9)
             let maxInView = Math.max(...visibleData.map(d => d[m.key])) || 10;
             let minInView = Math.min(...visibleData.map(d => d[m.key])) || 0;
-            if(m.key==='h' && minInView===0) minInView=40; // Puls tweak
+            if(m.key==='h' && minInView===0) minInView=40;
 
-            // Anti-Jitter state
             let s = graphState.yAxisState[m.key];
+            const isAuto = document.getElementById(`auto_${m.key}`).checked;
+
+            if (isAuto) {
+                // Y-zoom (Punkt 6)
+                // We fake Y-zoom by shrinking the Range calculation
+                const factor = graphState.zoomLevelY; 
+                
+                // Adjust max/min based on factor. Factor 1 = normal. Factor 0.5 = Zoom in (less range)
+                // But normally zoom means seeing DETAILS, so range gets smaller?
+                // Let's implement Amplitude Zoom: Increasing factor increases Max value shown?
+                // No, "Zoom In" usually means showing smaller range.
+                
+                if (maxInView > s.curMax) s.curMax = maxInView * 1.1;
+                if (maxInView < s.curMax * 0.8) s.curMax = s.curMax * 0.95;
+                if (minInView < s.curMin) s.curMin = minInView * 0.9;
+                
+                if(s.curMax < m.defMax) s.curMax = m.defMax; 
+            } else {
+                s.curMax = parseFloat(document.getElementById(`max_${m.key}`).value);
+                s.curMin = parseFloat(document.getElementById(`min_${m.key}`).value);
+            }
             
-            // Expandera direkt
-            if(maxInView > s.curMax) s.curMax = maxInView * 1.1;
-            // Krymp långsamt
-            if(maxInView < s.curMax * 0.8) s.curMax = s.curMax * 0.95;
-            
-            // Min
-            if(minInView < s.curMin) s.curMin = minInView * 0.9;
-            if(minInView > s.curMin * 1.2 && s.curMin > 0) s.curMin = s.curMin * 1.05;
+            // Apply Manual Y Zoom on top of calculated values
+            let displayMax = s.curMax / graphState.zoomLevelY;
+            let displayMin = s.curMin; 
 
-            // Clamp defaults if empty
-            if(s.curMax < m.defMax) s.curMax = m.defMax; // Starta snyggt (Punkt 11)
+            const range = displayMax - displayMin;
 
-            const range = s.curMax - s.curMin;
-
-            // Grid & X-ticks
+            // X-Grid & Ticks
             for (let t = firstTick; t <= endTime; t += step) {
                 const x = ((t - startTimeView) / timeSpan) * W;
-                
                 const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
                 line.setAttribute("x1", x); line.setAttribute("x2", x);
                 line.setAttribute("y1", 0); line.setAttribute("y2", H);
                 line.setAttribute("class", "grid-line");
                 svg.appendChild(line);
 
-                // Rita tidstext ENDAST i sista grafen
+                // Punkt 10: X-axel text (vit, stor)
                 if(idx === active.length - 1) {
                    const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                   txt.setAttribute("x", x); txt.setAttribute("y", H - 2);
-                   txt.setAttribute("text-anchor", "middle");
-                   txt.setAttribute("class", "axis-text");
+                   txt.setAttribute("x", x); txt.setAttribute("y", H - 5);
+                   txt.setAttribute("class", "axis-text-x"); // Vit text
                    txt.textContent = formatTimeShort(t);
                    svg.appendChild(txt);
                 }
             }
 
-            // Rita Linje
+            // Line
             let pts = "";
             visibleData.forEach(d => {
                 const x = ((d.t - startTimeView) / timeSpan) * W;
                 const val = d[m.key];
-                const y = H - ((val - s.curMin) / range * H);
-                pts += `${x},${y} `;
+                const y = H - ((val - displayMin) / range * H);
+                if(y >= -100 && y <= H+100) pts += `${x},${y} `;
             });
             const poly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
             poly.setAttribute("points", pts);
@@ -879,21 +918,19 @@
             poly.setAttribute("class", "graph-line");
             svg.appendChild(poly);
 
-            // Rita Y-ticks (Max, Mid, Min)
-            const yTicks = [s.curMax, s.curMin + range/2, s.curMin];
+            // Punkt 5: Y-ticks (Bara Min/Max)
+            const yTicks = [displayMax, displayMin];
             yTicks.forEach(val => {
-                if(val < 0) return;
-                const y = H - ((val - s.curMin) / range * H);
-                // Rita grid line horisontell
+                const y = H - ((val - displayMin) / range * H);
+                // Gridline
                 const hLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
                 hLine.setAttribute("x1", 0); hLine.setAttribute("x2", W);
                 hLine.setAttribute("y1", y); hLine.setAttribute("y2", y);
                 hLine.setAttribute("class", "grid-line");
                 svg.appendChild(hLine);
-
-                // Text (vänster)
+                // Text
                 const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                txt.setAttribute("x", 5); txt.setAttribute("y", y - 2);
+                txt.setAttribute("x", 5); txt.setAttribute("y", y - 3);
                 txt.setAttribute("fill", m.color);
                 txt.setAttribute("class", "axis-text");
                 txt.textContent = Math.round(val);
@@ -922,23 +959,28 @@
             graphState.lastMouseX = e.clientX;
             const sensitivity = 0.5 * graphState.zoomLevel;
             graphState.scrollOffset += dx * sensitivity * -1;
-            
-            // Rita om rätt graf
             if(isSingle) drawStackedGraphs(ui.singleGraphStack, graphState.data, true);
             else renderMainGraph();
         });
         element.addEventListener('wheel', e => {
             e.preventDefault();
             const delta = Math.sign(e.deltaY);
-            if (delta > 0) graphState.zoomLevel *= 1.1; else graphState.zoomLevel *= 0.9;
-            if (graphState.zoomLevel < 0.1) graphState.zoomLevel = 0.1;
             
+            // Punkt 6: Y-zoom med SHIFT
+            if (e.shiftKey) {
+                if (delta > 0) graphState.zoomLevelY *= 0.9; else graphState.zoomLevelY *= 1.1;
+                if(graphState.zoomLevelY < 0.1) graphState.zoomLevelY = 0.1;
+            } else {
+                if (delta > 0) graphState.zoomLevel *= 1.1; else graphState.zoomLevel *= 0.9;
+                if (graphState.zoomLevel < 0.1) graphState.zoomLevel = 0.1;
+            }
+
             if(isSingle) drawStackedGraphs(ui.singleGraphStack, graphState.data, true);
             else renderMainGraph();
         });
     }
     setupGestures(ui.graphContainer, false);
-    setupGestures(ui.singleGraphStack, true); // Punkt 6
+    setupGestures(ui.singleGraphStack, true); 
 
     ui.graphRes.onchange = renderMainGraph;
 
@@ -961,21 +1003,14 @@
         }
     };
 
-    function updateHistoryUI(currDist = 0) {
-        const totD = history.totalDist + currDist;
-        ui.lifeDist.textContent = totD.toFixed(3) + " km";
-        ui.sessCount.textContent = history.sessions.length;
-        ui.lifeTime.textContent = formatDurationLong(history.totalTime);
-    }
-
     function formatDurationLong(sec) {
         const d = Math.floor(sec / 86400);
         const h = Math.floor((sec % 86400) / 3600);
         const m = Math.floor((sec % 3600) / 60);
         let s = "";
-        if(d>0) s += d + "d ";
-        if(h>0) s += h + "h ";
-        s += m + "m";
+        if(d>0) s += d + " d ";
+        if(h>0) s += h + " h ";
+        s += m + " m"; // Punkt 4
         return s;
     }
     function formatTimeShort(sec) {
@@ -984,38 +1019,26 @@
         return `${m}:${s.toString().padStart(2,'0')}`;
     }
 
-    function saveHistory() { localStorage.setItem('gymstick_v7_history', JSON.stringify(history)); updateHistoryUI(); }
+    function saveHistory() { localStorage.setItem('gymstick_v7_history', JSON.stringify(history)); }
 
     // --- STATISTIK ---
     ui.statsBtn.onclick = () => { ui.statsModal.classList.add('open'); renderStats(); };
 
-    // Punkt 12: Peak Power
     window.showPowerCurve = () => {
-        // Använd nuvarande filtrering eller valt pass
-        // För enkelhet: Visa rekord från alla pass
-        
-        // Tidsintervall (sekunder)
         const windows = [1, 2, 5, 10, 20, 30, 60, 120, 300, 600, 1200, 1800, 3600];
         const records = {};
         
-        // Gå igenom all historik
         history.sessions.forEach(sess => {
             const data = sess.data;
             if(!data || data.length < 2) return;
-            
-            // För varje fönsterstorlek
             windows.forEach(win => {
                 let maxAvg = 0;
-                // Rullande medelvärde
-                // Optimering: Eftersom data är ca 1Hz, använd index
                 for(let i=0; i < data.length - win; i++) {
-                    // Summa
                     let sum = 0;
                     for(let k=0; k<win; k++) sum += data[i+k].w;
                     const avg = sum/win;
                     if(avg > maxAvg) maxAvg = avg;
                 }
-                
                 if(!records[win] || maxAvg > records[win]) records[win] = maxAvg;
             });
         });
@@ -1127,15 +1150,9 @@
         const s = history.sessions[idx];
         ui.singleTitle.textContent = "PASS: " + new Date(s.date).toLocaleString();
         ui.singleModal.classList.add('open');
-        
-        // Sätt data till global state för ritning
         graphState.data = s.data;
         graphState.scrollOffset = 0; 
-        
-        // Rita stackade grafer för passet
-        setTimeout(() => {
-             drawStackedGraphs(ui.singleGraphStack, s.data, true); 
-        }, 100);
+        setTimeout(() => { drawStackedGraphs(ui.singleGraphStack, s.data, true); }, 100);
     };
 
     window.calculateZoneSingle = () => {
@@ -1143,9 +1160,6 @@
         const key = document.getElementById('zoneMetricS').value;
         const min = parseFloat(document.getElementById('zoneMinS').value);
         const max = parseFloat(document.getElementById('zoneMaxS').value);
-        let pts = 0;
-        // Approximation: Varje punkt är 1 sek (beror på sändning)
-        // Bättre: summera dt
         let totalT = 0;
         for(let i=1; i<graphState.data.length; i++) {
              const p = graphState.data[i];
