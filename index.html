@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gymstick Pro Monitor v5.0</title>
+    <title>Gymstick Pro Monitor v6.0</title>
     <style>
         :root {
-            /* Mörkblått tema */
             --bg-color: #151525;
             --panel-bg: #1e1e2f;
             --border-color: #2d2d44;
@@ -24,68 +23,44 @@
         }
 
         html { font-size: 14px; }
+        * { box-sizing: border-box; }
 
         body { 
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
             background: var(--bg-color); 
             color: var(--text-main);
-            margin: 0; 
-            padding: 15px;
+            margin: 0; padding: 15px;
             height: 100vh;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            display: flex; flex-direction: column; overflow: hidden;
         }
 
-        /* --- LAYOUT --- */
+        /* LAYOUT */
         .main-container {
-            display: grid;
-            gap: 20px;
-            flex: 1;
-            overflow: hidden;
+            display: grid; gap: 20px; flex: 1; overflow: hidden;
             grid-template-columns: 400px 1fr;
             grid-template-rows: 1fr;
         }
 
         @media (max-width: 1000px) {
-            .main-container {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto 1fr;
-                overflow-y: auto;
-            }
+            .main-container { grid-template-columns: 1fr; grid-template-rows: auto 1fr; overflow-y: auto; }
             body { overflow-y: auto; height: auto; }
         }
 
         .panel {
-            background: var(--panel-bg);
-            border-radius: 16px;
-            border: 1px solid var(--border-color);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            overflow-y: auto;
+            background: var(--panel-bg); border-radius: 16px; border: 1px solid var(--border-color);
+            padding: 20px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto;
             box-shadow: 0 10px 40px rgba(0,0,0,0.4);
         }
 
-        /* --- VÄNSTER PANEL (LIVE) --- */
-        .header-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            text-align: center;
-            border-bottom: 2px solid var(--border-color);
-            padding-bottom: 15px;
-            align-items: center;
-        }
+        /* VÄNSTER PANEL */
+        .header-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; text-align: center; border-bottom: 2px solid var(--border-color); padding-bottom: 15px; align-items: center; }
         .h-item h3 { margin: 0; font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
         .val-big { font-size: 2.2rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
         
         .res-ctrl { display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-round {
             width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--border-color);
-            background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; display:grid; place-items:center; font-size: 1.4rem; line-height: 1;
-            transition: 0.2s;
+            background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; display:grid; place-items:center; font-size: 1.4rem; line-height: 1; transition: 0.2s;
         }
         .btn-round:hover { background: #333; border-color: #555; }
 
@@ -95,10 +70,8 @@
 
         .live-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .live-card { 
-            background: rgba(20, 20, 35, 0.6); 
-            padding: 12px; border-radius: 12px; 
-            text-align: center; 
-            display: flex; flex-direction: column; justify-content: center; 
+            background: rgba(20, 20, 35, 0.6); padding: 12px; border-radius: 12px; 
+            text-align: center; display: flex; flex-direction: column; justify-content: center; 
             border: 1px solid var(--border-color);
         }
         .live-lbl { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 2px; font-weight: 600; }
@@ -107,8 +80,7 @@
         .btn-action {
             background: var(--c-dist); color: #fff; border: none; padding: 16px; border-radius: 8px;
             font-weight: 700; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 1rem;
-            margin-top: auto; box-shadow: 0 4px 15px rgba(41, 121, 255, 0.3);
-            transition: transform 0.1s;
+            margin-top: auto; box-shadow: 0 4px 15px rgba(41, 121, 255, 0.3); transition: transform 0.1s;
         }
         .btn-action:hover { transform: translateY(-1px); filter: brightness(1.1); }
         .btn-stop { background: var(--c-watt); box-shadow: 0 4px 15px rgba(245, 0, 87, 0.3); display: none; }
@@ -116,20 +88,11 @@
         .progress-box { height: 6px; background: #111; margin-top: 15px; border-radius: 3px; overflow: hidden; display: none; }
         .progress-fill { height: 100%; background: var(--c-speed); width: 0%; transition: width 0.3s; }
 
-        /* --- HÖGER PANEL (ANALYS) --- */
-        
-        .config-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 12px;
-        }
+        /* HÖGER PANEL */
+        .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
         .config-card {
-            background: rgba(0,0,0,0.2);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 10px;
-            display: flex; flex-direction: column; gap: 5px;
-            transition: all 0.2s;
+            background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: 10px;
+            padding: 10px; display: flex; flex-direction: column; gap: 5px; transition: all 0.2s; position: relative;
         }
         .config-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 2px; }
         .config-title { font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; text-transform: uppercase; }
@@ -137,37 +100,40 @@
         
         .avg-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; min-height: 22px;}
         .avg-val { font-weight: bold; font-family: monospace; font-size: 1rem; }
-        select.tiny-select {
-            background: #222; color: #aaa; border: 1px solid #444; font-size: 0.75rem; padding: 2px; width: 70px; border-radius: 4px; cursor: pointer;
-        }
+        select.tiny-select { background: #222; color: #aaa; border: 1px solid #444; font-size: 0.75rem; padding: 2px; width: 70px; border-radius: 4px; cursor: pointer; }
         
         .single-mode .avg-row:first-child .avg-val { font-size: 2.2rem; line-height: 1; }
         .single-mode .avg-row:first-child { height: auto; margin-top: 8px; }
         .single-mode select.tiny-select { font-size: 0.8rem; width: auto; background: transparent; border: none; }
 
-        /* PROFFSIGA GRAFER */
-        .graph-wrapper {
-            flex: 1;
-            min-height: 350px;
-            background: #12121a; /* Mörkare bakgrund för kontrast */
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            position: relative;
-            padding: 20px; /* Mer utrymme */
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        /* AXEL INSTÄLLNINGAR (Y-AXIS SETTINGS) */
+        .axis-settings {
+            display: none; position: absolute; top: 35px; right: 10px; background: #1a1a2e; border: 1px solid #555;
+            padding: 10px; z-index: 10; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); width: 180px;
         }
-        svg { width: 100%; height: 100%; overflow: visible; }
+        .axis-settings.show { display: block; }
+        .as-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 0.8rem;}
+        .as-inp { width: 50px; background: #000; border: 1px solid #444; color: #fff; font-family: monospace; }
+        .btn-gear { background: transparent; border: none; color: #666; cursor: pointer; font-size: 1rem; padding: 0 5px; }
+        .btn-gear:hover { color: #fff; }
+
+        /* GRAF (SCROLLING ENGINE) */
+        .graph-wrapper {
+            flex: 1; min-height: 350px; background: #12121a; border-radius: 12px;
+            border: 1px solid var(--border-color); position: relative; overflow: hidden; cursor: grab;
+        }
+        .graph-wrapper:active { cursor: grabbing; }
+        svg { width: 100%; height: 100%; display: block; }
         
-        /* Punkt 7: Mycket tunnare linjer */
-        polyline { fill: none; stroke-width: 0.8; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
-        
-        /* Punkt 8: Skalor och Text */
-        .axis-text { font-size: 10px; font-family: 'Consolas', monospace; fill: #666; dominant-baseline: middle; }
-        .axis-line { stroke: #333; stroke-width: 1; }
-        .grid-line { stroke: #222; stroke-width: 1; stroke-dasharray: 2; }
+        .axis-text { font-size: 10px; font-family: 'Consolas', monospace; font-weight: normal; dominant-baseline: middle; }
+        .grid-line { stroke: #2a2a3a; stroke-width: 1; }
+        .graph-line { fill: none; stroke-width: 0.8; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 
         .graph-controls { display: flex; justify-content: flex-end; gap: 10px; align-items: center; }
         select.main-select { background: #333; color: #fff; border: 1px solid #555; padding: 6px 12px; border-radius: 6px; }
+
+        .zone-analysis { margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.9rem; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;}
+        .zone-res { font-weight: bold; color: var(--c-speed); margin-left: auto;}
 
         .footer-stats { display: flex; justify-content: space-between; color: var(--text-dim); font-size: 0.75rem; margin-top: 5px; border-top: 1px solid var(--border-color); padding-top: 10px;}
         .footer-val { color: var(--text-main); font-weight: bold; }
@@ -176,11 +142,11 @@
         .btn-sec { flex: 1; padding: 12px; background: transparent; border: 1px solid var(--border-color); color: var(--text-dim); border-radius: 8px; cursor: pointer; transition: 0.2s; font-size: 0.8rem; text-transform: uppercase; font-weight: 600;}
         .btn-sec:hover { background: var(--border-color); color: #fff; }
 
-        /* --- STATISTIK & MODALS --- */
+        /* STATISTIK MODAL */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 100;
-            display: none; justify-content: center; padding: 20px; box-sizing: border-box;
+            display: none; justify-content: center; padding: 20px; 
         }
         .modal.open { display: flex; }
         .modal-content {
@@ -192,11 +158,9 @@
         .modal-body { flex: 1; overflow-y: auto; padding: 20px; }
         
         .section-header { font-size: 1rem; color: var(--text-dim); border-bottom: 2px solid var(--border-color); padding-bottom: 5px; margin: 25px 0 15px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
-
         .stats-filter { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;}
         
-        /* Layout för Totalt (Punkt 2) */
-        .total-grid-top { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .total-grid-top { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
         .total-grid-bot { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
         
         .stat-card-small { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid var(--border-color); }
@@ -289,10 +253,10 @@
         
         <div class="graph-controls">
             <span style="font-size:0.8rem; color:#888;">Upplösning:</span>
-            <!-- Punkt 9: Default 2 sek -->
             <select id="graphRes" class="main-select">
                 <option value="1">1 sek</option>
                 <option value="2" selected>2 sek</option>
+                <option value="3">3 sek</option>
                 <option value="5">5 sek</option>
                 <option value="10">10 sek</option>
                 <option value="30">30 sek</option>
@@ -308,6 +272,23 @@
         <div class="graph-wrapper" id="graphContainer">
             <svg id="chartSvg" viewBox="0 0 800 400" preserveAspectRatio="none"></svg>
         </div>
+        
+        <!-- Zon Analys -->
+        <div class="zone-analysis">
+            <span>Visa tid där:</span>
+            <select id="zoneMetric" class="main-select" style="padding:4px">
+                <option value="h">Puls</option>
+                <option value="w">Watt</option>
+                <option value="s">Hastighet</option>
+                <option value="c">Kadens</option>
+            </select>
+            <span>var mellan</span>
+            <input type="number" id="zoneMin" value="100" style="width:50px; background:#000; border:1px solid #444; color:#fff; padding:4px;">
+            <span>och</span>
+            <input type="number" id="zoneMax" value="150" style="width:50px; background:#000; border:1px solid #444; color:#fff; padding:4px;">
+            <button onclick="calculateZone()" style="background:#333; color:#fff; border:1px solid #555; padding:4px 8px; cursor:pointer;">Sök</button>
+            <span id="zoneResult" class="zone-res"></span>
+        </div>
 
         <div class="footer-stats">
             <div>Totalt: <span class="footer-val c-dist" id="lifeDist">0.000 km</span></div>
@@ -316,7 +297,6 @@
         </div>
 
         <div class="file-controls">
-            <!-- Punkt PS: Kortare namn -->
             <button class="btn-sec" id="exportBtn">Spara</button>
             <button class="btn-sec" onclick="document.getElementById('importFile').click()">Ladda upp</button>
             <input type="file" id="importFile" style="display:none" accept=".json">
@@ -341,30 +321,27 @@
                 <select id="filterRes" class="main-select"><option value="all">Alla Motstånd</option></select>
             </div>
 
-            <!-- Punkt 2: Gruppering TOTALT -->
             <div class="section-header">TOTALT</div>
-            
-            <!-- Övre raden: Distans, Tid, Pass -->
+            <!-- Punkt 1 & 2 -->
             <div class="total-grid-top" id="totalTop"></div>
             
-            <!-- Undre raden: Medel Fart, Watt, Kadens, Puls -->
+            <div class="section-header">MEDELTAL FÖR TOTALT</div>
             <div class="total-grid-bot" id="totalBot"></div>
 
-            <!-- Punkt 2: Rubrik TRÄNINGSPASS -->
             <div class="section-header" style="margin-top:40px;">TRÄNINGSPASS</div>
             <div style="overflow-x:auto">
                 <table class="session-table" id="sessTable">
                     <thead>
-                        <!-- Punkt 3: Sorteringspilar -->
+                        <!-- Punkt 3: Ordning och namn -->
                         <tr>
                             <th onclick="sortSess('date')" style="text-align:left">Datum <span id="sort_date"></span></th>
-                            <th onclick="sortSess('dur')">Tid <span id="sort_dur"></span></th>
                             <th onclick="sortSess('dist')">Sträcka <span id="sort_dist"></span></th>
-                            <th onclick="sortSess('speed')">Medel Fart <span id="sort_speed"></span></th>
-                            <th onclick="sortSess('watt')">Medel Watt <span id="sort_watt"></span></th>
-                            <th onclick="sortSess('cad')">Medel Kadens <span id="sort_cad"></span></th>
-                            <th onclick="sortSess('hr')">Medel Puls <span id="sort_hr"></span></th>
+                            <th onclick="sortSess('dur')">Tid <span id="sort_dur"></span></th>
                             <th onclick="sortSess('cal')">Kalorier <span id="sort_cal"></span></th>
+                            <th onclick="sortSess('speed')">MEDELFART <span id="sort_speed"></span></th>
+                            <th onclick="sortSess('watt')">MEDELWATT <span id="sort_watt"></span></th>
+                            <th onclick="sortSess('cad')">MEDELKADENS <span id="sort_cad"></span></th>
+                            <th onclick="sortSess('hr')">MEDELPULS <span id="sort_hr"></span></th>
                         </tr>
                     </thead>
                     <tbody id="sessBody"></tbody>
@@ -376,16 +353,28 @@
 
 <!-- SINGLE SESSION MODAL -->
 <div class="modal" id="singleModal">
-    <div class="modal-content" style="max-width:900px; height:80%;">
+    <div class="modal-content" style="max-width:900px; height:90%;">
         <div class="modal-header">
             <h3 style="margin:0" id="singleTitle">PASS</h3>
             <button onclick="document.getElementById('singleModal').classList.remove('open')" style="width:auto; padding:5px 15px; background:transparent; border:1px solid #555; color:#fff; cursor:pointer;">X</button>
         </div>
         <div class="modal-body" style="display:flex; flex-direction:column;">
-            <div class="graph-wrapper" style="flex:1; min-height:0; margin-bottom:10px;">
-                <svg id="singleChart" viewBox="0 0 800 400" preserveAspectRatio="none"></svg>
+            <div class="graph-wrapper" style="flex:1; min-height:0; margin-bottom:10px;" id="singleGraphWrapper">
+                <svg id="singleChart" width="100%" height="100%"></svg>
             </div>
-            <div class="total-grid-bot" id="singleStats"></div>
+            <!-- Även här Zon-analys -->
+            <div class="zone-analysis" id="singleZoneBox">
+                <span>Visa tid där:</span>
+                <select id="zoneMetricS" class="main-select" style="padding:4px">
+                    <option value="h">Puls</option><option value="w">Watt</option><option value="s">Fart</option>
+                </select>
+                <span>var mellan</span>
+                <input type="number" id="zoneMinS" value="100" style="width:50px; background:#000; border:1px solid #444; color:#fff;">
+                <span>och</span>
+                <input type="number" id="zoneMaxS" value="150" style="width:50px; background:#000; border:1px solid #444; color:#fff;">
+                <button onclick="calculateZoneSingle()" style="background:#333; color:#fff; border:1px solid #555; cursor:pointer;">Sök</button>
+                <span id="zoneResultS" class="zone-res"></span>
+            </div>
         </div>
     </div>
 </div>
@@ -428,11 +417,10 @@
         fYear: document.getElementById('filterYear'),
         fMonth: document.getElementById('filterMonth'),
         fRes: document.getElementById('filterRes'),
-        // Single View
+        // Single
         singleModal: document.getElementById('singleModal'),
         singleChart: document.getElementById('singleChart'),
-        singleTitle: document.getElementById('singleTitle'),
-        singleStats: document.getElementById('singleStats')
+        singleTitle: document.getElementById('singleTitle')
     };
 
     // --- VARIABLER ---
@@ -445,6 +433,15 @@
     let lastRawDist = -1;
     let lastPktTime = 0;
 
+    // Graf-variabler (State)
+    let graphState = {
+        scrollOffset: 0, // Hur långt bakåt vi scrollat (sekunder)
+        zoomLevel: 1.0,  // Zoomfaktor
+        isDragging: false,
+        lastMouseX: 0,
+        data: [] // Referens till aktiv data
+    };
+
     const SEQ = [
         { bytes: [0xF0, 0xA0, 0x01, 0x01, 0x92], expect: 0xB0 },
         { bytes: [0xF0, 0xA3, 0x01, 0x01, 0x01, 0x96], expect: 0xB3 },
@@ -455,10 +452,10 @@
     const READ_CMD = [0xF0, 0xA2, 0x01, 0x01, 0x94];
     const STOP_CMD = [0xF0, 0xA5, 0x01, 0x01, 0x04, 0x9B];
 
-    let history = JSON.parse(localStorage.getItem('gymstick_v5_history')) || { sessions: [], totalDist: 0, totalTime: 0 };
+    let history = JSON.parse(localStorage.getItem('gymstick_v6_history')) || { sessions: [], totalDist: 0, totalTime: 0 };
     updateHistoryUI();
 
-    // --- CONFIG & INIT ---
+    // --- CONFIG ---
     const TIME_OPTS = [
         {v:'graph', t:'Grafen'},
         {v:5, t:'5s'}, {v:10, t:'10s'}, {v:30, t:'30s'},
@@ -466,11 +463,13 @@
         {v:600, t:'10m'}, {v:1800, t:'30m'}, {v:3600, t:'1h'}, {v:-1, t:'Tot'}
     ];
     const DEF_SELS = [60, 600, -1];
+    
+    // Punkt 10: Y-axis settings i config
     const METRICS = [
-        { key: 'w', title: 'EFFEKT', color: 'var(--c-watt)' },
-        { key: 's', title: 'HASTIGHET', color: 'var(--c-speed)' },
-        { key: 'c', title: 'KADENS', color: 'var(--c-cad)' },
-        { key: 'h', title: 'PULS', color: 'var(--c-hr)' }
+        { key: 'w', title: 'EFFEKT', color: 'var(--c-watt)', defMax:400 },
+        { key: 's', title: 'HASTIGHET', color: 'var(--c-speed)', defMax:50 },
+        { key: 'c', title: 'KADENS', color: 'var(--c-cad)', defMax:120 },
+        { key: 'h', title: 'PULS', color: 'var(--c-hr)', defMax:200 }
     ];
 
     function initConfigGrid() {
@@ -480,11 +479,29 @@
             card.className = 'config-card single-mode';
             card.style.borderLeft = `3px solid ${m.color}`;
             
+            // Inställningspanel för axlar
+            const axisPanel = document.createElement('div');
+            axisPanel.className = 'axis-settings';
+            axisPanel.innerHTML = `
+                <div class="as-row"><strong style="color:${m.color}">${m.title} SKALA</strong></div>
+                <div class="as-row">
+                    <label><input type="checkbox" checked id="auto_${m.key}"> Auto</label>
+                </div>
+                <div class="as-row">
+                    <span>Max:</span> <input type="number" id="max_${m.key}" value="${m.defMax}" class="as-inp">
+                </div>
+                <div class="as-row">
+                    <span>Min:</span> <input type="number" id="min_${m.key}" value="0" class="as-inp">
+                </div>
+            `;
+            // Lägg panelen i kortet men dold (visas via knapp)
+            
             const hdr = document.createElement('div');
             hdr.className = 'config-header';
             hdr.innerHTML = `
                 <span class="config-title" style="color:${m.color}">
                     <input type="checkbox" id="chk_${m.key}" checked class="chk"> ${m.title}
+                    <button class="btn-gear" onclick="toggleAxisSettings('${m.key}')">⚙</button>
                 </span>
                 <div class="config-opts">
                     <label><input type="checkbox" data-key="${m.key}" data-rows="2"> 2</label>
@@ -492,6 +509,7 @@
                 </div>
             `;
             card.appendChild(hdr);
+            card.appendChild(axisPanel); // Lägg in panelen
 
             const avgCont = document.createElement('div');
             avgCont.className = 'avg-container';
@@ -546,9 +564,19 @@
                     else card.classList.add('single-mode');
                 };
             });
-            document.getElementById(`chk_${m.key}`).onchange = () => drawGraph(ui.chart, sessionData);
+            // Orita om grafen vid ändring av checkbox eller axel-inställningar
+            document.getElementById(`chk_${m.key}`).onchange = renderMainGraph;
+            document.getElementById(`auto_${m.key}`).onchange = renderMainGraph;
+            document.getElementById(`max_${m.key}`).onchange = renderMainGraph;
+            document.getElementById(`min_${m.key}`).onchange = renderMainGraph;
         });
     }
+
+    window.toggleAxisSettings = (key) => {
+        const p = document.querySelector(`#avgs_${key}`).parentElement.querySelector('.axis-settings');
+        p.classList.toggle('show');
+    };
+
     initConfigGrid();
 
     // --- BLUETOOTH ---
@@ -606,6 +634,10 @@
             sessionData = [];
             startTime = Date.now();
             calcDist = 0; lastRawDist = -1; lastPktTime = Date.now();
+            
+            // Reset graph state
+            graphState.scrollOffset = 0;
+            graphState.data = sessionData;
             return;
         }
         const step = SEQ[seqIndex];
@@ -666,9 +698,10 @@
                 const elapsed = (Date.now() - startTime) / 1000;
                 sessionData.push({ t: elapsed, w: watt, s: speed, c: rpm, h: hr, l: level });
                 
-                if(sessionData.length % 2 === 0) {
-                    updateAverages();
-                    drawGraph(ui.chart, sessionData);
+                updateAverages();
+                // Om vi inte scrollar manuellt, scrolla automatiskt till slutet
+                if (!graphState.isDragging && graphState.scrollOffset <= 1) {
+                    renderMainGraph(); 
                 }
                 updateHistoryUI(calcDist);
             }
@@ -689,7 +722,8 @@
     function updateAverages() {
         if(sessionData.length === 0) return;
         const now = sessionData[sessionData.length-1].t;
-        const graphResVal = parseInt(ui.graphRes.value);
+        // Grafens fönster för "Grafen"-valet:
+        const windowSize = 120 * parseInt(ui.graphRes.value) * graphState.zoomLevel;
 
         function calc(metric) {
             for(let i=0; i<3; i++) {
@@ -698,7 +732,7 @@
                 if(!sel || !disp) continue;
 
                 let timeWin = sel.value;
-                if(timeWin === 'graph') timeWin = graphResVal; 
+                if(timeWin === 'graph') timeWin = windowSize; 
                 else timeWin = parseInt(timeWin);
                 
                 let sum = 0, count = 0;
@@ -716,103 +750,213 @@
         calc('w'); calc('s'); calc('c'); calc('h');
     }
 
-    // --- NY PROFFSIG GRAFMOTOR (Punkt 8) ---
-    function drawGraph(svgElement, data) {
-        svgElement.innerHTML = '';
-        if(!data || data.length < 2) return;
+    // --- NY SCROLLANDE GRAF-MOTOR (Punkt 7, 9, 10, 11) ---
+    function renderMainGraph() {
+        drawScrollingGraph(ui.chart, sessionData, false);
+    }
+
+    function drawScrollingGraph(svg, data, isStatic) {
+        if(!data || data.length < 2) { svg.innerHTML = ''; return; }
+
+        const width = svg.clientWidth || 800;
+        const height = svg.clientHeight || 400;
+        const padding = { top: 20, right: 50, bottom: 30, left: 50 }; // Plats för axlar
+        const drawW = width - padding.left - padding.right;
+        const drawH = height - padding.top - padding.bottom;
+
+        // Tidsfönster (Scroll & Zoom)
+        const resolution = parseInt(ui.graphRes.value);
+        // Visa alltid 120 punkter (default) * zoom
+        const visibleSeconds = 120 * resolution * graphState.zoomLevel;
         
-        const res = parseInt(ui.graphRes.value);
-        // Hårdkodad viewbox: 0 0 800 400
-        const W = 800, H = 400;
-        const padL = 60, padR = 60, padT = 20, padB = 30; // Marginaler
-        const drawW = W - padL - padR;
-        const drawH = H - padT - padB;
+        const latestTime = data[data.length-1].t;
+        // ScrollOffset 0 betyder "följ med realtid"
+        let endTime = latestTime - (graphState.scrollOffset * resolution * 5); // Scroll speed factor
+        if (endTime > latestTime) endTime = latestTime;
+        if (isStatic) endTime = latestTime - graphState.scrollOffset; // Direkt sekundkontroll vid static
 
-        // Sampling
-        const buckets = [];
-        data.forEach(p => {
-            const idx = Math.floor(p.t / res);
-            if(!buckets[idx]) buckets[idx] = {c:0, w:0, s:0, c_rpm:0, h:0, t:idx*res};
-            buckets[idx].c++;
-            buckets[idx].w += p.w;
-            buckets[idx].s += p.s;
-            buckets[idx].c_rpm += p.c; 
-            buckets[idx].h += p.h;
-        });
-        const valid = buckets.filter(b=>b);
-        if(valid.length < 2) return;
+        let startTimeView = endTime - visibleSeconds;
+        // Clamp start
+        if (startTimeView < 0 && !isStatic) startTimeView = 0; // Live: kan börja på 0
 
-        // Hitta aktiva
-        const active = [];
-        if(document.getElementById('chk_w').checked) active.push({key:'w', color:'var(--c-watt)', lbl:'W', side:'left'});
-        if(document.getElementById('chk_s').checked) active.push({key:'s', color:'var(--c-speed)', lbl:'km/h', side:'left'});
-        if(document.getElementById('chk_c').checked) active.push({key:'c_rpm', color:'var(--c-cad)', lbl:'rpm', side:'right'});
-        if(document.getElementById('chk_h').checked) active.push({key:'h', color:'var(--c-hr)', lbl:'bpm', side:'right'});
+        // Filtrera data inom fönstret
+        const visibleData = data.filter(p => p.t >= startTimeView && p.t <= endTime);
+        if (visibleData.length < 2) { svg.innerHTML=''; return; }
 
-        if(active.length === 0) return;
+        svg.innerHTML = ''; // Rensa
 
-        // Rita Grid
-        for(let i=0; i<=4; i++) {
-            const y = padT + (drawH * i / 4);
+        // Rita rutnät och X-axel (Tid) - Punkt 9: Snygga steg
+        const timeSpan = endTime - startTimeView;
+        let step = 60; // default 1 min
+        if (timeSpan < 60) step = 10;
+        else if (timeSpan < 120) step = 20;
+        else if (timeSpan < 300) step = 30;
+        else if (timeSpan < 600) step = 60;
+        else if (timeSpan < 1800) step = 300;
+        else step = 600;
+
+        // Hitta första "jämna" klockslag
+        const firstTick = Math.ceil(startTimeView / step) * step;
+        
+        for (let t = firstTick; t <= endTime; t += step) {
+            const x = padding.left + ((t - startTimeView) / timeSpan) * drawW;
+            
+            // Vertikal linje
             const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            line.setAttribute("x1", padL); line.setAttribute("x2", W-padR);
-            line.setAttribute("y1", y); line.setAttribute("y2", y);
+            line.setAttribute("x1", x); line.setAttribute("x2", x);
+            line.setAttribute("y1", padding.top); line.setAttribute("y2", height - padding.bottom);
             line.setAttribute("class", "grid-line");
-            svgElement.appendChild(line);
-        }
+            svg.appendChild(line);
 
-        // Rita Tidsskala (X)
-        const tMax = valid[valid.length-1].t;
-        const tStart = valid[0].t;
-        for(let i=0; i<=5; i++) {
-            const t = tStart + (tMax - tStart) * (i/5);
-            const x = padL + (drawW * (i/5));
+            // Text
             const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            txt.setAttribute("x", x); txt.setAttribute("y", H - 5);
+            txt.setAttribute("x", x); txt.setAttribute("y", height - 5);
             txt.setAttribute("text-anchor", "middle");
             txt.setAttribute("class", "axis-text");
             txt.textContent = formatTimeShort(t);
-            svgElement.appendChild(txt);
+            svg.appendChild(txt);
         }
 
-        // Rita Data
-        active.forEach((m, idx) => {
-            const maxVal = Math.max(...valid.map(b => b[m.key]/b.c)) || 100;
-            const scaleMax = maxVal * 1.1; 
+        // Hämta aktiva mätvärden
+        const active = [];
+        if(document.getElementById('chk_w').checked) active.push(METRICS[0]);
+        if(document.getElementById('chk_s').checked) active.push(METRICS[1]);
+        if(document.getElementById('chk_c').checked) active.push(METRICS[2]);
+        if(document.getElementById('chk_h').checked) active.push(METRICS[3]);
 
-            // Punkter
+        // Rita Y-axlar och Linjer (Punkt 10, 11)
+        active.forEach((m, idx) => {
+            // Hämta skala
+            const isAuto = document.getElementById(`auto_${m.key}`).checked;
+            let minVal = 0, maxVal = 100;
+            
+            if (isAuto) {
+                // Hitta max i synligt fönster
+                const localMax = Math.max(...visibleData.map(d => d[m.key])) || 10;
+                maxVal = localMax * 1.1; // Lite luft
+            } else {
+                maxVal = parseFloat(document.getElementById(`max_${m.key}`).value);
+                minVal = parseFloat(document.getElementById(`min_${m.key}`).value);
+            }
+            const range = maxVal - minVal;
+
+            // Skapa Polyline
             let pts = "";
-            valid.forEach((b, i) => {
-                const x = padL + (i / (valid.length - 1)) * drawW;
-                const val = b[m.key] / b.c;
-                const y = (padT + drawH) - ((val / scaleMax) * drawH);
-                pts += `${x},${y} `;
+            visibleData.forEach(d => {
+                const x = padding.left + ((d.t - startTimeView) / timeSpan) * drawW;
+                const val = d[m.key];
+                // Kläm värdet inom range
+                const normVal = (val - minVal) / range;
+                const y = (height - padding.bottom) - (normVal * drawH);
+                if (x >= padding.left && x <= (width - padding.right)) // Clip
+                    pts += `${x},${y} `;
             });
 
-            // Polyline
             const poly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
             poly.setAttribute("points", pts);
             poly.setAttribute("stroke", m.color);
-            svgElement.appendChild(poly);
+            poly.setAttribute("class", "graph-line");
+            svg.appendChild(poly);
 
-            // Rita Y-Axel Text (Max, Mid)
-            const xTxt = (m.side === 'left') ? 10 : W - 10;
-            const anchor = (m.side === 'left') ? "start" : "end";
-            // Stapla labels om flera på samma sida
-            const yOffset = (idx % 2) * 12; 
+            // Rita Y-axel (Punkt 11: Jämna steg)
+            // Vi ritar bara 3-4 ticks
+            const ySteps = [minVal, minVal + range*0.5, maxVal];
+            const xPos = (idx % 2 === 0) ? 5 : width - 35; // Vänster/Höger
+            const anchor = (idx % 2 === 0) ? "start" : "end";
+            
+            // Justera position om flera grafer delar sida
+            const yOffset = (Math.floor(idx/2) * 10); 
 
-            // Max
-            const txtMax = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            txtMax.setAttribute("x", xTxt); txtMax.setAttribute("y", padT + 5 + yOffset);
-            txtMax.setAttribute("text-anchor", anchor);
-            txtMax.setAttribute("fill", m.color);
-            txtMax.setAttribute("class", "axis-text");
-            txtMax.textContent = Math.round(maxVal);
-            svgElement.appendChild(txtMax);
+            ySteps.forEach(val => {
+                const y = (height - padding.bottom) - ((val - minVal) / range * drawH);
+                const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                txt.setAttribute("x", xPos + (idx%2===0 ? yOffset : -yOffset)); 
+                txt.setAttribute("y", y + 3);
+                txt.setAttribute("text-anchor", anchor);
+                txt.setAttribute("fill", m.color);
+                txt.setAttribute("class", "axis-text");
+                txt.textContent = Math.round(val);
+                svg.appendChild(txt);
+            });
         });
     }
 
-    ui.graphRes.onchange = () => { updateAverages(); drawGraph(ui.chart, sessionData); };
+    // --- INTERAKTION (ZOOM & PAN) ---
+    const gc = ui.graphWrapper;
+    
+    gc.addEventListener('mousedown', e => {
+        graphState.isDragging = true;
+        graphState.lastMouseX = e.clientX;
+        gc.style.cursor = 'grabbing';
+    });
+
+    window.addEventListener('mouseup', () => {
+        graphState.isDragging = false;
+        gc.style.cursor = 'grab';
+    });
+
+    window.addEventListener('mousemove', e => {
+        if (!graphState.isDragging) return;
+        const dx = e.clientX - graphState.lastMouseX;
+        graphState.lastMouseX = e.clientX;
+        
+        // Panorera (ändra scrollOffset)
+        // Känslighet beror på zoom
+        const sensitivity = 0.5 * graphState.zoomLevel;
+        graphState.scrollOffset += dx * sensitivity * -1;
+        
+        // Rendera live
+        drawScrollingGraph(ui.chart, graphState.data, false);
+    });
+
+    gc.addEventListener('wheel', e => {
+        e.preventDefault();
+        const delta = Math.sign(e.deltaY);
+        // Zooma in (minska faktor) / Ut (öka faktor)
+        if (delta > 0) graphState.zoomLevel *= 1.1;
+        else graphState.zoomLevel *= 0.9;
+        
+        // Limits
+        if (graphState.zoomLevel < 0.1) graphState.zoomLevel = 0.1;
+        if (graphState.zoomLevel > 10) graphState.zoomLevel = 10;
+        
+        drawScrollingGraph(ui.chart, graphState.data, false);
+    });
+    
+    // --- ANALYS VERKTYG (Punkt 5) ---
+    ui.graphRes.onchange = renderMainGraph;
+
+    window.calculateZone = () => {
+        const key = document.getElementById('zoneMetric').value;
+        const min = parseFloat(document.getElementById('zoneMin').value);
+        const max = parseFloat(document.getElementById('zoneMax').value);
+        
+        const timeInZone = sessionData.filter(d => d[key] >= min && d[key] <= max).length;
+        // Varje punkt är ca 1 sek i loggningen
+        const seconds = timeInZone; 
+        document.getElementById('zoneResult').textContent = formatDurationLong(seconds);
+    };
+
+    window.calculateZoneSingle = () => {
+        // Samma men för singelvy
+        if (!graphState.data) return;
+        const key = document.getElementById('zoneMetricS').value;
+        const min = parseFloat(document.getElementById('zoneMinS').value);
+        const max = parseFloat(document.getElementById('zoneMaxS').value);
+        
+        // Vi måste veta dt mellan punkter. Antar 1s för enkelhet eller beräknar.
+        // För sparade pass kan intervall variera.
+        let totalTime = 0;
+        for(let i=1; i<graphState.data.length; i++) {
+            const p = graphState.data[i];
+            const prev = graphState.data[i-1];
+            if (p[key] >= min && p[key] <= max) {
+                totalTime += (p.t - prev.t);
+            }
+        }
+        document.getElementById('zoneResultS').textContent = formatDurationLong(totalTime);
+    }
+
 
     // --- SPARA & STOPP ---
     ui.stopBtn.onclick = async () => {
@@ -838,12 +982,11 @@
 
     function updateHistoryUI(currDist = 0) {
         const totD = history.totalDist + currDist;
-        ui.lifeDist.textContent = totD.toFixed(2) + " km";
+        ui.lifeDist.textContent = totD.toFixed(3) + " km"; // Punkt 4
         ui.sessCount.textContent = history.sessions.length;
         ui.lifeTime.textContent = formatDurationLong(history.totalTime);
     }
 
-    // Punkt 4: Tidsformat
     function formatDurationLong(sec) {
         const d = Math.floor(sec / 86400);
         const h = Math.floor((sec % 86400) / 3600);
@@ -860,7 +1003,7 @@
         return `${m}:${s.toString().padStart(2,'0')}`;
     }
 
-    function saveHistory() { localStorage.setItem('gymstick_v5_history', JSON.stringify(history)); updateHistoryUI(); }
+    function saveHistory() { localStorage.setItem('gymstick_v6_history', JSON.stringify(history)); updateHistoryUI(); }
 
     // --- STATISTIK ---
     ui.statsBtn.onclick = () => {
@@ -873,17 +1016,11 @@
     function renderStats() {
         // Uppdatera filter
         const yF = ui.fYear.value;
-        // Punkt 1: Dynamiska år
         const years = [...new Set(history.sessions.map(s => new Date(s.date).getFullYear()))].sort().reverse();
         if(ui.fYear.children.length === 1) {
             years.forEach(y => ui.fYear.add(new Option(y, y)));
             for(let i=1; i<=32; i++) ui.fRes.add(new Option("Innehåller Nivå " + i, i));
             for(let i=0; i<12; i++) ui.fMonth.add(new Option(new Date(0,i).toLocaleString('sv',{month:'long'}), i));
-        } else {
-            // Kolla om nya år tillkommit
-            years.forEach(y => {
-                if(![...ui.fYear.options].some(o => o.value == y)) ui.fYear.add(new Option(y,y));
-            });
         }
 
         const mF = ui.fMonth.value;
@@ -894,13 +1031,11 @@
             const d = new Date(s.date);
             if(yF !== 'all' && d.getFullYear() != yF) return false;
             if(mF !== 'all' && d.getMonth() != mF) return false;
-            if(rF !== 'all') {
-                return s.data.some(p => p.l == rF);
-            }
+            if(rF !== 'all') { return s.data.some(p => p.l == rF); }
             return true;
         });
 
-        // Totals (Punkt 2)
+        // Totals
         let tDist=0, tTime=0, tCal=0, sWatt=0, sSpd=0, sCad=0, sHr=0, pts=0;
         filtered.forEach(s => {
             tDist += s.dist; tTime += s.dur; tCal += s.cal;
@@ -914,20 +1049,21 @@
         const avg = (sum) => pts ? Math.round(sum/pts) : 0;
         const avgF = (sum) => pts ? (sum/pts).toFixed(1) : 0;
 
+        // Punkt 1: Kalorier i övre raden
         ui.totalTop.innerHTML = `
             <div class="stat-card-small"><span class="sc-val c-dist">${tDist.toFixed(1)} km</span><span class="sc-lbl">Distans</span></div>
             <div class="stat-card-small"><span class="sc-val">${formatDurationLong(tTime)}</span><span class="sc-lbl">Tid</span></div>
-            <div class="stat-card-small"><span class="sc-val c-cal">${filtered.length}</span><span class="sc-lbl">Pass</span></div>
+            <div class="stat-card-small"><span class="sc-val c-cal">${tCal}</span><span class="sc-lbl">Kalorier</span></div>
+            <div class="stat-card-small"><span class="sc-val">${filtered.length}</span><span class="sc-lbl">Pass</span></div>
         `;
         ui.totalBot.innerHTML = `
-            <div class="stat-card-small"><span class="sc-val c-speed">${avgF(sSpd)}</span><span class="sc-lbl">Medel Fart</span></div>
-            <div class="stat-card-small"><span class="sc-val c-watt">${avg(sWatt)}</span><span class="sc-lbl">Medel Watt</span></div>
-            <div class="stat-card-small"><span class="sc-val c-cad">${avg(sCad)}</span><span class="sc-lbl">Medel Kadens</span></div>
-            <div class="stat-card-small"><span class="sc-val c-hr">${avg(sHr)}</span><span class="sc-lbl">Medel Puls</span></div>
+            <div class="stat-card-small"><span class="sc-val c-speed">${avgF(sSpd)}</span><span class="sc-lbl">Fart</span></div>
+            <div class="stat-card-small"><span class="sc-val c-watt">${avg(sWatt)}</span><span class="sc-lbl">Watt</span></div>
+            <div class="stat-card-small"><span class="sc-val c-cad">${avg(sCad)}</span><span class="sc-lbl">Kadens</span></div>
+            <div class="stat-card-small"><span class="sc-val c-hr">${avg(sHr)}</span><span class="sc-lbl">Puls</span></div>
         `;
 
         // Tabell
-        // Punkt 3: Pilar
         const arrow = sortAsc ? ' ↑' : ' ↓';
         ['date','dur','dist','speed','watt','cad','hr','cal'].forEach(k => {
             document.getElementById('sort_'+k).textContent = (sortCol === k) ? arrow : '';
@@ -951,6 +1087,7 @@
             return sortAsc ? (va>vb?1:-1) : (va<vb?1:-1);
         });
 
+        // Punkt 3: Ny kolumnordning
         ui.sessBody.innerHTML = filtered.map((s, idx) => {
             const d = new Date(s.date);
             const dStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
@@ -959,16 +1096,16 @@
                 const h = s.data.filter(p=>p.h>0);
                 return h.length ? Math.round(h.reduce((acc,v)=>acc+v.h,0)/h.length) : 0;
             };
-            // Punkt 6: Onclick öppnar modal
+            
             return `<tr onclick="openSession(${history.sessions.indexOf(s)})">
                 <td style="text-align:left">${dStr}</td>
-                <td>${formatDurationLong(s.dur)}</td>
                 <td class="c-dist">${s.dist.toFixed(2)}</td>
+                <td>${formatDurationLong(s.dur)}</td>
+                <td class="c-cal">${s.cal}</td>
                 <td class="c-speed">${(s.data.reduce((ac,v)=>ac+v.s,0)/s.data.length).toFixed(1)}</td>
                 <td class="c-watt">${getAvg('w')}</td>
                 <td class="c-cad">${getAvg('c')}</td>
                 <td class="c-hr">${getAvgHr()}</td>
-                <td class="c-cal">${s.cal}</td>
             </tr>`;
         }).join('');
     }
@@ -982,8 +1119,15 @@
         const s = history.sessions[idx];
         ui.singleTitle.textContent = "PASS: " + new Date(s.date).toLocaleString();
         ui.singleModal.classList.add('open');
-        // Rita graf i modalen
-        setTimeout(() => drawGraph(ui.singleChart, s.data), 100);
+        
+        // Sätt data till global state temporärt för att använda ritfunktionen
+        graphState.data = s.data;
+        graphState.scrollOffset = 0; // Se hela passet
+        
+        // Rita statisk graf (hela passet)
+        setTimeout(() => {
+             drawScrollingGraph(ui.singleChart, s.data, true); 
+        }, 100);
     };
 
     [ui.fYear, ui.fMonth, ui.fRes].forEach(el => el.onchange = renderStats);
