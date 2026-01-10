@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gymstick Pro Monitor v4.0</title>
+    <title>Gymstick Pro Monitor v5.0</title>
     <style>
         :root {
             /* Mörkblått tema */
@@ -44,7 +44,6 @@
             gap: 20px;
             flex: 1;
             overflow: hidden;
-            /* Vänster panel breddad till 400px (Punkt 2) */
             grid-template-columns: 400px 1fr;
             grid-template-rows: 1fr;
         }
@@ -80,8 +79,6 @@
             align-items: center;
         }
         .h-item h3 { margin: 0; font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
-        
-        /* Punkt 1: Större typsnitt för Header-värden */
         .val-big { font-size: 2.2rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
         
         .res-ctrl { display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -148,22 +145,26 @@
         .single-mode .avg-row:first-child { height: auto; margin-top: 8px; }
         .single-mode select.tiny-select { font-size: 0.8rem; width: auto; background: transparent; border: none; }
 
-        /* Grafen (Punkt 3: Mindre font, synliga axlar) */
+        /* PROFFSIGA GRAFER */
         .graph-wrapper {
             flex: 1;
             min-height: 350px;
-            background: rgba(0,0,0,0.3);
+            background: #12121a; /* Mörkare bakgrund för kontrast */
             border-radius: 12px;
             border: 1px solid var(--border-color);
             position: relative;
-            /* Ökad padding för att axlarna ska rymmas */
-            padding: 15px 40px 30px 40px; 
+            padding: 20px; /* Mer utrymme */
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
         }
         svg { width: 100%; height: 100%; overflow: visible; }
         
-        /* Punkt 3: Mikroskopisk font för SVG-koordinatsystem */
-        .axis-text { font-size: 3.5px; font-family: monospace; font-weight: normal; fill: #aaa; }
-        .grid-line { stroke: #333; stroke-width: 0.5; stroke-dasharray: 2; }
+        /* Punkt 7: Mycket tunnare linjer */
+        polyline { fill: none; stroke-width: 0.8; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+        
+        /* Punkt 8: Skalor och Text */
+        .axis-text { font-size: 10px; font-family: 'Consolas', monospace; fill: #666; dominant-baseline: middle; }
+        .axis-line { stroke: #333; stroke-width: 1; }
+        .grid-line { stroke: #222; stroke-width: 1; stroke-dasharray: 2; }
 
         .graph-controls { display: flex; justify-content: flex-end; gap: 10px; align-items: center; }
         select.main-select { background: #333; color: #fff; border: 1px solid #555; padding: 6px 12px; border-radius: 6px; }
@@ -172,34 +173,43 @@
         .footer-val { color: var(--text-main); font-weight: bold; }
 
         .file-controls { display: flex; gap: 10px; margin-top: 10px; }
-        .btn-sec { flex: 1; padding: 10px; background: transparent; border: 1px solid var(--border-color); color: var(--text-dim); border-radius: 8px; cursor: pointer; transition: 0.2s; font-size: 0.8rem; text-transform: uppercase; font-weight: 600;}
+        .btn-sec { flex: 1; padding: 12px; background: transparent; border: 1px solid var(--border-color); color: var(--text-dim); border-radius: 8px; cursor: pointer; transition: 0.2s; font-size: 0.8rem; text-transform: uppercase; font-weight: 600;}
         .btn-sec:hover { background: var(--border-color); color: #fff; }
 
-        /* --- STATISTIK MODAL --- */
+        /* --- STATISTIK & MODALS --- */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 100;
-            display: none; justify-content: center; padding: 40px; box-sizing: border-box;
+            display: none; justify-content: center; padding: 20px; box-sizing: border-box;
         }
         .modal.open { display: flex; }
         .modal-content {
-            background: var(--panel-bg); width: 100%; max-width: 1000px;
+            background: var(--panel-bg); width: 100%; max-width: 1100px;
             border-radius: 16px; border: 1px solid var(--border-color);
-            display: flex; flex-direction: column; overflow: hidden;
+            display: flex; flex-direction: column; overflow: hidden; max-height: 100%;
         }
-        .modal-header { padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;}
+        .modal-header { padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: #1a1a2e;}
         .modal-body { flex: 1; overflow-y: auto; padding: 20px; }
         
+        .section-header { font-size: 1rem; color: var(--text-dim); border-bottom: 2px solid var(--border-color); padding-bottom: 5px; margin: 25px 0 15px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+
         .stats-filter { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;}
-        .stat-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px; }
-        .big-stat-card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; text-align: center; border: 1px solid var(--border-color); }
-        .big-stat-val { font-size: 1.5rem; font-weight: 700; color: #fff; display: block; }
-        .big-stat-lbl { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; }
+        
+        /* Layout för Totalt (Punkt 2) */
+        .total-grid-top { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .total-grid-bot { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        
+        .stat-card-small { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid var(--border-color); }
+        .sc-val { font-size: 1.4rem; font-weight: 700; color: #fff; display: block; margin-bottom: 2px; }
+        .sc-lbl { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; }
 
         .session-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        .session-table th { text-align: left; padding: 10px; border-bottom: 2px solid var(--border-color); cursor: pointer; color: var(--text-dim); text-transform: uppercase; font-size: 0.75rem;}
-        .session-table td { padding: 12px 10px; border-bottom: 1px solid var(--border-color); color: #ccc; }
+        .session-table th { text-align: right; padding: 10px; border-bottom: 2px solid var(--border-color); cursor: pointer; color: var(--text-dim); text-transform: uppercase; font-size: 0.75rem; user-select: none; }
+        .session-table th:hover { color: #fff; }
+        .session-table td { padding: 12px 10px; border-bottom: 1px solid var(--border-color); color: #ccc; text-align: right; }
+        .session-table tr { cursor: pointer; transition: 0.2s; }
         .session-table tr:hover { background: rgba(255,255,255,0.05); }
+        .sort-icon { font-size: 0.8em; margin-left: 4px; display: inline-block; width: 10px;}
 
         /* Färgklasser */
         .c-watt { color: var(--c-watt); }
@@ -226,21 +236,18 @@
         <div class="header-grid">
             <div class="h-item">
                 <h3>Tid</h3>
-                <!-- Punkt 1: Stor font -->
                 <div class="val-big" id="valTime">00:00</div>
             </div>
             <div class="h-item">
                 <h3>Motstånd</h3>
                 <div class="res-ctrl">
                     <button class="btn-round" id="btnResDown">-</button>
-                    <!-- Punkt 1: Stor font -->
                     <div class="val-big c-res" id="valRes">--</div>
                     <button class="btn-round" id="btnResUp">+</button>
                 </div>
             </div>
             <div class="h-item">
                 <h3>Puls</h3>
-                <!-- Punkt 1: Stor font -->
                 <div class="val-big c-hr" id="valHr">--</div>
             </div>
         </div>
@@ -282,13 +289,14 @@
         
         <div class="graph-controls">
             <span style="font-size:0.8rem; color:#888;">Upplösning:</span>
+            <!-- Punkt 9: Default 2 sek -->
             <select id="graphRes" class="main-select">
                 <option value="1">1 sek</option>
-                <option value="2">2 sek</option>
+                <option value="2" selected>2 sek</option>
                 <option value="5">5 sek</option>
                 <option value="10">10 sek</option>
                 <option value="30">30 sek</option>
-                <option value="60" selected>1 min</option>
+                <option value="60">1 min</option>
                 <option value="300">5 min</option>
             </select>
         </div>
@@ -298,7 +306,7 @@
         </div>
 
         <div class="graph-wrapper" id="graphContainer">
-            <svg id="chartSvg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+            <svg id="chartSvg" viewBox="0 0 800 400" preserveAspectRatio="none"></svg>
         </div>
 
         <div class="footer-stats">
@@ -308,11 +316,10 @@
         </div>
 
         <div class="file-controls">
-            <!-- Punkt 5: Renamed buttons -->
-            <button class="btn-sec" id="exportBtn">Spara (JSON)</button>
-            <button class="btn-sec" onclick="document.getElementById('importFile').click()">Ladda upp (JSON)</button>
+            <!-- Punkt PS: Kortare namn -->
+            <button class="btn-sec" id="exportBtn">Spara</button>
+            <button class="btn-sec" onclick="document.getElementById('importFile').click()">Ladda upp</button>
             <input type="file" id="importFile" style="display:none" accept=".json">
-            <!-- Punkt 7: Statistik knapp -->
             <button class="btn-sec" id="statsBtn" style="border-color: var(--c-speed); color:var(--c-speed);">STATISTIK</button>
         </div>
 
@@ -323,8 +330,8 @@
 <div class="modal" id="statsModal">
     <div class="modal-content">
         <div class="modal-header">
-            <h2 style="margin:0">STATISTIKCENTRAL</h2>
-            <button onclick="document.getElementById('statsModal').classList.remove('open')" style="width:auto; padding:10px 20px; background:transparent; border:1px solid #555;">Stäng</button>
+            <h2 style="margin:0; letter-spacing:1px; color:#fff;">STATISTIK</h2>
+            <button onclick="document.getElementById('statsModal').classList.remove('open')" style="width:auto; padding:10px 20px; background:transparent; border:1px solid #555; color:#fff; cursor:pointer;">STÄNG</button>
         </div>
         <div class="modal-body">
             
@@ -334,27 +341,51 @@
                 <select id="filterRes" class="main-select"><option value="all">Alla Motstånd</option></select>
             </div>
 
-            <div class="stat-card-grid" id="statCards">
-                <!-- Fylls med JS -->
-            </div>
+            <!-- Punkt 2: Gruppering TOTALT -->
+            <div class="section-header">TOTALT</div>
+            
+            <!-- Övre raden: Distans, Tid, Pass -->
+            <div class="total-grid-top" id="totalTop"></div>
+            
+            <!-- Undre raden: Medel Fart, Watt, Kadens, Puls -->
+            <div class="total-grid-bot" id="totalBot"></div>
 
-            <h3 style="border-bottom:1px solid #333; padding-bottom:10px; margin-top:30px;">PASSLISTA</h3>
+            <!-- Punkt 2: Rubrik TRÄNINGSPASS -->
+            <div class="section-header" style="margin-top:40px;">TRÄNINGSPASS</div>
             <div style="overflow-x:auto">
                 <table class="session-table" id="sessTable">
                     <thead>
+                        <!-- Punkt 3: Sorteringspilar -->
                         <tr>
-                            <th onclick="sortSess('date')">Datum</th>
-                            <th onclick="sortSess('dur')">Tid</th>
-                            <th onclick="sortSess('dist')">Sträcka</th>
-                            <th onclick="sortSess('watt')">Snitt Watt</th>
-                            <th onclick="sortSess('hr')">Snitt Puls</th>
-                            <th onclick="sortSess('speed')">Snitt Fart</th>
-                            <th onclick="sortSess('cal')">Kalorier</th>
+                            <th onclick="sortSess('date')" style="text-align:left">Datum <span id="sort_date"></span></th>
+                            <th onclick="sortSess('dur')">Tid <span id="sort_dur"></span></th>
+                            <th onclick="sortSess('dist')">Sträcka <span id="sort_dist"></span></th>
+                            <th onclick="sortSess('speed')">Medel Fart <span id="sort_speed"></span></th>
+                            <th onclick="sortSess('watt')">Medel Watt <span id="sort_watt"></span></th>
+                            <th onclick="sortSess('cad')">Medel Kadens <span id="sort_cad"></span></th>
+                            <th onclick="sortSess('hr')">Medel Puls <span id="sort_hr"></span></th>
+                            <th onclick="sortSess('cal')">Kalorier <span id="sort_cal"></span></th>
                         </tr>
                     </thead>
                     <tbody id="sessBody"></tbody>
                 </table>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- SINGLE SESSION MODAL -->
+<div class="modal" id="singleModal">
+    <div class="modal-content" style="max-width:900px; height:80%;">
+        <div class="modal-header">
+            <h3 style="margin:0" id="singleTitle">PASS</h3>
+            <button onclick="document.getElementById('singleModal').classList.remove('open')" style="width:auto; padding:5px 15px; background:transparent; border:1px solid #555; color:#fff; cursor:pointer;">X</button>
+        </div>
+        <div class="modal-body" style="display:flex; flex-direction:column;">
+            <div class="graph-wrapper" style="flex:1; min-height:0; margin-bottom:10px;">
+                <svg id="singleChart" viewBox="0 0 800 400" preserveAspectRatio="none"></svg>
+            </div>
+            <div class="total-grid-bot" id="singleStats"></div>
         </div>
     </div>
 </div>
@@ -377,26 +408,31 @@
         time: document.getElementById('valTime'),
         hr: document.getElementById('valHr'),
         res: document.getElementById('valRes'),
-        // Knappar
         btnResUp: document.getElementById('btnResUp'),
         btnResDown: document.getElementById('btnResDown'),
         // Analys
         chart: document.getElementById('chartSvg'),
+        graphWrapper: document.getElementById('graphContainer'),
         graphRes: document.getElementById('graphRes'),
         configGrid: document.getElementById('configGrid'),
-        // Footer
         lifeDist: document.getElementById('lifeDist'),
         lifeTime: document.getElementById('lifeTime'),
         sessCount: document.getElementById('sessCount'),
-        // Stats Modal
+        // Stats
         statsBtn: document.getElementById('statsBtn'),
         statsModal: document.getElementById('statsModal'),
-        statCards: document.getElementById('statCards'),
+        totalTop: document.getElementById('totalTop'),
+        totalBot: document.getElementById('totalBot'),
         sessBody: document.getElementById('sessBody'),
         // Filter
         fYear: document.getElementById('filterYear'),
         fMonth: document.getElementById('filterMonth'),
-        fRes: document.getElementById('filterRes')
+        fRes: document.getElementById('filterRes'),
+        // Single View
+        singleModal: document.getElementById('singleModal'),
+        singleChart: document.getElementById('singleChart'),
+        singleTitle: document.getElementById('singleTitle'),
+        singleStats: document.getElementById('singleStats')
     };
 
     // --- VARIABLER ---
@@ -419,8 +455,7 @@
     const READ_CMD = [0xF0, 0xA2, 0x01, 0x01, 0x94];
     const STOP_CMD = [0xF0, 0xA5, 0x01, 0x01, 0x04, 0x9B];
 
-    // Historik med mer data för statistik
-    let history = JSON.parse(localStorage.getItem('gymstick_v4_history')) || { sessions: [], totalDist: 0, totalTime: 0 };
+    let history = JSON.parse(localStorage.getItem('gymstick_v5_history')) || { sessions: [], totalDist: 0, totalTime: 0 };
     updateHistoryUI();
 
     // --- CONFIG & INIT ---
@@ -511,7 +546,7 @@
                     else card.classList.add('single-mode');
                 };
             });
-            document.getElementById(`chk_${m.key}`).onchange = drawGraph;
+            document.getElementById(`chk_${m.key}`).onchange = () => drawGraph(ui.chart, sessionData);
         });
     }
     initConfigGrid();
@@ -629,14 +664,12 @@
 
             if(startTime) {
                 const elapsed = (Date.now() - startTime) / 1000;
-                // Spara motstånd (l) för statistik
                 sessionData.push({ t: elapsed, w: watt, s: speed, c: rpm, h: hr, l: level });
                 
                 if(sessionData.length % 2 === 0) {
                     updateAverages();
-                    drawGraph();
+                    drawGraph(ui.chart, sessionData);
                 }
-                // Punkt 6: Uppdatera realtidstotal
                 updateHistoryUI(calcDist);
             }
         }
@@ -673,25 +706,31 @@
                 
                 for(let j=sessionData.length-1; j>=0; j--) {
                     if(sessionData[j].t < cutoff) break;
-                    // Punkt 9: Puls ignorerar nollor
                     if(metric === 'h' && sessionData[j][metric] === 0) continue;
-                    
                     sum += sessionData[j][metric];
                     count++;
                 }
-                
                 disp.textContent = count > 0 ? Math.round(sum/count) : '-';
             }
         }
         calc('w'); calc('s'); calc('c'); calc('h');
     }
 
-    function drawGraph() {
-        if(sessionData.length < 2) return;
-        const res = parseInt(ui.graphRes.value);
+    // --- NY PROFFSIG GRAFMOTOR (Punkt 8) ---
+    function drawGraph(svgElement, data) {
+        svgElement.innerHTML = '';
+        if(!data || data.length < 2) return;
         
+        const res = parseInt(ui.graphRes.value);
+        // Hårdkodad viewbox: 0 0 800 400
+        const W = 800, H = 400;
+        const padL = 60, padR = 60, padT = 20, padB = 30; // Marginaler
+        const drawW = W - padL - padR;
+        const drawH = H - padT - padB;
+
+        // Sampling
         const buckets = [];
-        sessionData.forEach(p => {
+        data.forEach(p => {
             const idx = Math.floor(p.t / res);
             if(!buckets[idx]) buckets[idx] = {c:0, w:0, s:0, c_rpm:0, h:0, t:idx*res};
             buckets[idx].c++;
@@ -703,77 +742,93 @@
         const valid = buckets.filter(b=>b);
         if(valid.length < 2) return;
 
-        const svg = ui.chart;
-        svg.innerHTML = ''; 
-
-        function makePoly(metricKey, color, maxVal, width, height) {
-            let pts = "";
-            valid.forEach((b, i) => {
-                const x = (i / (valid.length - 1)) * width;
-                const val = b[metricKey] / b.c;
-                const y = height - ((val / maxVal) * height);
-                pts += `${x},${y} `;
-            });
-            const line = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-            line.setAttribute("points", pts);
-            line.setAttribute("stroke", color);
-            line.setAttribute("fill", "none");
-            line.setAttribute("stroke-width", "2"); // Tunnare linjer (Punkt 3)
-            return line;
-        }
-
+        // Hitta aktiva
         const active = [];
-        if(document.getElementById('chk_w').checked) active.push({key:'w', color:'var(--c-watt)', lbl:'W'});
-        if(document.getElementById('chk_s').checked) active.push({key:'s', color:'var(--c-speed)', lbl:'km/h'});
-        if(document.getElementById('chk_c').checked) active.push({key:'c_rpm', color:'var(--c-cad)', lbl:'rpm'});
-        if(document.getElementById('chk_h').checked) active.push({key:'h', color:'var(--c-hr)', lbl:'bpm'});
+        if(document.getElementById('chk_w').checked) active.push({key:'w', color:'var(--c-watt)', lbl:'W', side:'left'});
+        if(document.getElementById('chk_s').checked) active.push({key:'s', color:'var(--c-speed)', lbl:'km/h', side:'left'});
+        if(document.getElementById('chk_c').checked) active.push({key:'c_rpm', color:'var(--c-cad)', lbl:'rpm', side:'right'});
+        if(document.getElementById('chk_h').checked) active.push({key:'h', color:'var(--c-hr)', lbl:'bpm', side:'right'});
 
         if(active.length === 0) return;
 
-        // Rita axlar (Punkt 3: 0-100 koordinatsystem, men SVG-skalning hanterar det)
-        active.forEach((m, idx) => {
-            const max = Math.max(...valid.map(b => b[m.key]/b.c)) || 100;
-            const scaledMax = max * 1.1; 
+        // Rita Grid
+        for(let i=0; i<=4; i++) {
+            const y = padT + (drawH * i / 4);
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", padL); line.setAttribute("x2", W-padR);
+            line.setAttribute("y1", y); line.setAttribute("y2", y);
+            line.setAttribute("class", "grid-line");
+            svgElement.appendChild(line);
+        }
 
-            svg.appendChild(makePoly(m.key, m.color, scaledMax, 100, 100));
-
-            // Text i mikroskopisk font (3px) så den ser bra ut
-            const xPos = (idx % 2 === 0) ? 1 : 90; 
-            const yPos = 5 + (Math.floor(idx/2) * 5);
-            
+        // Rita Tidsskala (X)
+        const tMax = valid[valid.length-1].t;
+        const tStart = valid[0].t;
+        for(let i=0; i<=5; i++) {
+            const t = tStart + (tMax - tStart) * (i/5);
+            const x = padL + (drawW * (i/5));
             const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            txt.setAttribute("x", xPos);
-            txt.setAttribute("y", yPos);
-            txt.setAttribute("fill", m.color);
+            txt.setAttribute("x", x); txt.setAttribute("y", H - 5);
+            txt.setAttribute("text-anchor", "middle");
             txt.setAttribute("class", "axis-text");
-            txt.textContent = `${Math.round(max)} ${m.lbl}`;
-            svg.appendChild(txt);
+            txt.textContent = formatTimeShort(t);
+            svgElement.appendChild(txt);
+        }
+
+        // Rita Data
+        active.forEach((m, idx) => {
+            const maxVal = Math.max(...valid.map(b => b[m.key]/b.c)) || 100;
+            const scaleMax = maxVal * 1.1; 
+
+            // Punkter
+            let pts = "";
+            valid.forEach((b, i) => {
+                const x = padL + (i / (valid.length - 1)) * drawW;
+                const val = b[m.key] / b.c;
+                const y = (padT + drawH) - ((val / scaleMax) * drawH);
+                pts += `${x},${y} `;
+            });
+
+            // Polyline
+            const poly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+            poly.setAttribute("points", pts);
+            poly.setAttribute("stroke", m.color);
+            svgElement.appendChild(poly);
+
+            // Rita Y-Axel Text (Max, Mid)
+            const xTxt = (m.side === 'left') ? 10 : W - 10;
+            const anchor = (m.side === 'left') ? "start" : "end";
+            // Stapla labels om flera på samma sida
+            const yOffset = (idx % 2) * 12; 
+
+            // Max
+            const txtMax = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            txtMax.setAttribute("x", xTxt); txtMax.setAttribute("y", padT + 5 + yOffset);
+            txtMax.setAttribute("text-anchor", anchor);
+            txtMax.setAttribute("fill", m.color);
+            txtMax.setAttribute("class", "axis-text");
+            txtMax.textContent = Math.round(maxVal);
+            svgElement.appendChild(txtMax);
         });
     }
 
-    ui.graphRes.onchange = () => { updateAverages(); drawGraph(); };
+    ui.graphRes.onchange = () => { updateAverages(); drawGraph(ui.chart, sessionData); };
 
+    // --- SPARA & STOPP ---
     ui.stopBtn.onclick = async () => {
-        if(confirm("Avsluta och spara pass?")) {
+        if(confirm("Avsluta pass?")) {
             await send(STOP_CMD);
-            
-            // Spara
-            const d = parseFloat(ui.dist.textContent);
-            const c = parseInt(ui.cal.textContent);
+            // Spara full data
+            const dist = parseFloat(ui.dist.textContent);
+            const cal = parseInt(ui.cal.textContent);
             const dur = sessionData.length > 0 ? sessionData[sessionData.length-1].t : 0;
-            
-            // Aggregat för statistik (Punkt 8)
-            // Vi sparar inte rådata i "sessions" för evigt för att spara minne, men vi kan.
-            // För "Stats"-vyn behöver vi aggregerade värden.
             
             history.sessions.push({
                 date: new Date().toISOString(),
-                dist: d,
-                dur: dur,
-                cal: c,
-                data: sessionData // Vi behåller rådata för grafer
+                dist: dist, dur: dur, cal: cal,
+                data: sessionData
             });
-            history.totalDist += d;
+            history.totalDist += dist;
             history.totalTime += dur;
             
             saveHistory();
@@ -781,161 +836,166 @@
         }
     };
 
-    function updateHistoryUI(currentSessionDist = 0) {
-        const tot = history.totalDist + currentSessionDist;
-        ui.lifeDist.textContent = tot.toFixed(2) + " km";
+    function updateHistoryUI(currDist = 0) {
+        const totD = history.totalDist + currDist;
+        ui.lifeDist.textContent = totD.toFixed(2) + " km";
         ui.sessCount.textContent = history.sessions.length;
-        // Punkt 7: Total tid
-        const h = Math.floor(history.totalTime / 3600);
-        const m = Math.floor((history.totalTime % 3600) / 60);
-        ui.lifeTime.textContent = `${h}h ${m}m`;
+        ui.lifeTime.textContent = formatDurationLong(history.totalTime);
     }
 
-    function saveHistory() {
-        localStorage.setItem('gymstick_v4_history', JSON.stringify(history));
-        updateHistoryUI();
+    // Punkt 4: Tidsformat
+    function formatDurationLong(sec) {
+        const d = Math.floor(sec / 86400);
+        const h = Math.floor((sec % 86400) / 3600);
+        const m = Math.floor((sec % 3600) / 60);
+        let s = "";
+        if(d>0) s += d + " dag ";
+        if(h>0) s += h + " h ";
+        s += m + " min";
+        return s;
+    }
+    function formatTimeShort(sec) {
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        return `${m}:${s.toString().padStart(2,'0')}`;
     }
 
-    // --- STATISTIK CENTRAL (Punkt 7, 8, 9) ---
+    function saveHistory() { localStorage.setItem('gymstick_v5_history', JSON.stringify(history)); updateHistoryUI(); }
+
+    // --- STATISTIK ---
     ui.statsBtn.onclick = () => {
         ui.statsModal.classList.add('open');
         renderStats();
     };
 
-    let sortCol = 'date';
-    let sortAsc = false;
+    let sortCol = 'date', sortAsc = false;
 
     function renderStats() {
-        // 1. Filtrera
-        const yFilter = ui.fYear.value;
-        const mFilter = ui.fMonth.value;
-        const rFilter = ui.fRes.value;
-
-        // Fyll filter-dropdowns om tomma
+        // Uppdatera filter
+        const yF = ui.fYear.value;
+        // Punkt 1: Dynamiska år
+        const years = [...new Set(history.sessions.map(s => new Date(s.date).getFullYear()))].sort().reverse();
         if(ui.fYear.children.length === 1) {
-            const years = [...new Set(history.sessions.map(s => new Date(s.date).getFullYear()))];
-            years.sort().reverse().forEach(y => ui.fYear.add(new Option(y, y)));
-            // Resistances
-            for(let i=1; i<=32; i++) ui.fRes.add(new Option("Nivå " + i, i));
-            // Månader
+            years.forEach(y => ui.fYear.add(new Option(y, y)));
+            for(let i=1; i<=32; i++) ui.fRes.add(new Option("Innehåller Nivå " + i, i));
             for(let i=0; i<12; i++) ui.fMonth.add(new Option(new Date(0,i).toLocaleString('sv',{month:'long'}), i));
+        } else {
+            // Kolla om nya år tillkommit
+            years.forEach(y => {
+                if(![...ui.fYear.options].some(o => o.value == y)) ui.fYear.add(new Option(y,y));
+            });
         }
 
+        const mF = ui.fMonth.value;
+        const rF = ui.fRes.value;
+
+        // Filtrera
         let filtered = history.sessions.filter(s => {
             const d = new Date(s.date);
-            if(yFilter !== 'all' && d.getFullYear() != yFilter) return false;
-            if(mFilter !== 'all' && d.getMonth() != mFilter) return false;
-            
-            // Motståndsfilter (Punkt 8): Kolla om passet innehåller detta motstånd
-            if(rFilter !== 'all') {
-                const targetRes = parseInt(rFilter);
-                // Har vi kört på denna nivå?
-                const hasRes = s.data.some(p => p.l === targetRes);
-                if(!hasRes) return false;
+            if(yF !== 'all' && d.getFullYear() != yF) return false;
+            if(mF !== 'all' && d.getMonth() != mF) return false;
+            if(rF !== 'all') {
+                return s.data.some(p => p.l == rF);
             }
             return true;
         });
 
-        // 2. Beräkna Totaler för urvalet
-        let totDist=0, totTime=0, totCal=0, sumSpeed=0, sumCad=0, sumWatt=0, points=0;
-        
+        // Totals (Punkt 2)
+        let tDist=0, tTime=0, tCal=0, sWatt=0, sSpd=0, sCad=0, sHr=0, pts=0;
         filtered.forEach(s => {
-            totDist += s.dist;
-            totTime += s.dur;
-            totCal += s.cal;
-            
-            // För medelvärden: loopa data points
+            tDist += s.dist; tTime += s.dur; tCal += s.cal;
             s.data.forEach(p => {
-                // Motståndsfilter logic: Räkna bara tid/distans på denna nivå om valt
-                if(rFilter !== 'all' && p.l != rFilter) return;
-                
-                sumSpeed += p.s;
-                sumCad += p.c;
-                sumWatt += p.w;
-                points++;
+                sWatt+=p.w; sSpd+=p.s; sCad+=p.c;
+                if(p.h>0) sHr+=p.h;
+                pts++;
             });
         });
-
-        // Om vi filtrerar på motstånd, måste vi räkna om totTime/Dist baserat på points
-        // Enkel approximation: varje punkt är ca 1-2 sekunder. Vi kör på points.
-        // För exakthet borde vi spara dt per punkt. Men detta duger för översikt.
         
-        const avgSpeed = points ? (sumSpeed/points).toFixed(1) : 0;
-        const avgCad = points ? Math.round(sumCad/points) : 0;
-        const avgWatt = points ? Math.round(sumWatt/points) : 0;
+        const avg = (sum) => pts ? Math.round(sum/pts) : 0;
+        const avgF = (sum) => pts ? (sum/pts).toFixed(1) : 0;
 
-        // Rita kort
-        ui.statCards.innerHTML = `
-            <div class="big-stat-card"><span class="big-stat-val c-dist">${totDist.toFixed(1)} km</span><span class="big-stat-lbl">Sträcka</span></div>
-            <div class="big-stat-card"><span class="big-stat-val">${(totTime/60).toFixed(0)} min</span><span class="big-stat-lbl">Tid</span></div>
-            <div class="big-stat-card"><span class="big-stat-val c-cal">${totCal}</span><span class="big-stat-lbl">Kalorier</span></div>
-            <div class="big-stat-card"><span class="big-stat-val c-speed">${avgSpeed}</span><span class="big-stat-lbl">Snitt Fart</span></div>
-            <div class="big-stat-card"><span class="big-stat-val c-watt">${avgWatt}</span><span class="big-stat-lbl">Snitt Watt</span></div>
-            <div class="big-stat-card"><span class="big-stat-val c-cad">${avgCad}</span><span class="big-stat-lbl">Snitt Kadens</span></div>
+        ui.totalTop.innerHTML = `
+            <div class="stat-card-small"><span class="sc-val c-dist">${tDist.toFixed(1)} km</span><span class="sc-lbl">Distans</span></div>
+            <div class="stat-card-small"><span class="sc-val">${formatDurationLong(tTime)}</span><span class="sc-lbl">Tid</span></div>
+            <div class="stat-card-small"><span class="sc-val c-cal">${filtered.length}</span><span class="sc-lbl">Pass</span></div>
+        `;
+        ui.totalBot.innerHTML = `
+            <div class="stat-card-small"><span class="sc-val c-speed">${avgF(sSpd)}</span><span class="sc-lbl">Medel Fart</span></div>
+            <div class="stat-card-small"><span class="sc-val c-watt">${avg(sWatt)}</span><span class="sc-lbl">Medel Watt</span></div>
+            <div class="stat-card-small"><span class="sc-val c-cad">${avg(sCad)}</span><span class="sc-lbl">Medel Kadens</span></div>
+            <div class="stat-card-small"><span class="sc-val c-hr">${avg(sHr)}</span><span class="sc-lbl">Medel Puls</span></div>
         `;
 
-        // 3. Tabell
-        // Sortera
-        filtered.sort((a,b) => {
-            let valA, valB;
-            // Helper to get avg from session data
-            const getAvg = (s, k) => s.data.reduce((acc,v)=>acc+v[k],0)/s.data.length || 0;
-            
-            if(sortCol === 'date') { valA=new Date(a.date); valB=new Date(b.date); }
-            else if(sortCol === 'dur') { valA=a.dur; valB=b.dur; }
-            else if(sortCol === 'dist') { valA=a.dist; valB=b.dist; }
-            else if(sortCol === 'cal') { valA=a.cal; valB=b.cal; }
-            else if(sortCol === 'watt') { valA=getAvg(a,'w'); valB=getAvg(b,'w'); }
-            else if(sortCol === 'hr') { valA=getAvg(a,'h'); valB=getAvg(b,'h'); }
-            else if(sortCol === 'speed') { valA=getAvg(a,'s'); valB=getAvg(b,'s'); }
-            
-            return sortAsc ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
+        // Tabell
+        // Punkt 3: Pilar
+        const arrow = sortAsc ? ' ↑' : ' ↓';
+        ['date','dur','dist','speed','watt','cad','hr','cal'].forEach(k => {
+            document.getElementById('sort_'+k).textContent = (sortCol === k) ? arrow : '';
         });
 
-        ui.sessBody.innerHTML = filtered.map(s => {
+        filtered.sort((a,b) => {
+            const getAvg = (s,k) => s.data.reduce((ac,v)=>ac+v[k],0)/s.data.length||0;
+            let va, vb;
+            if(sortCol==='date') { va=new Date(a.date); vb=new Date(b.date); }
+            else if(sortCol==='dur') { va=a.dur; vb=b.dur; }
+            else if(sortCol==='dist') { va=a.dist; vb=b.dist; }
+            else if(sortCol==='cal') { va=a.cal; vb=b.cal; }
+            else if(sortCol==='watt') { va=getAvg(a,'w'); vb=getAvg(b,'w'); }
+            else if(sortCol==='speed') { va=getAvg(a,'s'); vb=getAvg(b,'s'); }
+            else if(sortCol==='cad') { va=getAvg(a,'c'); vb=getAvg(b,'c'); }
+            else if(sortCol==='hr') { 
+                const ha = a.data.filter(p=>p.h>0); const hb = b.data.filter(p=>p.h>0);
+                va = ha.length ? ha.reduce((s,v)=>s+v.h,0)/ha.length : 0;
+                vb = hb.length ? hb.reduce((s,v)=>s+v.h,0)/hb.length : 0;
+            }
+            return sortAsc ? (va>vb?1:-1) : (va<vb?1:-1);
+        });
+
+        ui.sessBody.innerHTML = filtered.map((s, idx) => {
             const d = new Date(s.date);
-            const dateStr = d.toLocaleDateString('fi-FI') + ' ' + d.toLocaleTimeString('fi-FI', {hour:'2-digit', minute:'2-digit'});
-            const getAvg = (k) => Math.round(s.data.reduce((acc,v)=>acc+v[k],0)/s.data.length || 0);
-            const getAvgHr = () => { // Punkt 9: Puls > 0
-                const validP = s.data.filter(p=>p.h>0);
-                return validP.length ? Math.round(validP.reduce((acc,v)=>acc+v.h,0)/validP.length) : 0;
+            const dStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+            const getAvg = (k) => Math.round(s.data.reduce((ac,v)=>ac+v[k],0)/s.data.length||0);
+            const getAvgHr = () => {
+                const h = s.data.filter(p=>p.h>0);
+                return h.length ? Math.round(h.reduce((acc,v)=>acc+v.h,0)/h.length) : 0;
             };
-            
-            return `<tr>
-                <td>${dateStr}</td>
-                <td>${(s.dur/60).toFixed(0)}m</td>
+            // Punkt 6: Onclick öppnar modal
+            return `<tr onclick="openSession(${history.sessions.indexOf(s)})">
+                <td style="text-align:left">${dStr}</td>
+                <td>${formatDurationLong(s.dur)}</td>
                 <td class="c-dist">${s.dist.toFixed(2)}</td>
+                <td class="c-speed">${(s.data.reduce((ac,v)=>ac+v.s,0)/s.data.length).toFixed(1)}</td>
                 <td class="c-watt">${getAvg('w')}</td>
+                <td class="c-cad">${getAvg('c')}</td>
                 <td class="c-hr">${getAvgHr()}</td>
-                <td class="c-speed">${(s.data.reduce((acc,v)=>acc+v.s,0)/s.data.length).toFixed(1)}</td>
                 <td class="c-cal">${s.cal}</td>
             </tr>`;
         }).join('');
     }
 
-    window.sortSess = (col) => {
-        if(sortCol === col) sortAsc = !sortAsc;
-        else { sortCol = col; sortAsc = false; } // Default ny kolumn = fallande (högst/nyast först)
+    window.sortSess = (c) => {
+        if(sortCol===c) sortAsc=!sortAsc; else { sortCol=c; sortAsc=false; }
         renderStats();
+    };
+
+    window.openSession = (idx) => {
+        const s = history.sessions[idx];
+        ui.singleTitle.textContent = "PASS: " + new Date(s.date).toLocaleString();
+        ui.singleModal.classList.add('open');
+        // Rita graf i modalen
+        setTimeout(() => drawGraph(ui.singleChart, s.data), 100);
     };
 
     [ui.fYear, ui.fMonth, ui.fRes].forEach(el => el.onchange = renderStats);
 
-    // Import/Export
     document.getElementById('exportBtn').onclick = () => {
         const b = new Blob([JSON.stringify(history)],{type:'application/json'});
-        const a =document.createElement('a'); a.href=URL.createObjectURL(b); a.download='gymstick_history.json'; a.click();
+        const a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='gymstick.json'; a.click();
     };
     document.getElementById('importFile').onchange = (e) => {
         const r = new FileReader();
         r.onload = (ev) => {
-            try {
-                history = JSON.parse(ev.target.result);
-                localStorage.setItem('gymstick_v4_history', JSON.stringify(history));
-                updateHistoryUI();
-                renderStats();
-                alert("Data uppladdad!");
-            } catch(x){alert("Fel fil");}
+            try { history = JSON.parse(ev.target.result); saveHistory(); alert("Uppladdad!"); } catch(x){alert("Fel");}
         };
         r.readAsText(e.target.files[0]);
     };
