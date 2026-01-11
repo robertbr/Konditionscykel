@@ -1113,7 +1113,20 @@
 
     [ui.fYear, ui.fMonth, ui.fRes].forEach(el => el.onchange = renderStats);
 
-    document.getElementById('exportBtn').onclick = () => { const b = new Blob([JSON.stringify(history)],{type:'application/json'}); const a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='gymstick.json'; a.click(); };
+    document.getElementById('exportBtn').onclick = () => { 
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        const h = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        
+        const b = new Blob([JSON.stringify(history)],{type:'application/json'}); 
+        const a = document.createElement('a'); 
+        a.href=URL.createObjectURL(b); 
+        a.download = `gymstick_${y}-${m}-${d}_${h}-${min}.json`; 
+        a.click(); 
+    };
     document.getElementById('importFile').onchange = (e) => { const r = new FileReader(); r.onload = (ev) => { try { history = JSON.parse(ev.target.result); if(history.settings) settings = history.settings; saveHistoryFile(); alert("Uppladdad!"); initConfigGrid(); if(history.sessions.length > 0) { graphState.data = history.sessions[history.sessions.length-1].data; drawCombinedGraph(ui.chart, graphState.data, true); } updateHistoryUI(); } catch(x){console.log(x); alert("Fel");} }; r.readAsText(e.target.files[0]); };
 
     ui.statsBtn.onclick = () => { ui.statsModal.classList.add('open'); renderStats(); };
