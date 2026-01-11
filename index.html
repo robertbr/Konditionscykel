@@ -378,7 +378,6 @@
             <div class="stats-filter">
                 <select id="filterYear" class="main-select"><option value="all">Alla år</option></select>
                 <select id="filterMonth" class="main-select"><option value="all">Alla månader</option></select>
-                <select id="filterRes" class="main-select"><option value="all">Alla motstånd</option></select>
             </div>
 
             <div class="section-header">TOTALT</div>
@@ -554,7 +553,7 @@
         sessBody: document.getElementById('sessBody'),
         fYear: document.getElementById('filterYear'),
         fMonth: document.getElementById('filterMonth'),
-        fRes: document.getElementById('filterRes'),
+        // fRes borttaget
         btnDeleteAll: document.getElementById('btnDeleteAll'),
         singleModal: document.getElementById('singleModal'),
         singleChart: document.getElementById('singleChart'),
@@ -1032,27 +1031,17 @@
         
         // Months
         if(ui.fMonth.children.length === 1) {
-            const months = new Set(history.sessions.map(s => new Date(s.date).getMonth()));
-            const mNames = ["Januari","Februari","Mars","April","Maj","Juni","Juli","Augusti","September","Oktober","November","December"];
-            [...months].sort((a,b)=>a-b).forEach(m => ui.fMonth.add(new Option(mNames[m], m)));
-        }
-
-        // Resistance
-        if(ui.fRes.children.length === 1) {
-            const resSet = new Set();
-            history.sessions.forEach(s => s.data.forEach(p => resSet.add(p.l)));
-            [...resSet].sort((a,b)=>a-b).forEach(r => ui.fRes.add(new Option(r, r)));
+            const mNames = ["januari","februari","mars","april","maj","juni","juli","augusti","september","oktober","november","december"];
+            mNames.forEach((m, i) => ui.fMonth.add(new Option(m, i)));
         }
 
         const yF = ui.fYear.value;
         const mF = ui.fMonth.value; 
-        const rF = ui.fRes.value;
         
         let filtered = history.sessions.filter(s => {
             const d = new Date(s.date);
             if(yF !== 'all' && d.getFullYear() != yF) return false;
             if(mF !== 'all' && d.getMonth() != mF) return false;
-            if(rF !== 'all') { return s.data.some(p => p.l == rF); }
             return true;
         });
 
@@ -1129,7 +1118,7 @@
         setTimeout(() => { drawCombinedGraph(ui.singleChart, s.data, true, true); }, 100);
     };
 
-    [ui.fYear, ui.fMonth, ui.fRes].forEach(el => el.onchange = renderStats);
+    [ui.fYear, ui.fMonth].forEach(el => el.onchange = renderStats);
 
     document.getElementById('exportBtn').onclick = () => { 
         const now = new Date();
