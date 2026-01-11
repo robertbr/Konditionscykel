@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gymstick Pro Monitor v12.0</title>
+    <title>Gymstick Pro Monitor v12.1</title>
     <style>
         :root {
             --bg-color: #f0f2f5;
@@ -352,12 +352,14 @@
         <div class="config-grid" id="configGrid"></div>
 
         <div class="graph-wrapper" id="graphContainer">
-            <div class="zoom-switch">
-                <!-- Inga zoomknappar i högerpanelen (Punkt 2) -->
-            </div>
             <svg id="chartSvg" viewBox="0 0 1000 400" preserveAspectRatio="none"></svg>
         </div>
-
+        
+        <div class="footer-stats">
+            <div>Totalt: <span class="footer-val c-dist" id="lifeDist">0.000 km</span></div>
+            <div>Tid: <span class="footer-val" id="lifeTime">0h 0m</span></div>
+            <div>Pass: <span class="footer-val" id="sessCount">0</span></div>
+        </div>
     </div>
 </div>
 
@@ -566,6 +568,12 @@
         calcResult: document.getElementById('calcResult'),
         powerModal: document.getElementById('powerModal'),
         powerBody: document.getElementById('powerBody'),
+        lifeDist: document.getElementById('lifeDist'),
+        lifeTime: document.getElementById('lifeTime'),
+        sessCount: document.getElementById('sessCount'),
+        avgStart: document.getElementById('avgStart'),
+        avgEnd: document.getElementById('avgEnd'),
+        avgResultS: document.getElementById('avgResultS'),
         // X-Axis Inputs
         xMinH: document.getElementById('x_min_h'), xMinM: document.getElementById('x_min_m'),
         xMaxH: document.getElementById('x_max_h'), xMaxM: document.getElementById('x_max_m'),
@@ -616,6 +624,13 @@
     if(history.settings) settings = history.settings;
 
     function saveHistoryFile() { history.settings = settings; localStorage.setItem('gymstick_v6_history', JSON.stringify(history)); }
+    function updateHistoryUI(currDist = 0) {
+        const totD = history.totalDist + currDist;
+        ui.lifeDist.textContent = totD.toFixed(3) + " km";
+        ui.sessCount.textContent = history.sessions.length;
+        ui.lifeTime.textContent = formatDurationLong(history.totalTime);
+    }
+    updateHistoryUI();
 
     // --- CONSTANTS ---
     const TIME_OPTS = [
