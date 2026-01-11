@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gymstick Pro Monitor v12.1</title>
+    <title>Gymstick Pro Monitor v13.0</title>
     <style>
         :root {
+            /* --- LIGHT MODE VARIABLER --- */
             --bg-color: #f0f2f5;
             --panel-bg: #ffffff;
             --border-color: #e4e6eb;
@@ -18,17 +19,18 @@
             --grid-line-strong: #d0d2d6;
 
             /* Pigga Färger */
-            --c-speed: #00c853;
-            --c-watt: #d50000;
-            --c-cad: #6200ea;
-            --c-hr: #ff6d00;
-            --c-dist: #2962ff;
-            --c-cal: #ffd600;
-            --c-res: #fbc02d;
+            --c-speed: #00c853;  /* Skarp Grön */
+            --c-watt: #d50000;   /* Djup Röd/Rosa */
+            --c-cad: #6200ea;    /* Lila */
+            --c-hr: #ff6d00;     /* Orange */
+            --c-dist: #2962ff;   /* Blå */
+            --c-cal: #ffd600;    /* Gul/Guld */
+            --c-res: #fbc02d;    /* Gul */
             
             --btn-bg: #e4e6eb;
         }
 
+        /* --- DARK MODE --- */
         body.dark-mode {
             --bg-color: #0f1115;
             --panel-bg: #181a1f;
@@ -41,6 +43,7 @@
             --grid-line: #2a2d35;
             --grid-line-strong: #3f424a;
 
+            /* Neon Färger */
             --c-speed: #00e676;
             --c-watt: #ff4081;
             --c-cad: #e040fb;
@@ -354,12 +357,6 @@
         <div class="graph-wrapper" id="graphContainer">
             <svg id="chartSvg" viewBox="0 0 1000 400" preserveAspectRatio="none"></svg>
         </div>
-        
-        <div class="footer-stats">
-            <div>Totalt: <span class="footer-val c-dist" id="lifeDist">0.000 km</span></div>
-            <div>Tid: <span class="footer-val" id="lifeTime">0h 0m</span></div>
-            <div>Pass: <span class="footer-val" id="sessCount">0</span></div>
-        </div>
     </div>
 </div>
 
@@ -564,6 +561,8 @@
         singleTitle: document.getElementById('singleTitle'),
         singleGraphWrapper: document.getElementById('singleGraphWrapper'),
         singleGraphControls: document.getElementById('singleGraphControls'),
+        ch1:document.getElementById('ch1'), cm1:document.getElementById('cm1'), cs1:document.getElementById('cs1'),
+        ch2:document.getElementById('ch2'), cm2:document.getElementById('cm2'), cs2:document.getElementById('cs2'),
         calcMetric: document.getElementById('calcMetric'),
         calcResult: document.getElementById('calcResult'),
         powerModal: document.getElementById('powerModal'),
@@ -625,10 +624,7 @@
 
     function saveHistoryFile() { history.settings = settings; localStorage.setItem('gymstick_v6_history', JSON.stringify(history)); }
     function updateHistoryUI(currDist = 0) {
-        const totD = history.totalDist + currDist;
-        ui.lifeDist.textContent = totD.toFixed(3) + " km";
-        ui.sessCount.textContent = history.sessions.length;
-        ui.lifeTime.textContent = formatDurationLong(history.totalTime);
+        // UI Uppdateras endast i Stats, men vi kan ha dem här ifall vi vill visa i panel
     }
     updateHistoryUI();
 
