@@ -376,9 +376,9 @@
         <div class="modal-body">
             
             <div class="stats-filter">
-                <select id="filterYear" class="main-select"><option value="all">Alla År</option></select>
-                <select id="filterMonth" class="main-select"><option value="all">Alla Månader</option></select>
-                <select id="filterRes" class="main-select"><option value="all">Alla Motstånd</option></select>
+                <select id="filterYear" class="main-select"><option value="all">Alla år</option></select>
+                <select id="filterMonth" class="main-select"><option value="all">Alla månader</option></select>
+                <select id="filterRes" class="main-select"><option value="all">Alla motstånd</option></select>
             </div>
 
             <div class="section-header">TOTALT</div>
@@ -1025,11 +1025,29 @@
     }
 
     function renderStats() {
-        const yF = ui.fYear.value;
+        // --- Populate Filters ---
+        // Years
         const years = [...new Set(history.sessions.map(s => new Date(s.date).getFullYear()))].sort().reverse();
         if(ui.fYear.children.length === 1) years.forEach(y => ui.fYear.add(new Option(y, y)));
         
-        const mF = ui.fMonth.value; const rF = ui.fRes.value;
+        // Months
+        if(ui.fMonth.children.length === 1) {
+            const months = new Set(history.sessions.map(s => new Date(s.date).getMonth()));
+            const mNames = ["Januari","Februari","Mars","April","Maj","Juni","Juli","Augusti","September","Oktober","November","December"];
+            [...months].sort((a,b)=>a-b).forEach(m => ui.fMonth.add(new Option(mNames[m], m)));
+        }
+
+        // Resistance
+        if(ui.fRes.children.length === 1) {
+            const resSet = new Set();
+            history.sessions.forEach(s => s.data.forEach(p => resSet.add(p.l)));
+            [...resSet].sort((a,b)=>a-b).forEach(r => ui.fRes.add(new Option(r, r)));
+        }
+
+        const yF = ui.fYear.value;
+        const mF = ui.fMonth.value; 
+        const rF = ui.fRes.value;
+        
         let filtered = history.sessions.filter(s => {
             const d = new Date(s.date);
             if(yF !== 'all' && d.getFullYear() != yF) return false;
