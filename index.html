@@ -610,6 +610,7 @@
 
     // --- DATA ---
     let iconsoleWrite = null, pollInterval = null, currentResistance = 1, sessionData = [], startTime = null;
+    let bluetoothDevice = null;
     let calcDist = 0, lastRawDist = -1, lastPktTime = 0, rolloverCount = 0, lastBikeTimeSec = -1;
     let graphState = { scrollOffset: 0, zoomLevel: 1.0, isDragging: false, lastMouseX: 0, data: [], yAxisState: {}, zoomMode: 'x', yOffset: 0, manualXMin: null, manualXMax: null };
     let singleSettings = JSON.parse(JSON.stringify(settings.metrics)); 
@@ -759,6 +760,7 @@
         try {
             ui.statusText.textContent = "Söker enhet...";
             const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['fitness_machine'] }], optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb'] });
+            bluetoothDevice = device;
             device.addEventListener('gattserverdisconnected', onDisconnect);
             const server = await device.gatt.connect();
             const service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
@@ -846,6 +848,33 @@
     }
     ui.btnResUp.onclick = () => setRes(currentResistance + 1);
     ui.btnResDown.onclick = () => setRes(currentResistance - 1);
+
+    ui.stopBtn.onclick = async () => {
+        if(pollInterval) clearInterval(pollInterval);
+        
+        // Spara passet om det finns data
+        if(sessionData.length > 0) {
+            const last = sessionData[sessionData.length-1];
+            const s = {
+                date: new Date().toISOString(),
+                dur: last.t,
+                dist: calcDist,
+                cal: parseInt(ui.cal.textContent)||0,
+                data: sessionData
+            };
+            history.sessions.push(s);
+            saveHistoryFile();
+            alert("Pass sparat och avslutat!");
+        }
+
+        try { await send(STOP_CMD); } catch(e){}
+        
+        if(bluetoothDevice && bluetoothDevice.gatt.connected) {
+            bluetoothDevice.gatt.disconnect();
+        } else {
+            onDisconnect();
+        }
+    };
 
     function updateAverages() {
         if(sessionData.length === 0) return;
