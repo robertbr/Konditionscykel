@@ -615,6 +615,7 @@
     let iconsoleWrite = null, pollInterval = null, currentResistance = 1, sessionData = [], startTime = null;
     let bluetoothDevice = null;
     let calcDist = 0, lastRawDist = -1, lastPktTime = 0, rolloverCount = 0, lastBikeTimeSec = -1;
+    let distOffset = 0, lastTotalRawDist = -1;
     let graphState = { scrollOffset: 0, zoomLevel: 1.0, isDragging: false, lastMouseX: 0, data: [], yAxisState: {}, zoomMode: 'x', yOffset: 0, manualXMin: null, manualXMax: null };
     let singleSettings = JSON.parse(JSON.stringify(settings.metrics)); 
     let seqIndex = 0;
@@ -795,6 +796,7 @@
             sessionData = []; startTime = Date.now();
             calcDist = 0; lastRawDist = -1; lastPktTime = Date.now();
             rolloverCount = 0; lastBikeTimeSec = -1; 
+            distOffset = 0; lastTotalRawDist = -1;
             graphState.scrollOffset = 0; graphState.data = sessionData;
             return;
         }
@@ -823,13 +825,25 @@
             const totalSecDisplay = (rolloverCount * 6000) + currentBikeSec;
 
             const now = Date.now(); const dt = (now - lastPktTime) / 1000; lastPktTime = now;
-            if (rawDist > lastRawDist && lastRawDist !== -1) calcDist = rawDist;
+            
+            // --- LOGIK FÖR ATT HANTERA NÄR CYKELN BÖRJAR OM PÅ 0 ---
+            if (lastRawDist !== -1 && rawDist < lastRawDist - 50) {
+                // Om distansen plötsligt sjunker med mer än 50km, har cykeln börjat om.
+                // Vi sparar det sista värdet i vår offset.
+                distOffset += lastRawDist; 
+            }
+            
+            let totalRawDist = rawDist + distOffset;
+
+            if (totalRawDist > lastTotalRawDist && lastTotalRawDist !== -1) calcDist = totalRawDist;
             else {
                 if (speed > 0 && dt < 5) calcDist += (speed / 3600) * dt;
-                if (calcDist > rawDist + 0.099) calcDist = rawDist + 0.099;
-                if (calcDist < rawDist) calcDist = rawDist;
+                if (calcDist > totalRawDist + 0.099) calcDist = totalRawDist + 0.099;
+                if (calcDist < totalRawDist) calcDist = totalRawDist;
             }
+            
             lastRawDist = rawDist;
+            lastTotalRawDist = totalRawDist;
 
             ui.speed.textContent = speed.toFixed(1); ui.watt.textContent = watt.toFixed(0);
             ui.cad.textContent = rpm; ui.hr.textContent = hr; ui.cal.textContent = cal;
