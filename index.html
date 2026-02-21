@@ -413,7 +413,10 @@
     <div class="modal-content" style="max-width:95%; height:95%;">
         <div class="modal-header">
             <h3 style="margin:0" id="singleTitle">PASS</h3>
-            <button onclick="document.getElementById('singleModal').classList.remove('open')" class="btn-ctrl" style="width:auto; border-color:var(--border-color);">X</button>
+            <div>
+                <button onclick="deleteCurrentSession()" class="btn-ctrl" style="width:auto; border-color:#ff3d00; color:#ff3d00; margin-right:10px;">RADERA PASS</button>
+                <button onclick="document.getElementById('singleModal').classList.remove('open')" class="btn-ctrl" style="width:auto; border-color:var(--border-color);">X</button>
+            </div>
         </div>
         <div class="modal-body" style="display:flex; flex-direction:column;">
             
@@ -618,6 +621,8 @@
     
     let sortCol = 'date';
     let sortAsc = false;
+
+    let currentSessionIdx = -1;
 
     let history = JSON.parse(localStorage.getItem('gymstick_v6_history')) || { sessions: [], totalDist: 0, totalTime: 0, settings: settings };
     if(history.settings) settings = history.settings;
@@ -1131,6 +1136,7 @@
     
     window.sortSess = (c) => { if(sortCol===c) sortAsc=!sortAsc; else { sortCol=c; sortAsc=false; } renderStats(); };
     window.openSession = (idx) => {
+        currentSessionIdx = idx;
         const s = history.sessions[idx];
         ui.singleTitle.textContent = "PASS: " + new Date(s.date).toLocaleString();
         ui.singleModal.classList.add('open');
@@ -1145,6 +1151,19 @@
         
         initSingleControls(); 
         setTimeout(() => { drawCombinedGraph(ui.singleChart, s.data, true, true); }, 100);
+    };
+
+    window.deleteCurrentSession = () => {
+        if (currentSessionIdx === -1) return;
+        if (confirm("Är du säker på att du vill radera detta träningspass? Det kan inte ångras.")) {
+            // Ta bort passet från historiken
+            history.sessions.splice(currentSessionIdx, 1);
+            saveHistoryFile();
+            
+            // Stäng modalen och uppdatera vyn
+            document.getElementById('singleModal').classList.remove('open');
+            renderStats(); 
+        }
     };
 
     [ui.fYear, ui.fMonth].forEach(el => el.onchange = renderStats);
