@@ -1,1227 +1,398 @@
 <!DOCTYPE html>
-<html lang="sv">
+<html lang="sv" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gymstick Pro Monitor v13.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Avståndssensor App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
     <style>
-        :root {
-            /* --- LIGHT MODE VARIABLER --- */
-            --bg-color: #f0f2f5;
-            --panel-bg: #ffffff;
-            --border-color: #e4e6eb;
-            --text-main: #1c1e21;
-            --text-dim: #65676b;
-            --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            
-            --graph-bg: #f7f8fa;
-            --grid-line: #e4e6eb;
-            --grid-line-strong: #d0d2d6;
-
-            /* Pigga Färger */
-            --c-speed: #00c853;  /* Skarp Grön */
-            --c-watt: #d50000;   /* Djup Röd/Rosa */
-            --c-cad: #6200ea;    /* Lila */
-            --c-hr: #ff6d00;     /* Orange */
-            --c-dist: #2962ff;   /* Blå */
-            --c-cal: #ffd600;    /* Gul/Guld */
-            --c-res: #fbc02d;    /* Gul */
-            
-            --btn-bg: #e4e6eb;
-        }
-
-        /* --- DARK MODE --- */
-        body.dark-mode {
-            --bg-color: #0f1115;
-            --panel-bg: #181a1f;
-            --border-color: #2a2d35;
-            --text-main: #e0e0e0;
-            --text-dim: #9ca3af;
-            --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            
-            --graph-bg: #131519;
-            --grid-line: #2a2d35;
-            --grid-line-strong: #3f424a;
-
-            /* Neon Färger */
-            --c-speed: #00e676;
-            --c-watt: #ff4081;
-            --c-cad: #e040fb;
-            --c-hr: #ff6e40;
-            --c-dist: #448aff;
-            --c-cal: #ffab00;
-            --c-res: #ffd600;
-            
-            --btn-bg: #2a2d35;
-        }
-
-        html { font-size: 14px; }
-        * { box-sizing: border-box; }
-
-        body { 
-            font-family: 'Segoe UI', system-ui, sans-serif; 
-            background: var(--bg-color); 
-            color: var(--text-main);
-            margin: 0; padding: 15px;
-            height: 100vh;
-            display: flex; flex-direction: column; overflow: hidden;
-            transition: background 0.3s, color 0.3s;
-        }
-
-        /* LAYOUT */
-        .main-container {
-            display: grid; gap: 20px; flex: 1; overflow: hidden;
-            grid-template-columns: 320px 1fr; 
-            grid-template-rows: 1fr;
-            transition: all 0.3s ease;
-        }
-
-        .main-container.full-mode {
-            grid-template-columns: 1fr;
-            max-width: 500px;
-            margin: 0 auto;
-        }
-        .main-container.full-mode .panel-right { display: none; }
-
-        @media (max-width: 900px) {
-            .main-container { grid-template-columns: 1fr; grid-template-rows: auto 1fr; overflow-y: auto; }
-            body { overflow-y: auto; height: auto; }
-        }
-
-        .panel {
-            background: var(--panel-bg); border-radius: 16px; border: 1px solid var(--border-color);
-            padding: 20px; display: flex; flex-direction: column; gap: 15px; overflow-y: hidden;
-            box-shadow: var(--shadow);
-            position: relative;
-            transition: background 0.3s, border-color 0.3s;
-        }
-        .scroll-y { overflow-y: auto; }
-
-        /* VÄNSTER PANEL */
-        .header-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; text-align: center; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; align-items: center; }
-        .h-item h3 { margin: 0; font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
-        .val-mid { font-size: 1.5rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.2; }
-        
-        .res-ctrl { display: flex; align-items: center; justify-content: center; gap: 5px; }
-        .btn-round {
-            width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border-color);
-            background: var(--btn-bg); color: var(--text-main); cursor: pointer; display:grid; place-items:center; font-size: 1.2rem; line-height: 1; transition: 0.2s;
-        }
-        .btn-round:hover { filter: brightness(0.9); }
-
-        .watt-display { text-align: center; margin: 5px 0 0 0; }
-        .watt-num { font-size: 5rem; font-weight: 900; line-height: 0.9; color: var(--c-watt); letter-spacing: -2px; }
-        .watt-lbl { font-size: 1rem; font-weight: 800; color: var(--c-watt); opacity: 0.8; letter-spacing: 3px; }
-
-        .live-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .live-card { 
-            background: var(--bg-color); padding: 10px; border-radius: 12px; 
-            text-align: center; display: flex; flex-direction: column; justify-content: center; 
-            border: 1px solid var(--border-color);
-        }
-        .live-lbl { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 2px; font-weight: 700; }
-        .live-val { font-size: 2rem; font-weight: 800; line-height: 1; }
-
-        .progress-box { height: 6px; background: var(--border-color); margin-top: 10px; border-radius: 3px; overflow: hidden; display: none; }
-        .progress-fill { height: 100%; background: var(--c-speed); width: 0%; transition: width 0.3s; }
-
-        .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto; }
-        .btn-ctrl {
-            background: var(--btn-bg); border: 1px solid var(--border-color); color: var(--text-dim);
-            padding: 10px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 700;
-            text-transform: uppercase; transition: 0.2s;
-        }
-        .btn-ctrl:hover { background: var(--border-color); color: var(--text-main); }
-
-        .btn-main {
-            grid-column: span 2; background: var(--c-dist); color: #fff; border: none; padding: 14px; border-radius: 8px;
-            font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 1rem;
-            box-shadow: 0 4px 12px rgba(41, 98, 255, 0.25); transition: transform 0.1s;
-        }
-        .btn-main:hover { transform: translateY(-1px); filter: brightness(1.1); }
-        .btn-stop { background: var(--c-watt); box-shadow: 0 4px 12px rgba(213, 0, 0, 0.25); display: none; }
-
-        /* HÖGER PANEL */
-        .right-header { 
-            display: flex; gap: 15px; align-items: center; margin-bottom: 5px; 
-            background: var(--btn-bg); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);
-        }
-        .header-title { color: var(--text-main); font-weight: 900; font-size: 0.9rem; white-space: nowrap; margin-right: auto;}
-        .header-status { font-size: 0.7rem; color: var(--text-dim); font-weight: bold; text-transform: uppercase;}
-        
-        .theme-toggle { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 0 5px; line-height: 1;}
-        select.main-select { background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer;}
-
-        .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
-        .config-card {
-            background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 10px;
-            padding: 8px; display: flex; flex-direction: column; gap: 4px; transition: all 0.2s; position: relative;
-        }
-        .config-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; margin-bottom: 2px; }
-        .config-title { font-weight: 800; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; text-transform: uppercase; }
-        .config-opts { display: flex; gap: 8px; font-size: 0.75rem; color: var(--text-dim); font-weight: 600; }
-        .chk { transform: scale(1.1); cursor: pointer; }
-        
-        .avg-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; min-height: 20px;}
-        .avg-val { font-weight: bold; font-family: monospace; font-size: 0.9rem; color: var(--text-main); }
-        select.tiny-select { background: var(--panel-bg); color: var(--text-dim); border: 1px solid var(--border-color); font-size: 0.7rem; padding: 0px; width: 60px; border-radius: 4px; cursor: pointer; }
-        
-        .single-mode .avg-row:first-child .avg-val { font-size: 1.8rem; line-height: 1; }
-        .single-mode .avg-row:first-child { height: auto; margin-top: 5px; }
-        .single-mode select.tiny-select { font-size: 0.75rem; width: auto; background: transparent; border: none; font-weight: 600;}
-
-        /* AXEL INSTÄLLNINGAR */
-        .axis-settings {
-            display: none; position: absolute; top: 30px; right: 5px; background: var(--panel-bg); border: 1px solid var(--border-color);
-            padding: 10px; z-index: 10; border-radius: 8px; box-shadow: var(--shadow); width: 160px;
-        }
-        .axis-settings.show { display: block; }
-        .as-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 0.8rem;}
-        .as-inp { width: 45px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); font-family: monospace; padding: 2px;}
-        .btn-gear { background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.9rem; padding: 0 5px; }
-        .btn-gear:hover { color: var(--text-main); }
-
-        /* GRAF */
-        .graph-wrapper {
-            flex: 1; min-height: 300px; background: var(--graph-bg); border-radius: 12px;
-            border: 1px solid var(--border-color); position: relative; overflow: hidden; cursor: grab;
-            padding: 10px 50px 30px 50px; 
-        }
-        .graph-wrapper:active { cursor: grabbing; }
-        svg { width: 100%; height: 100%; display: block; overflow: visible; }
-        
-        .axis-text { font-size: 20px; font-family: 'Segoe UI', sans-serif; font-weight: 700; dominant-baseline: middle; }
-        .axis-text-x { font-size: 12px; fill: var(--text-dim); text-anchor: middle; font-weight: 600;}
-        .grid-line { stroke: var(--grid-line); stroke-width: 1; }
-        .grid-line-strong { stroke: var(--grid-line-strong); stroke-width: 1; }
-        .graph-line { fill: none; stroke-width: 2; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
-        .graph-line-dashed { stroke-dasharray: 4,4; } 
-
-        .file-input-wrapper { position: relative; overflow: hidden; display: inline-block; width: 100%; height: 100%;}
-        .file-input-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-
-        /* MODAL */
-        .modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 100; backdrop-filter: blur(5px);
-            display: none; justify-content: center; padding: 20px; 
-        }
-        .modal.open { display: flex; }
-        .modal-content {
-            background: var(--panel-bg); width: 100%; max-width: 1100px;
-            border-radius: 16px; border: 1px solid var(--border-color);
-            display: flex; flex-direction: column; overflow: hidden; max-height: 100%;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
-        }
-        .modal-header { padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--bg-color);}
-        .modal-body { flex: 1; overflow-y: auto; padding: 20px; }
-        
-        .section-header { font-size: 0.9rem; color: var(--text-dim); border-bottom: 2px solid var(--border-color); padding-bottom: 5px; margin: 25px 0 15px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
-        .stats-filter { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;}
-        
-        .total-grid-top { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        .total-grid-bot { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        
-        .stat-card-small { background: var(--bg-color); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid var(--border-color); }
-        .sc-val { font-size: 1.4rem; font-weight: 800; color: var(--text-main); display: block; margin-bottom: 2px; }
-        .sc-lbl { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; }
-
-        .session-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        .session-table th { text-align: right; padding: 10px; border-bottom: 2px solid var(--border-color); cursor: pointer; color: var(--text-dim); text-transform: uppercase; font-size: 0.75rem; user-select: none; font-weight: 700;}
-        .session-table th:hover { color: var(--text-main); }
-        .session-table td { padding: 12px 10px; border-bottom: 1px solid var(--border-color); color: var(--text-main); text-align: right; font-variant-numeric: tabular-nums; }
-        .session-table tr { cursor: pointer; transition: 0.2s; }
-        .session-table tr:hover { background: var(--bg-color); }
-        .sort-icon { font-size: 0.8em; margin-left: 4px; display: inline-block; width: 10px;}
-        
-        .zone-analysis { margin-top: 10px; padding: 10px; background: var(--bg-color); border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.9rem; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;}
-        .zone-res { font-weight: bold; color: var(--c-speed); margin-left: auto;}
-
-        .calc-input { width: 40px; background: var(--panel-bg); border: 1px solid var(--border-color); color: var(--text-main); font-family: monospace; text-align: center; padding: 5px; border-radius: 4px; }
-
-        /* Färgklasser */
-        .c-watt { color: var(--c-watt); }
-        .c-speed { color: var(--c-speed); }
-        .c-cad { color: var(--c-cad); }
-        .c-hr { color: var(--c-hr); }
-        .c-dist { color: var(--c-dist); }
-        .c-cal { color: var(--c-cal); }
-        .c-res { color: var(--c-res); }
-
-        /* Single Graph Controls Layout */
-        .single-layout { display: grid; grid-template-columns: 200px 1fr; gap: 20px; height: 100%; min-height: 400px; }
-        .single-controls { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; padding-right: 5px; }
-        .sg-card { background: var(--bg-color); border-radius: 8px; padding: 10px; border: 1px solid var(--border-color); }
-        .sg-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-        .sg-lbl { font-weight: bold; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; }
-        .sg-inputs { display: flex; gap: 5px; }
-        .sg-inp { width: 45px; background: var(--panel-bg); border: 1px solid var(--border-color); color: var(--text-main); font-family: monospace; font-size: 0.8rem; padding: 2px; text-align: center; }
-
-        @media (max-width: 800px) {
-            .single-layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-            .single-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-height: none; }
-        }
-
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .font-mono { font-family: 'JetBrains+Mono', monospace; }
+        /* Smooth scrolling log console */
+        #console-log { scroll-behavior: smooth; }
     </style>
 </head>
-<body>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
 
-<div class="main-container" id="mainContainer">
-
-    <!-- VÄNSTER: LIVE -->
-    <div class="panel scroll-y">
-        <div class="header-grid">
-            <div class="h-item">
-                <h3>Tid</h3>
-                <div class="val-mid" id="valTime">0:00</div>
-            </div>
-            <div class="h-item">
-                <h3>Motstånd</h3>
-                <div class="res-ctrl">
-                    <button class="btn-round" id="btnResDown">-</button>
-                    <div class="val-mid c-res" id="valRes">--</div>
-                    <button class="btn-round" id="btnResUp">+</button>
+    <header class="bg-slate-900 border-b border-slate-800 p-4 sticky top-0 z-50 shadow-md">
+        <div class="flex justify-between items-center mb-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                    <i class="fa-solid fa-satellite-dish text-white"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base leading-tight">Avståndsmätare</h1>
+                    <p class="text-[10px] text-blue-400 font-mono">BLE Protocol v2.0</p>
                 </div>
             </div>
-            <div class="h-item">
-                <h3>Puls</h3>
-                <div class="val-mid c-hr" id="valHr">--</div>
+            <!-- Status Badge -->
+            <div id="status-badge" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                Väntar
             </div>
         </div>
 
-        <div class="watt-display">
-            <div class="watt-num" id="valWatt">0</div>
-            <div class="watt-lbl">EFFEKT</div>
+        <!-- Primary Action Buttons -->
+        <div class="grid grid-cols-2 gap-3 mt-4">
+            <button id="btn-connect" onclick="connectAndSetup()" class="py-3 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-600/20 transition-all flex justify-center items-center gap-2">
+                <i class="fa-brands fa-bluetooth"></i> 1. Anslut
+            </button>
+            <button id="btn-start" onclick="startMeasurement()" disabled class="py-3 rounded-xl bg-slate-800 text-slate-500 font-bold text-sm border border-slate-700 transition-all flex justify-center items-center gap-2">
+                <i class="fa-solid fa-play"></i> 2. Starta
+            </button>
         </div>
+    </header>
 
-        <div class="live-grid">
-            <div class="live-card">
-                <div class="live-lbl">Hastighet</div>
-                <div class="live-val c-speed" id="valSpeed">0.0</div>
-            </div>
-            <div class="live-card">
-                <div class="live-lbl">Kadens</div>
-                <div class="live-val c-cad" id="valCad">0</div>
-            </div>
-            <div class="live-card">
-                <div class="live-lbl">Sträcka</div>
-                <div class="live-val c-dist" id="valDist">0.000</div>
-            </div>
-            <div class="live-card">
-                <div class="live-lbl">Kalorier</div>
-                <div class="live-val c-cal" id="valCal">0</div>
-            </div>
-        </div>
-
-        <div style="margin-top:auto">
-            <div class="progress-box" id="progBox"><div class="progress-fill" id="progFill"></div></div>
-            <div id="statusText" style="text-align:center; font-size:0.75rem; color:var(--text-dim); margin:8px 0;"></div>
-            
-            <div class="control-grid">
-                <button class="btn-ctrl" id="exportBtn">Spara</button>
-                <div class="file-input-wrapper btn-ctrl" style="text-align:center;">
-                    <span style="pointer-events:none;">Ladda upp</span>
-                    <input type="file" id="importFile" accept=".json">
-                </div>
-                <button class="btn-ctrl" id="toggleLayout">◨ Layout</button>
-                <button class="btn-ctrl" id="statsBtn" style="color:var(--c-speed); border-color:var(--c-speed);">Statistik</button>
-                
-                <button class="btn-main" id="connectBtn">ANSLUT</button>
-                <button class="btn-main btn-stop" id="stopBtn">AVSLUTA</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- HÖGER: ANALYS -->
-    <div class="panel panel-right">
+    <main class="flex-1 p-4 flex flex-col gap-4">
         
-        <div class="right-header">
-            <span class="header-title">GYMSTICK GB 8.0</span>
-            <span id="connStatus" class="header-status">FRÅNKOPPLAD</span>
-            <div style="flex:1"></div>
-            <button class="theme-toggle" id="themeBtn" title="Byt Tema">☾</button>
-            <select id="graphRes" class="main-select">
-                <option value="1">1 sek</option>
-                <option value="2" selected>2 sek</option>
-                <option value="3">3 sek</option>
-                <option value="5">5 sek</option>
-                <option value="10">10 sek</option>
-                <option value="30">30 sek</option>
-                <option value="60">1 min</option>
-                <option value="300">5 min</option>
-            </select>
-        </div>
-
-        <div class="config-grid" id="configGrid"></div>
-
-        <div class="graph-wrapper" id="graphContainer">
-            <svg id="chartSvg" viewBox="0 0 1000 400" preserveAspectRatio="none"></svg>
-        </div>
-    </div>
-</div>
-
-<!-- STATISTIK MODAL -->
-<div class="modal" id="statsModal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <div style="display:flex; align-items:center; gap:15px;">
-                <h2 style="margin:0; letter-spacing:1px;">STATISTIK</h2>
-                <button id="btnDeleteAll" class="btn-ctrl" style="width:auto; border-color:#ff3d00; color:#ff3d00; font-size:0.7rem; padding:6px 12px;">RADERA ALLT</button>
+        <!-- Big Distance Display -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center shadow-xl relative overflow-hidden">
+            <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl"></div>
+            <p class="text-[10px] uppercase tracking-widest text-slate-400 font-semibold mb-2">Avstånd</p>
+            <div class="flex items-baseline justify-center">
+                <span id="dist-main" class="text-6xl font-extrabold tracking-tighter text-white font-mono">-.---</span>
+                <span class="text-xl font-bold text-slate-500 ml-2">m</span>
             </div>
-            <div>
-                <button onclick="showPowerCurve()" class="btn-ctrl" style="margin-right:10px; width:auto; border-color:var(--border-color);">EFFEKTKURVA</button>
-                <button onclick="document.getElementById('statsModal').classList.remove('open')" class="btn-ctrl" style="width:auto; border-color:var(--border-color);">STÄNG</button>
-            </div>
-        </div>
-        <div class="modal-body">
             
-            <div class="stats-filter">
-                <select id="filterYear" class="main-select"><option value="all">Alla år</option></select>
-                <select id="filterMonth" class="main-select"><option value="all">Alla månader</option></select>
-            </div>
-
-            <div class="section-header">TOTALT</div>
-            <div class="total-grid-top" id="totalTop"></div>
-            
-            <div class="section-header">MEDELTAL FÖR TOTALT</div>
-            <div class="total-grid-bot" id="totalBot"></div>
-
-            <div class="section-header" style="margin-top:40px;">TRÄNINGSPASS</div>
-            <div style="overflow-x:auto">
-                <table class="session-table" id="sessTable">
-                    <thead>
-                        <tr>
-                            <th onclick="sortSess('date')" style="text-align:left">Datum <span id="sort_date"></span></th>
-                            <th onclick="sortSess('dist')">Sträcka <span id="sort_dist"></span></th>
-                            <th onclick="sortSess('dur')">Tid <span id="sort_dur"></span></th>
-                            <th onclick="sortSess('cal')">Kalorier <span id="sort_cal"></span></th>
-                            <th onclick="sortSess('speed')">MEDELHASTIGHET <span id="sort_speed"></span></th>
-                            <th onclick="sortSess('watt')">MEDELEFFEKT <span id="sort_watt"></span></th>
-                            <th onclick="sortSess('cad')">MEDELKADENS <span id="sort_cad"></span></th>
-                            <th onclick="sortSess('hr')">MEDELPULS <span id="sort_hr"></span></th>
-                        </tr>
-                    </thead>
-                    <tbody id="sessBody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- SINGLE SESSION MODAL -->
-<div class="modal" id="singleModal">
-    <div class="modal-content" style="max-width:95%; height:95%;">
-        <div class="modal-header">
-            <h3 style="margin:0" id="singleTitle">PASS</h3>
-            <div>
-                <button onclick="deleteCurrentSession()" class="btn-ctrl" style="width:auto; border-color:#ff3d00; color:#ff3d00; margin-right:10px;">RADERA PASS</button>
-                <button onclick="document.getElementById('singleModal').classList.remove('open')" class="btn-ctrl" style="width:auto; border-color:var(--border-color);">X</button>
-            </div>
-        </div>
-        <div class="modal-body" style="display:flex; flex-direction:column;">
-            
-            <div class="single-layout">
-                <!-- Vänster: Kontroller -->
-                <div class="single-controls">
-                    <div id="singleGraphControls"></div>
-                    
-                    <!-- Punkt 7: Manuell X-axel -->
-                     <div class="sg-card" style="border-left: 4px solid var(--text-main)">
-                        <div class="sg-row"><strong class="sg-lbl">TIDSSKALA (X)</strong></div>
-                        <div class="sg-row">Start: <input id="x_min_h" value="0" class="sg-inp"> h <input id="x_min_m" value="0" class="sg-inp"> m</div>
-                        <div class="sg-row">Slut: <input id="x_max_h" value="0" class="sg-inp"> h <input id="x_max_m" value="0" class="sg-inp"> m</div>
-                        <button onclick="applyXScale()" style="width:100%; background:var(--btn-bg); border:1px solid var(--border-color); color:var(--text-main); font-weight:bold; cursor:pointer; padding:5px;">Uppdatera</button>
-                    </div>
+            <div class="mt-4 flex justify-between items-center text-xs font-mono bg-slate-950 p-2 rounded-lg border border-slate-800/50">
+                <div class="flex flex-col text-left">
+                    <span class="text-slate-500 text-[9px]">Uppdatering</span>
+                    <span id="hz-indicator" class="text-blue-400 font-bold">0.0 Hz</span>
                 </div>
-
-                <!-- Höger: Graf -->
-                <div style="display:flex; flex-direction:column; gap:10px; min-width:0;">
-                    <div class="graph-wrapper" style="flex:1; min-height:0; position:relative; padding:10px 50px 30px 50px;" id="singleGraphWrapper">
-                        <svg id="singleChart" width="100%" height="100%"></svg>
-                    </div>
-                    
-                    <!-- Zon Analys -->
-                    <div class="zone-analysis" style="justify-content:flex-start;">
-                        <span style="font-weight:bold;">Zon:</span>
-                        <select id="zoneMetricS" class="main-select" style="padding:4px">
-                            <option value="h">Puls</option><option value="w">Effekt</option><option value="s">Hastighet</option><option value="c">Kadens</option>
-                        </select>
-                        <span>mellan</span>
-                        <input type="number" id="zoneMinS" value="100" style="width:50px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-main);">
-                        <span>och</span>
-                        <input type="number" id="zoneMaxS" value="150" style="width:50px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-main);">
-                        <button onclick="calculateZoneSingle()" style="background:var(--btn-bg); color:var(--text-main); border:1px solid var(--border-color); cursor:pointer; padding:4px 8px; border-radius:4px;">Sök</button>
-                        <span id="zoneResultS" class="zone-res" style="margin-left:10px;"></span>
-                    </div>
-
-                    <!-- Punkt 4: Medeltal Kalkylator UNDER Zon -->
-                    <div class="zone-analysis" style="display:block;">
-                        <div style="font-weight:bold; margin-bottom:5px;">Beräkna medeltal</div>
-                        <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
-                            <select id="calcMetric" class="main-select" style="padding:4px">
-                                <option value="w">Effekt</option><option value="h">Puls</option><option value="s">Hastighet</option><option value="c">Kadens</option>
-                            </select>
-                            <!-- Punkt 5: Förifyllda nollor -->
-                            <span>Start:</span>
-                            <input type="number" id="ch1" value="0" class="calc-input">:<input type="number" id="cm1" value="0" class="calc-input">:<input type="number" id="cs1" value="0" class="calc-input">
-                            <span>Slut:</span>
-                            <input type="number" id="ch2" value="0" class="calc-input">:<input type="number" id="cm2" value="0" class="calc-input">:<input type="number" id="cs2" value="0" class="calc-input">
-                            <button onclick="calculateCustomAvg()" style="background:var(--btn-bg); color:var(--text-main); border:1px solid var(--border-color); cursor:pointer; padding:4px 8px; border-radius:4px;">Beräkna</button>
-                            <span id="calcResult" style="font-weight:bold; margin-left:10px; font-size:1.1rem; color:var(--c-watt)"></span>
-                        </div>
-                    </div>
-
+                <div class="flex flex-col text-right">
+                    <span class="text-slate-500 text-[9px]">Paket</span>
+                    <span id="packet-counter" class="text-emerald-400 font-bold">0</span>
                 </div>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- POWER CURVE MODAL -->
-<div class="modal" id="powerModal">
-    <div class="modal-content" style="max-width:600px; max-height:80%;">
-        <div class="modal-header">
-            <h3 style="margin:0">EFFEKTKURVA</h3>
-            <button onclick="document.getElementById('powerModal').classList.remove('open')" class="btn-ctrl" style="width:auto; border-color:var(--border-color);">X</button>
+        <!-- Realtime Chart -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl h-64 flex flex-col">
+            <p class="text-[10px] uppercase tracking-widest text-slate-400 font-semibold mb-2"><i class="fa-solid fa-chart-line mr-1"></i> Graf</p>
+            <div class="flex-1 w-full relative">
+                <canvas id="distanceChart"></canvas>
+            </div>
         </div>
-        <div class="modal-body">
-            <p style="color:var(--text-dim); font-size:0.8rem;">Högsta medeleffekt för olika tidsintervall.</p>
-            <table class="session-table" id="powerTable">
-                <thead><tr><th>Tid</th><th>Detta Pass (W)</th><th>Rekord (W)</th></tr></thead>
-                <tbody id="powerBody"></tbody>
-            </table>
+
+        <!-- Debug Console -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex-1 min-h-[200px] flex flex-col">
+            <div class="flex justify-between items-center mb-2">
+                <p class="text-[10px] uppercase tracking-widest text-slate-400 font-semibold"><i class="fa-solid fa-terminal mr-1"></i> Systemlogg</p>
+                <button onclick="clearLog()" class="text-[10px] text-slate-500 hover:text-slate-300 px-2 py-1 bg-slate-800 rounded border border-slate-700">Rensa</button>
+            </div>
+            <div id="console-log" class="flex-1 bg-slate-950 rounded-lg p-3 overflow-y-auto font-mono text-[10px] space-y-1.5 border border-slate-800 max-h-[250px]">
+                <div class="text-slate-500 italic">Redo. Klicka på Anslut och välj din enhet.</div>
+            </div>
         </div>
-    </div>
-</div>
+        
+    </main>
 
-<script>
-    // --- HELPER FUNKTIONER ---
-    function formatDurationLong(sec) {
-        const d = Math.floor(sec / 86400);
-        const h = Math.floor((sec % 86400) / 3600);
-        const m = Math.floor((sec % 3600) / 60);
-        const s = Math.floor(sec % 60);
-        let str = "";
-        if(d>0) str += d + " d "; if(h>0) str += h + " h "; 
-        if(m>0 || str.length>0) str += m + " m ";
-        str += s + " s";
-        return str;
-    }
-    
-    function formatTimeSmart(totalSeconds) {
-        const h = Math.floor(totalSeconds / 3600);
-        const m = Math.floor((totalSeconds % 3600) / 60);
-        const s = Math.floor(totalSeconds % 60);
-        const sStr = s.toString().padStart(2, '0');
-        if (h > 0) {
-            const mStr = m.toString().padStart(2, '0');
-            return `${h}:${mStr}:${sStr}`;
-        }
-        return `${m}:${sStr}`;
-    }
+    <script>
+        // --- UUIDs baserat på analysen ---
+        // Huvudtjänster
+        const SERVICE_UUIDS = [
+            '4a5c0000-0000-0000-0000-5c1e741f1c00', // Primär tjänst
+            '4a5c0001-0000-0000-0000-5c1e741f1c00'  // Sekundär tjänst (innehåller 0x0028 kanal)
+        ];
 
-    function formatTimeShort(sec) {
-        const m = Math.floor(sec / 60);
-        const s = Math.floor(sec % 60);
-        return `${m}:${s.toString().padStart(2,'0')}`;
-    }
+        // Skrivkanal för kommandon
+        const CMD_UUID_PREFIX = '4a5c0000-0100'; 
+        
+        // Datakanaler vi måste lyssna på
+        const DATA_UUID_1 = '4a5c0000-0300'; 
+        const DATA_UUID_2 = '4a5c0001-0003'; 
 
-    // --- SETUP UI ---
-    const ui = {
-        connectBtn: document.getElementById('connectBtn'),
-        stopBtn: document.getElementById('stopBtn'),
-        connStatus: document.getElementById('connStatus'),
-        progBox: document.getElementById('progBox'),
-        progFill: document.getElementById('progFill'),
-        statusText: document.getElementById('statusText'),
-        themeBtn: document.getElementById('themeBtn'),
-        speed: document.getElementById('valSpeed'),
-        watt: document.getElementById('valWatt'),
-        cad: document.getElementById('valCad'),
-        dist: document.getElementById('valDist'),
-        cal: document.getElementById('valCal'),
-        time: document.getElementById('valTime'),
-        hr: document.getElementById('valHr'),
-        res: document.getElementById('valRes'),
-        btnResUp: document.getElementById('btnResUp'),
-        btnResDown: document.getElementById('btnResDown'),
-        chart: document.getElementById('chartSvg'),
-        graphWrapper: document.getElementById('graphContainer'),
-        graphRes: document.getElementById('graphRes'),
-        configGrid: document.getElementById('configGrid'),
-        statsBtn: document.getElementById('statsBtn'),
-        statsModal: document.getElementById('statsModal'),
-        totalTop: document.getElementById('totalTop'),
-        totalBot: document.getElementById('totalBot'),
-        sessBody: document.getElementById('sessBody'),
-        fYear: document.getElementById('filterYear'),
-        fMonth: document.getElementById('filterMonth'),
-        // fRes borttaget
-        btnDeleteAll: document.getElementById('btnDeleteAll'),
-        singleModal: document.getElementById('singleModal'),
-        singleChart: document.getElementById('singleChart'),
-        singleTitle: document.getElementById('singleTitle'),
-        singleGraphWrapper: document.getElementById('singleGraphWrapper'),
-        singleGraphControls: document.getElementById('singleGraphControls'),
-        ch1:document.getElementById('ch1'), cm1:document.getElementById('cm1'), cs1:document.getElementById('cs1'),
-        ch2:document.getElementById('ch2'), cm2:document.getElementById('cm2'), cs2:document.getElementById('cs2'),
-        calcMetric: document.getElementById('calcMetric'),
-        calcResult: document.getElementById('calcResult'),
-        powerModal: document.getElementById('powerModal'),
-        powerBody: document.getElementById('powerBody'),
-        lifeDist: document.getElementById('lifeDist'),
-        lifeTime: document.getElementById('lifeTime'),
-        sessCount: document.getElementById('sessCount'),
-        avgStart: document.getElementById('avgStart'),
-        avgEnd: document.getElementById('avgEnd'),
-        avgResultS: document.getElementById('avgResultS'),
-        // X-Axis Inputs
-        xMinH: document.getElementById('x_min_h'), xMinM: document.getElementById('x_min_m'),
-        xMaxH: document.getElementById('x_max_h'), xMaxM: document.getElementById('x_max_m'),
-        // Zone Inputs
-        zoneMetricS: document.getElementById('zoneMetricS'),
-        zoneMinS: document.getElementById('zoneMinS'),
-        zoneMaxS: document.getElementById('zoneMaxS'),
-        zoneResultS: document.getElementById('zoneResultS')
-    };
+        let bleDevice = null;
+        let cmdCharacteristic = null;
+        let dataCharacteristics = [];
+        
+        let isConnected = false;
+        let packetCount = 0;
+        let lastPacketTime = performance.now();
+        
+        let chart = null;
 
-    // --- TEMA ---
-    if (localStorage.getItem('gymstick_theme') === null) localStorage.setItem('gymstick_theme', 'dark');
-    let isDark = localStorage.getItem('gymstick_theme') === 'dark';
-    if(isDark) document.body.classList.add('dark-mode');
-    ui.themeBtn.textContent = isDark ? '☾' : '☀';
-    ui.themeBtn.onclick = () => {
-        isDark = !isDark;
-        if(isDark) document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode');
-        localStorage.setItem('gymstick_theme', isDark ? 'dark' : 'light');
-        ui.themeBtn.textContent = isDark ? '☾' : '☀';
-    };
+        window.onload = () => {
+            initChart();
+        };
 
-    // --- SETTINGS ---
-    let settings = {
-        graphRes: 2,
-        metrics: {
-            w: { show: true, rows: 1, auto: true, min: 0, max: 400, avgs:[60, 600, -1] },
-            s: { show: true, rows: 1, auto: true, min: 0, max: 40, avgs:[60, 600, -1] },
-            c: { show: true, rows: 1, auto: true, min: 0, max: 120, avgs:[60, 600, -1] },
-            h: { show: true, rows: 1, auto: true, min: 0, max: 180, avgs:[60, 600, -1] }
-        }
-    };
-    const savedSettings = JSON.parse(localStorage.getItem('gymstick_settings'));
-    if(savedSettings) settings = { ...settings, ...savedSettings };
-    function saveSettings() { localStorage.setItem('gymstick_settings', JSON.stringify(settings)); }
-
-    // --- DATA ---
-    let iconsoleWrite = null, pollInterval = null, currentResistance = 1, sessionData = [], startTime = null;
-    let bluetoothDevice = null;
-    let calcDist = 0, lastRawDist = -1, lastPktTime = 0, rolloverCount = 0, lastBikeTimeSec = -1;
-    let distOffset = 0, lastTotalRawDist = -1;
-    let graphState = { scrollOffset: 0, zoomLevel: 1.0, isDragging: false, lastMouseX: 0, data: [], yAxisState: {}, zoomMode: 'x', yOffset: 0, manualXMin: null, manualXMax: null };
-    let singleSettings = JSON.parse(JSON.stringify(settings.metrics)); 
-    let seqIndex = 0;
-    
-    let sortCol = 'date';
-    let sortAsc = false;
-
-    let currentSessionIdx = -1;
-
-    let history = JSON.parse(localStorage.getItem('gymstick_v6_history')) || { sessions: [], totalDist: 0, totalTime: 0, settings: settings };
-    if(history.settings) settings = history.settings;
-
-    function saveHistoryFile() { history.settings = settings; localStorage.setItem('gymstick_v6_history', JSON.stringify(history)); }
-    function updateHistoryUI(currDist = 0) {
-        // UI Uppdateras endast i Stats, men vi kan ha dem här ifall vi vill visa i panel
-    }
-    updateHistoryUI();
-
-    // --- CONSTANTS ---
-    const TIME_OPTS = [
-        {v:'graph', t:'Grafen'}, {v:5, t:'5 s'}, {v:10, t:'10 s'}, {v:30, t:'30 s'},
-        {v:60, t:'1 m'}, {v:120, t:'2 m'}, {v:300, t:'5 m'},
-        {v:600, t:'10 m'}, {v:1800, t:'30 m'}, {v:3600, t:'1 h'}, {v:-1, t:'Tot'}
-    ];
-    
-    const METRICS = [
-        { key: 'w', title: 'EFFEKT', color: 'var(--c-watt)', defMax:400 },
-        { key: 's', title: 'HASTIGHET', color: 'var(--c-speed)', defMax:40 },
-        { key: 'c', title: 'KADENS', color: 'var(--c-cad)', defMax:120 },
-        { key: 'h', title: 'PULS', color: 'var(--c-hr)', defMax:180 }
-    ];
-    
-    const SEQ = [ { bytes: [0xF0, 0xA0, 0x01, 0x01, 0x92], expect: 0xB0 }, { bytes: [0xF0, 0xA3, 0x01, 0x01, 0x01, 0x96], expect: 0xB3 }, { bytes: [0xF0, 0xA4, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xA0], expect: 0xB4 }, { bytes: [0xF0, 0xA5, 0x01, 0x01, 0x02, 0x99], expect: 0xB5 } ];
-    const READ_CMD = [0xF0, 0xA2, 0x01, 0x01, 0x94];
-    const STOP_CMD = [0xF0, 0xA5, 0x01, 0x01, 0x04, 0x9B];
-    const DEF_SELS = [60, 600, -1];
-
-    function initConfigGrid() {
-        ui.configGrid.innerHTML = '';
-        METRICS.forEach(m => {
-            const s = settings.metrics[m.key];
-            graphState.yAxisState[m.key] = { curMax: s.max, curMin: s.min };
-
-            const card = document.createElement('div');
-            card.className = s.rows > 1 ? 'config-card' : 'config-card single-mode';
-            card.style.borderLeft = `4px solid ${m.color}`; 
-            
-            const hdr = document.createElement('div');
-            hdr.className = 'config-header';
-            hdr.innerHTML = `<span class="config-title" style="color:${m.color}"><input type="checkbox" id="chk_${m.key}" class="chk" ${s.show?'checked':''}> ${m.title}<button class="btn-gear" onclick="toggleAxisSettings('${m.key}')">⚙</button></span><div class="config-opts"><label><input type="checkbox" data-key="${m.key}" data-rows="2" ${s.rows>=2?'checked':''}> 2</label><label><input type="checkbox" data-key="${m.key}" data-rows="3" ${s.rows===3?'checked':''}> 3</label></div>`;
-            card.appendChild(hdr);
-            
-            const axisPanel = document.createElement('div');
-            axisPanel.className = 'axis-settings';
-            // Punkt 6: Max överst
-            axisPanel.innerHTML = `<div class="as-row"><strong style="color:${m.color}">${m.title} SKALA</strong></div><div class="as-row"><label><input type="checkbox" id="auto_${m.key}" ${s.auto?'checked':''}> Auto</label></div><div class="as-row"><span>Max:</span> <input type="number" id="max_${m.key}" value="${s.max}" class="as-inp"></div><div class="as-row"><span>Min:</span> <input type="number" id="min_${m.key}" value="${s.min}" class="as-inp"></div>`;
-            card.appendChild(axisPanel);
-
-            axisPanel.querySelectorAll('input').forEach(inp => {
-                inp.onchange = () => {
-                    settings.metrics[m.key].auto = document.getElementById(`auto_${m.key}`).checked;
-                    settings.metrics[m.key].max = parseFloat(document.getElementById(`max_${m.key}`).value);
-                    settings.metrics[m.key].min = parseFloat(document.getElementById(`min_${m.key}`).value);
-                    saveSettings(); renderMainGraph();
-                };
+        function initChart() {
+            const ctx = document.getElementById('distanceChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: [], datasets: [{
+                    label: 'Meter', data: [], borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2, fill: true, pointRadius: 0, tension: 0.1
+                }]},
+                options: {
+                    responsive: true, maintainAspectRatio: false, animation: false,
+                    scales: {
+                        x: { display: false },
+                        y: { min: 0, max: 2, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: {size: 10} } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
             });
+        }
 
-            const avgCont = document.createElement('div'); avgCont.className = 'avg-container'; avgCont.id = `avgs_${m.key}`;
-
-            for(let i=0; i<3; i++) {
-                const row = document.createElement('div'); row.className = 'avg-row';
-                if((i===1 && s.rows<2) || (i===2 && s.rows<3)) row.style.display='none';
-                
-                const sel = document.createElement('select'); sel.className = 'tiny-select';
-                TIME_OPTS.forEach(opt => {
-                    const o = document.createElement('option'); o.value = opt.v; o.textContent = opt.t;
-                    if(opt.v == s.avgs[i]) o.selected = true;
-                    sel.appendChild(o);
-                });
-                sel.dataset.metric = m.key; sel.dataset.idx = i;
-                sel.onchange = (e) => { settings.metrics[m.key].avgs[i] = e.target.value; saveSettings(); updateAverages(); };
-                
-                const val = document.createElement('span'); val.className = 'avg-val'; val.style.color = m.color; val.textContent = '-'; val.id = `val_${m.key}_${i}`;
-                row.appendChild(sel); row.appendChild(val); avgCont.appendChild(row);
-            }
-            card.appendChild(avgCont);
-            ui.configGrid.appendChild(card);
-
-            const inputs = hdr.querySelectorAll('input[type=checkbox][data-rows]');
-            inputs.forEach(inp => {
-                inp.onchange = (e) => {
-                    const k = e.target.dataset.key;
-                    const r = parseInt(e.target.dataset.rows);
-                    const isChecked = e.target.checked;
-                    const otherInp = hdr.querySelector(`input[data-rows="${r===3?2:3}"]`);
-                    if(isChecked && otherInp) otherInp.checked = false;
-                    const chk2 = hdr.querySelector('input[data-rows="2"]').checked;
-                    const chk3 = hdr.querySelector('input[data-rows="3"]').checked;
-                    avgCont.children[1].style.display = (chk2 || chk3) ? 'flex' : 'none';
-                    avgCont.children[2].style.display = chk3 ? 'flex' : 'none';
-                    if(chk2 || chk3) { card.classList.remove('single-mode'); settings.metrics[m.key].rows = chk3 ? 3 : 2; }
-                    else { card.classList.add('single-mode'); settings.metrics[m.key].rows = 1; }
-                    saveSettings();
-                };
-            });
-            document.getElementById(`chk_${m.key}`).onchange = (e) => { settings.metrics[m.key].show = e.target.checked; saveSettings(); renderMainGraph(); };
-        });
-    }
-
-    function initSingleControls() {
-        ui.singleGraphControls.innerHTML = '';
-        METRICS.forEach(m => {
-            const s = singleSettings[m.key];
+        function log(msg, type = 'info') {
+            const logEl = document.getElementById('console-log');
             const div = document.createElement('div');
-            div.className = 'sg-card';
-            div.style.borderLeft = `4px solid ${m.color}`;
-            // Punkt 6: Max över Min
-            div.innerHTML = `
-                <div class="sg-row"><span class="sg-lbl" style="color:${m.color}"><input type="checkbox" id="s_chk_${m.key}" ${s.show?'checked':''}> ${m.title}</span></div>
-                <div class="sg-row"><span>Max:</span> <input type="number" id="s_max_${m.key}" value="${s.max}" class="sg-inp"></div>
-                <div class="sg-row"><span>Min:</span> <input type="number" id="s_min_${m.key}" value="${s.min}" class="sg-inp"></div>
-            `;
-            ui.singleGraphControls.appendChild(div);
-            const redraw = () => {
-                 singleSettings[m.key].show = document.getElementById(`s_chk_${m.key}`).checked;
-                 singleSettings[m.key].min = parseFloat(document.getElementById(`s_min_${m.key}`).value);
-                 singleSettings[m.key].max = parseFloat(document.getElementById(`s_max_${m.key}`).value);
-                 drawCombinedGraph(ui.singleChart, graphState.data, true, true);
-            };
-            div.querySelectorAll('input').forEach(i => i.onchange = redraw);
-        });
-    }
-
-    window.toggleAxisSettings = (key) => {
-        const p = document.querySelector(`#avgs_${key}`).parentElement.querySelector('.axis-settings');
-        p.classList.toggle('show');
-    };
-
-    ui.graphRes.value = settings.graphRes;
-    ui.graphRes.onchange = (e) => { settings.graphRes = parseInt(e.target.value); saveSettings(); renderMainGraph(); updateAverages(); };
-    
-    initConfigGrid();
-    graphState.data = []; 
-    setTimeout(() => drawCombinedGraph(ui.chart, [], false), 50);
-    document.getElementById('toggleLayout').onclick = () => { document.getElementById('mainContainer').classList.toggle('full-mode'); };
-
-    ui.connectBtn.onclick = async () => {
-        try {
-            ui.statusText.textContent = "Söker enhet...";
-            const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['fitness_machine'] }], optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb'] });
-            bluetoothDevice = device;
-            device.addEventListener('gattserverdisconnected', onDisconnect);
-            const server = await device.gatt.connect();
-            const service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
-            const notifyChar = await service.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
-            await notifyChar.startNotifications();
-            notifyChar.addEventListener('characteristicvaluechanged', handleData);
-            iconsoleWrite = await service.getCharacteristic('0000fff2-0000-1000-8000-00805f9b34fb');
-            ui.connectBtn.style.display = 'none'; ui.progBox.style.display = 'block'; startHandshake();
-        } catch (e) { ui.statusText.textContent = "Fel: " + e.message; }
-    };
-
-    function onDisconnect() {
-        ui.connStatus.textContent = "FRÅNKOPPLAD"; ui.connStatus.style.color = "var(--text-dim)"; ui.connStatus.style.background = "transparent";
-        ui.connectBtn.style.display = 'block'; ui.stopBtn.style.display = 'none'; ui.progBox.style.display = 'none';
-        if(pollInterval) clearInterval(pollInterval);
-    }
-    
-    async function send(bytes) { if(!iconsoleWrite) return; try { await iconsoleWrite.writeValue(new Uint8Array(bytes)); } catch(e){} }
-    function startHandshake() { seqIndex = 0; sendNext(); }
-    async function sendNext() {
-        if (seqIndex >= SEQ.length) {
-            ui.statusText.textContent = ""; ui.progBox.style.display = 'none';
-            ui.connStatus.textContent = "ANSLUTEN"; ui.connStatus.style.background = "rgba(0,255,0,0.2)"; ui.connStatus.style.color = "var(--c-speed)";
-            ui.stopBtn.style.display = 'block';
-            if (pollInterval) clearInterval(pollInterval);
-            pollInterval = setInterval(() => send(READ_CMD), 1000);
-            sessionData = []; startTime = Date.now();
-            calcDist = 0; lastRawDist = -1; lastPktTime = Date.now();
-            rolloverCount = 0; lastBikeTimeSec = -1; 
-            distOffset = 0; lastTotalRawDist = -1;
-            graphState.scrollOffset = 0; graphState.data = sessionData;
-            return;
-        }
-        const step = SEQ[seqIndex];
-        ui.progFill.style.width = ((seqIndex / SEQ.length) * 100) + "%";
-        ui.statusText.textContent = "Initierar...";
-        await send(step.bytes);
-    }
-
-    function handleData(event) {
-        const data = new Uint8Array(event.target.value.buffer);
-        if (seqIndex < SEQ.length) { if (data[0] === 0xF0 && data[1] === SEQ[seqIndex].expect) { seqIndex++; setTimeout(sendNext, 200); return; } }
-
-        if (data.length >= 20 && data[0] === 0xF0 && data[1] === 0xB2) {
-            const val = (h, l) => 100 * (data[h] - 1) + (data[l] - 1);
-            const speed = val(6, 7) / 10; const rpm = val(8, 9); const rawDist = val(10, 11) / 10;
-            const cal = val(12, 13); const hr = val(14, 15); const watt = val(16, 17) / 10;
-            const level = data[18] - 1; currentResistance = level;
+            const time = new Date().toLocaleTimeString('sv-SE', {hour12:false, fractionalSecondDigits: 1}).split(',')[0];
             
-            let tMin = data[4] - 1; if(tMin<0) tMin=0;
-            let tSec = data[5] - 1; if(tSec<0) tSec=0;
-            const currentBikeSec = tMin * 60 + tSec;
+            let color = 'text-slate-300';
+            if (type === 'error') color = 'text-red-400 font-bold';
+            if (type === 'success') color = 'text-emerald-400';
+            if (type === 'data') color = 'text-sky-300 opacity-80';
+            if (type === 'cmd') color = 'text-amber-300';
 
-            if (lastBikeTimeSec > -1 && (lastBikeTimeSec - currentBikeSec) > 3000) rolloverCount++;
-            lastBikeTimeSec = currentBikeSec;
-            const totalSecDisplay = (rolloverCount * 6000) + currentBikeSec;
-
-            const now = Date.now(); const dt = (now - lastPktTime) / 1000; lastPktTime = now;
-            
-            // --- LOGIK FÖR ATT HANTERA NÄR CYKELN BÖRJAR OM PÅ 0 ---
-            if (lastRawDist !== -1 && rawDist < lastRawDist - 50) {
-                // Om distansen plötsligt sjunker med mer än 50km, har cykeln börjat om.
-                // Vi sparar det sista värdet i vår offset.
-                distOffset += lastRawDist; 
-            }
-            
-            let totalRawDist = rawDist + distOffset;
-
-            if (totalRawDist > lastTotalRawDist && lastTotalRawDist !== -1) calcDist = totalRawDist;
-            else {
-                if (speed > 0 && dt < 5) calcDist += (speed / 3600) * dt;
-                if (calcDist > totalRawDist + 0.099) calcDist = totalRawDist + 0.099;
-                if (calcDist < totalRawDist) calcDist = totalRawDist;
-            }
-            
-            lastRawDist = rawDist;
-            lastTotalRawDist = totalRawDist;
-
-            ui.speed.textContent = speed.toFixed(1); ui.watt.textContent = watt.toFixed(0);
-            ui.cad.textContent = rpm; ui.hr.textContent = hr; ui.cal.textContent = cal;
-            ui.res.textContent = level; ui.time.textContent = formatTimeSmart(totalSecDisplay);
-            ui.dist.textContent = calcDist.toFixed(3);
-
-            if(startTime) {
-                const elapsed = (Date.now() - startTime) / 1000;
-                sessionData.push({ t: elapsed, w: watt, s: speed, c: rpm, h: hr, l: level });
-                updateAverages();
-                if (!graphState.isDragging && graphState.scrollOffset <= 1) renderMainGraph(); 
-            }
-        }
-    }
-
-    async function setRes(lvl) {
-        if(lvl < 1) lvl = 1; if(lvl > 32) lvl = 32;
-        const bLvl = lvl + 1; const bytes = [0xF0, 0xA6, 0x01, 0x01, bLvl];
-        let sum = 0; for(let b of bytes) sum += b; bytes.push(sum & 0xFF);
-        await send(bytes);
-    }
-    ui.btnResUp.onclick = () => setRes(currentResistance + 1);
-    ui.btnResDown.onclick = () => setRes(currentResistance - 1);
-
-    ui.stopBtn.onclick = async () => {
-        if(pollInterval) clearInterval(pollInterval);
-        
-        // Spara passet om det finns data
-        if(sessionData.length > 0) {
-            const last = sessionData[sessionData.length-1];
-            const s = {
-                date: new Date().toISOString(),
-                dur: last.t,
-                dist: calcDist,
-                cal: parseInt(ui.cal.textContent)||0,
-                data: sessionData
-            };
-            history.sessions.push(s);
-            saveHistoryFile();
-            alert("Pass sparat och avslutat!");
+            div.className = color;
+            div.innerHTML = `<span class="text-slate-600 mr-2">[${time}]</span>${msg}`;
+            logEl.appendChild(div);
+            logEl.scrollTop = logEl.scrollHeight;
         }
 
-        try { await send(STOP_CMD); } catch(e){}
-        
-        if(bluetoothDevice && bluetoothDevice.gatt.connected) {
-            bluetoothDevice.gatt.disconnect();
-        } else {
-            onDisconnect();
-        }
-    };
-
-    function updateAverages() {
-        if(sessionData.length === 0) return;
-        const now = sessionData[sessionData.length-1].t;
-        const graphResVal = parseInt(ui.graphRes.value);
-        function calc(metric) {
-            for(let i=0; i<3; i++) {
-                const sel = document.querySelector(`select[data-metric="${metric}"][data-idx="${i}"]`);
-                const disp = document.getElementById(`val_${metric}_${i}`);
-                if(!sel || !disp) continue;
-                let timeWin = sel.value;
-                if(timeWin === 'graph') timeWin = 120 * graphResVal * graphState.zoomLevel; else timeWin = parseInt(timeWin);
-                let sum = 0, count = 0;
-                const cutoff = (timeWin === -1) ? 0 : (now - timeWin);
-                for(let j=sessionData.length-1; j>=0; j--) {
-                    if(sessionData[j].t < cutoff) break;
-                    if(metric === 'h' && sessionData[j][metric] === 0) continue;
-                    sum += sessionData[j][metric]; count++;
-                }
-                disp.textContent = count > 0 ? Math.round(sum/count) : '-';
-            }
-        }
-        calc('w'); calc('s'); calc('c'); calc('h');
-    }
-
-    function renderMainGraph() { drawCombinedGraph(ui.chart, sessionData, false); }
-    function drawCombinedGraph(svg, data, isStatic, isSingleView = false) {
-        const active = [];
-        METRICS.forEach(m => {
-            const chkId = isSingleView ? `s_chk_${m.key}` : `chk_${m.key}`;
-            const el = document.getElementById(chkId);
-            if(el && el.checked) active.push(m);
-        });
-        if(active.length === 0) { svg.innerHTML = ''; return; }
-
-        const W = 1000, H = 400; const padT = 20, padB = 40, padL = 80, padR = 80; const drawH = H - padT - padB;
-        svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("preserveAspectRatio", "none"); svg.innerHTML = '';
-
-        let startTimeView, endTime;
-        if (isStatic) {
-            // Punkt 7: Manual X-Axis
-            if (isSingleView && graphState.manualXMin !== null && graphState.manualXMax !== null) {
-                startTimeView = graphState.manualXMin;
-                endTime = graphState.manualXMax;
-            } else {
-                const latest = data.length > 0 ? data[data.length-1].t : 0;
-                const range = latest; const zoomRange = range / graphState.zoomLevel;
-                let offset = graphState.scrollOffset;
-                if (offset < 0) offset = 0; if (offset > range - zoomRange) offset = range - zoomRange;
-                graphState.scrollOffset = offset;
-                endTime = latest - offset; startTimeView = endTime - zoomRange; if (startTimeView < 0) startTimeView = 0;
-            }
-        } else {
-            const res = parseInt(ui.graphRes.value); const win = 120 * res;
-            const latest = data.length > 0 ? data[data.length-1].t : 0;
-            endTime = latest - (graphState.scrollOffset * res * 5);
-            if(endTime > latest) endTime = latest; startTimeView = endTime - win; if(startTimeView < 0) startTimeView = 0;
+        function clearLog() {
+            document.getElementById('console-log').innerHTML = '';
         }
 
-        const visibleData = data.filter(p => p.t >= startTimeView && p.t <= endTime);
-        const timeSpan = endTime - startTimeView;
-        let step = 60;
-        if (timeSpan < 60) step = 10; else if (timeSpan < 300) step = 30; else if (timeSpan < 600) step = 60; else if (timeSpan < 1800) step = 300; else step = 600;
-        const firstTick = Math.ceil(startTimeView / step) * step;
-
-        for (let t = firstTick; t <= endTime; t += step) {
-            const x = padL + ((t - startTimeView) / timeSpan) * (W - padL - padR);
-            if(x < padL || x > W - padR) continue;
-            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            line.setAttribute("x1", x); line.setAttribute("x2", x); line.setAttribute("y1", padT); line.setAttribute("y2", H - padB); line.setAttribute("class", "grid-line"); svg.appendChild(line);
-            const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            txt.setAttribute("x", x); txt.setAttribute("y", H - 10); txt.setAttribute("class", "axis-text-x"); txt.textContent = formatTimeSmart(t); svg.appendChild(txt);
-        }
-        for(let i=0; i<=2; i++) {
-            const y = padT + (drawH * i / 2);
-            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            line.setAttribute("x1", padL); line.setAttribute("x2", W - padR); line.setAttribute("y1", y); line.setAttribute("y2", y); line.setAttribute("class", "grid-line-strong"); svg.appendChild(line);
-        }
-
-        active.forEach((m, idx) => {
-            let maxVal, minVal;
-            if (isSingleView) {
-                minVal = parseFloat(document.getElementById(`s_min_${m.key}`).value);
-                maxVal = parseFloat(document.getElementById(`s_max_${m.key}`).value);
-            } else {
-                const isAuto = document.getElementById(`auto_${m.key}`).checked;
-                if(isAuto && visibleData.length > 0) {
-                     const vals = visibleData.map(d => d[m.key]);
-                     let lMax = Math.max(...vals); let lMin = Math.min(...vals);
-                     if(lMax==-Infinity) lMax=m.defMax; if(lMin==Infinity) lMin=0;
-                     if(m.key==='h' && lMin===0) lMin=40;
-                     let s = graphState.yAxisState[m.key];
-                     if(lMax > s.curMax) s.curMax = lMax * 1.1; 
-                     if(lMin < s.curMin) s.curMin = lMin * 0.9;
-                     maxVal = s.curMax; minVal = s.curMin;
+        async function connectAndSetup() {
+            if (isConnected) {
+                if(bleDevice && bleDevice.gatt.connected) {
+                    bleDevice.gatt.disconnect();
                 } else {
-                     maxVal = parseFloat(document.getElementById(`max_${m.key}`).value);
-                     minVal = parseFloat(document.getElementById(`min_${m.key}`).value);
+                    onDisconnect(); // Forcera disconnect UI om status i osynk
+                }
+                return;
+            }
+
+            try {
+                log('Begär Bluetooth-enhet...', 'info');
+                
+                // Bredare sökning för att säkerställa att vi hittar enheten på Android
+                bleDevice = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: [
+                        ...SERVICE_UUIDS,
+                        '00001800-0000-1000-8000-00805f9b34fb', // Generic Access
+                        '00001801-0000-1000-8000-00805f9b34fb'  // Generic Attribute
+                    ]
+                });
+
+                bleDevice.addEventListener('gattserverdisconnected', onDisconnect);
+                
+                log(`Ansluter till GATT på: ${bleDevice.name || 'Enhet'}...`, 'info');
+                const server = await bleDevice.gatt.connect();
+                log('GATT ansluten! Söker tjänster...', 'success');
+
+                cmdCharacteristic = null;
+                dataCharacteristics = [];
+
+                // Sök igenom tjänsterna
+                for (let uuid of SERVICE_UUIDS) {
+                    try {
+                        const service = await server.getPrimaryService(uuid);
+                        const characteristics = await service.getCharacteristics();
+                        
+                        for (let char of characteristics) {
+                            const uuidStr = char.uuid.toLowerCase();
+                            
+                            // Hitta kommandokanal
+                            if (uuidStr.includes(CMD_UUID_PREFIX) && (char.properties.write || char.properties.writeWithoutResponse)) {
+                                cmdCharacteristic = char;
+                                log(`Hittade Kommandokanal: ${uuidStr.substring(0,13)}...`, 'success');
+                            }
+                            
+                            // Hitta datakanaler
+                            if ((uuidStr.includes(DATA_UUID_1) || uuidStr.includes(DATA_UUID_2)) && (char.properties.notify || char.properties.indicate)) {
+                                dataCharacteristics.push(char);
+                                log(`Hittade Datakanal: ${uuidStr.substring(0,13)}...`, 'success');
+                            }
+                        }
+                    } catch (e) {
+                        log(`Kunde inte läsa tjänst ${uuid.substring(0,8)}: ${e.message}`, 'error');
+                        // Fortsätt till nästa tjänst även om en misslyckas, Android kan ibland ha problem med specifika tjänster
+                    }
+                }
+
+                if (!cmdCharacteristic) {
+                    log('Hittade ingen specifik kommandokanal, letar efter någon skrivbar...', 'amber');
+                    // Fallback: Leta efter någon skrivbar kanal om den specifika inte hittades
+                    const allServices = await server.getPrimaryServices();
+                    for(let s of allServices) {
+                        const chars = await s.getCharacteristics();
+                        for(let c of chars) {
+                             if(c.properties.write || c.properties.writeWithoutResponse) {
+                                 cmdCharacteristic = c;
+                                 log(`Använder alternativ skrivkanal: ${c.uuid.substring(0,13)}...`, 'success');
+                                 break;
+                             }
+                        }
+                        if(cmdCharacteristic) break;
+                    }
+                }
+
+                if (!cmdCharacteristic) throw new Error("Kunde inte hitta någon kanal att skriva till!");
+                if (dataCharacteristics.length === 0) throw new Error("Hittade inga datakanaler för mottagning!");
+
+                log('Initierar handskakning (lyssnar på kanaler)...', 'info');
+                
+                for (let char of dataCharacteristics) {
+                    try {
+                        await char.startNotifications();
+                        char.addEventListener('characteristicvaluechanged', handleIncomingData);
+                        log(`✓ Lyssnar nu aktivt på: ${char.uuid.substring(0,13)}...`, 'success');
+                    } catch (e) {
+                         log(`Kunde inte starta lyssning på ${char.uuid.substring(0,8)}: ${e.message}`, 'error');
+                    }
+                }
+
+                isConnected = true;
+                updateUIState(true);
+                log('Redo! Handskakning klar. Tryck på Starta.', 'success');
+
+            } catch (error) {
+                log(`Fel vid anslutning: ${error.message}`, 'error');
+                updateUIState(false);
+                if(bleDevice && bleDevice.gatt.connected) {
+                    bleDevice.gatt.disconnect();
                 }
             }
-            const range = maxVal - minVal;
-            if(visibleData.length > 1) {
-                let pts = "";
-                visibleData.forEach(d => {
-                    const x = padL + ((d.t - startTimeView) / timeSpan) * (W - padL - padR);
-                    const val = d[m.key];
-                    const y = (H - padB) - ((val - minVal) / range * drawH);
-                    if (y >= padT - 100 && y <= H + 100) pts += `${x},${y} `;
-                });
-                const poly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-                poly.setAttribute("points", pts); poly.setAttribute("stroke", m.color); poly.setAttribute("class", "graph-line");
-                if (m.key === 'h') poly.setAttribute("stroke-dasharray", "5,5"); svg.appendChild(poly);
-            }
-            const isLeft = (idx < 2); const xText = isLeft ? (idx === 0 ? 10 : 70) : (idx === 2 ? W - 70 : W - 10); const anchor = isLeft ? "start" : "end";
-            const tMax = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            tMax.setAttribute("x", xText); tMax.setAttribute("y", padT + 10); tMax.setAttribute("text-anchor", anchor); tMax.setAttribute("fill", m.color); tMax.setAttribute("class", "axis-text"); tMax.textContent = Math.round(maxVal); svg.appendChild(tMax);
-            const tMin = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            tMin.setAttribute("x", xText); tMin.setAttribute("y", H - padB - 10); tMin.setAttribute("text-anchor", anchor); tMin.setAttribute("fill", m.color); tMin.setAttribute("class", "axis-text"); tMin.textContent = Math.round(minVal); svg.appendChild(tMin);
-        });
-    }
-
-    function setupGestures(element, isSingle) {
-        element.addEventListener('mousedown', e => { graphState.isDragging = true; graphState.lastMouseX = e.clientX; element.style.cursor = 'grabbing'; });
-        window.addEventListener('mouseup', () => { graphState.isDragging = false; element.style.cursor = 'grab'; });
-        window.addEventListener('mousemove', e => {
-            if (!graphState.isDragging) return;
-            const dx = e.clientX - graphState.lastMouseX;
-            graphState.lastMouseX = e.clientX;
-            const sensitivity = isSingle ? (graphState.data[graphState.data.length-1].t / 1000) : 1; 
-            graphState.scrollOffset += dx * sensitivity * -1;
-            if(isSingle) drawCombinedGraph(ui.singleChart, graphState.data, true, true); else renderMainGraph();
-        });
-        element.addEventListener('wheel', e => {
-            e.preventDefault();
-            const delta = Math.sign(e.deltaY);
-            if (delta > 0) graphState.zoomLevel *= 1.1; else graphState.zoomLevel *= 0.9;
-            if (graphState.zoomLevel < 0.1) graphState.zoomLevel = 0.1;
-            if(isSingle) drawCombinedGraph(ui.singleChart, graphState.data, true, true); else renderMainGraph();
-        });
-    }
-    setupGestures(ui.graphWrapper, false);
-    setupGestures(ui.singleGraphWrapper, true); 
-
-    // Punkt 4: Custom Avg Logic med en decimal
-    window.calculateCustomAvg = () => {
-        const getSec = (id) => (parseInt(document.getElementById('ch'+id).value)||0)*3600 + (parseInt(document.getElementById('cm'+id).value)||0)*60 + (parseInt(document.getElementById('cs'+id).value)||0);
-        const t1 = getSec('1'); const t2 = getSec('2');
-        const metric = document.getElementById('calcMetric').value;
-        if(t2 <= t1) { ui.calcResult.textContent = "Fel tid"; return; }
-        let sum = 0, count = 0;
-        graphState.data.forEach(p => { if(p.t >= t1 && p.t <= t2) { sum += p[metric]; count++; } });
-        ui.calcResult.textContent = (count ? (sum/count).toFixed(1) : 0);
-    }
-    
-    window.calculateZoneSingle = () => {
-        if (!graphState.data || graphState.data.length < 2) return;
-        const key = document.getElementById('zoneMetricS').value;
-        const min = parseFloat(document.getElementById('zoneMinS').value);
-        const max = parseFloat(document.getElementById('zoneMaxS').value);
-        let totalT = 0;
-        for(let i=1; i<graphState.data.length; i++) {
-             const p = graphState.data[i];
-             const prev = graphState.data[i-1];
-             if(p[key]>=min && p[key]<=max) totalT += (p.t - prev.t);
-        }
-        document.getElementById('zoneResultS').textContent = formatDurationLong(totalT);
-    }
-    
-    // Punkt 7: Manual X-Scale
-    window.applyXScale = () => {
-        const h1 = parseInt(ui.xMinH.value)||0; const m1 = parseInt(ui.xMinM.value)||0;
-        const h2 = parseInt(ui.xMaxH.value)||0; const m2 = parseInt(ui.xMaxM.value)||0;
-        graphState.manualXMin = h1*3600 + m1*60;
-        graphState.manualXMax = h2*3600 + m2*60;
-        drawCombinedGraph(ui.singleChart, graphState.data, true, true);
-    }
-
-    function renderStats() {
-        // --- Populate Filters ---
-        // Years
-        const years = [...new Set(history.sessions.map(s => new Date(s.date).getFullYear()))].sort().reverse();
-        if(ui.fYear.children.length === 1) years.forEach(y => ui.fYear.add(new Option(y, y)));
-        
-        // Months
-        if(ui.fMonth.children.length === 1) {
-            const mNames = ["januari","februari","mars","april","maj","juni","juli","augusti","september","oktober","november","december"];
-            mNames.forEach((m, i) => ui.fMonth.add(new Option(m, i)));
         }
 
-        const yF = ui.fYear.value;
-        const mF = ui.fMonth.value; 
-        
-        let filtered = history.sessions.filter(s => {
-            const d = new Date(s.date);
-            if(yF !== 'all' && d.getFullYear() != yF) return false;
-            if(mF !== 'all' && d.getMonth() != mF) return false;
-            return true;
-        });
-
-        let tDist=0, tTime=0, tCal=0, sWatt=0, sSpd=0, sCad=0, sHr=0, pts=0, ptsHr=0;
-        filtered.forEach(s => {
-            tDist += s.dist; tTime += s.dur; tCal += s.cal;
-            s.data.forEach(p => { 
-                sWatt+=p.w; sSpd+=p.s; sCad+=p.c; 
-                // Punkt 1: Filter HR
-                if(p.h>0) { sHr+=p.h; ptsHr++; }
-                pts++; 
-            });
-        });
-        
-        const avg = (sum) => pts ? Math.round(sum/pts) : 0;
-        const avgF = (sum) => pts ? (sum/pts).toFixed(1) : 0;
-        const avgHr = ptsHr ? Math.round(sHr/ptsHr) : 0; 
-
-        ui.totalTop.innerHTML = `<div class="stat-card-small"><span class="sc-val c-dist">${tDist.toFixed(1)} km</span><span class="sc-lbl">Distans</span></div><div class="stat-card-small"><span class="sc-val">${formatDurationLong(tTime)}</span><span class="sc-lbl">Tid</span></div><div class="stat-card-small"><span class="sc-val c-cal">${tCal}</span><span class="sc-lbl">Kalorier</span></div><div class="stat-card-small"><span class="sc-val">${filtered.length}</span><span class="sc-lbl">Träningspass</span></div>`;
-        ui.totalBot.innerHTML = `<div class="stat-card-small"><span class="sc-val c-speed">${avgF(sSpd)}</span><span class="sc-lbl">Hastighet</span></div><div class="stat-card-small"><span class="sc-val c-watt">${avg(sWatt)}</span><span class="sc-lbl">Medeleffekt</span></div><div class="stat-card-small"><span class="sc-val c-cad">${avg(sCad)}</span><span class="sc-lbl">Medelkadens</span></div><div class="stat-card-small"><span class="sc-val c-hr">${avgHr}</span><span class="sc-lbl">Medelpuls</span></div>`;
-
-        const arrow = sortAsc ? ' ↑' : ' ↓';
-        ['date','dur','dist','speed','watt','cad','hr','cal'].forEach(k => document.getElementById('sort_'+k).textContent = (sortCol === k) ? arrow : '');
-
-        filtered.sort((a,b) => {
-            const getAvg = (s,k) => s.data.reduce((ac,v)=>ac+v[k],0)/s.data.length||0;
-            let va, vb;
-            if(sortCol==='date') { va=new Date(a.date); vb=new Date(b.date); }
-            else if(sortCol==='dur') { va=a.dur; vb=b.dur; }
-            else if(sortCol==='dist') { va=a.dist; vb=b.dist; }
-            else if(sortCol==='cal') { va=a.cal; vb=b.cal; }
-            else if(sortCol==='watt') { va=getAvg(a,'w'); vb=getAvg(b,'w'); }
-            else if(sortCol==='speed') { va=getAvg(a,'s'); vb=getAvg(b,'s'); }
-            else if(sortCol==='cad') { va=getAvg(a,'c'); vb=getAvg(b,'c'); }
-            else if(sortCol==='hr') { 
-                const ha = a.data.filter(p=>p.h>0); const hb = b.data.filter(p=>p.h>0);
-                va = ha.length ? ha.reduce((s,v)=>s+v.h,0)/ha.length : 0;
-                vb = hb.length ? hb.reduce((s,v)=>s+v.h,0)/hb.length : 0;
-            }
-            return sortAsc ? (va>vb?1:-1) : (va<vb?1:-1);
-        });
-
-        ui.sessBody.innerHTML = filtered.map((s, idx) => {
-            const d = new Date(s.date);
-            const dStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-            const getAvg = (k) => Math.round(s.data.reduce((ac,v)=>ac+v[k],0)/s.data.length||0);
-            const getAvgHr = () => {
-                const validP = s.data.filter(p=>p.h>0);
-                if(validP.length === 0) return "-";
-                const avg = Math.round(validP.reduce((acc,v)=>acc+v.h,0)/validP.length);
-                const pct = Math.round((validP.length / s.data.length) * 100);
-                return `<span title="Tid med signal">${avg} (${pct}%)</span>`;
-            };
+        async function startMeasurement() {
+            if (!cmdCharacteristic) return;
             
-            return `<tr onclick="openSession(${history.sessions.indexOf(s)})"><td style="text-align:left">${dStr}</td><td class="c-dist">${s.dist.toFixed(2)}</td><td>${formatDurationLong(s.dur)}</td><td class="c-cal">${s.cal}</td><td class="c-speed">${(s.data.reduce((ac,v)=>ac+v.s,0)/s.data.length).toFixed(1)}</td><td class="c-watt">${getAvg('w')}</td><td class="c-cad">${getAvg('c')}</td><td class="c-hr">${getAvgHr()}</td></tr>`;
-        }).join('');
-    }
-    
-    window.sortSess = (c) => { if(sortCol===c) sortAsc=!sortAsc; else { sortCol=c; sortAsc=false; } renderStats(); };
-    window.openSession = (idx) => {
-        currentSessionIdx = idx;
-        const s = history.sessions[idx];
-        ui.singleTitle.textContent = "PASS: " + new Date(s.date).toLocaleString();
-        ui.singleModal.classList.add('open');
-        graphState.data = s.data; graphState.scrollOffset = 0; 
-        
-        // Punkt 7: Pre-fill X-Axis
-        graphState.manualXMin = null; graphState.manualXMax = null;
-        const dur = s.dur;
-        const h = Math.floor(dur/3600); const m = Math.floor((dur%3600)/60);
-        ui.xMaxH.value = h; ui.xMaxM.value = m;
-        ui.xMinH.value = 0; ui.xMinM.value = 0;
-        
-        initSingleControls(); 
-        setTimeout(() => { drawCombinedGraph(ui.singleChart, s.data, true, true); }, 100);
-    };
+            try {
+                log('🚀 Påbörjar startsekvens...', 'info');
+                
+                // Startsekvens baserad på analys
+                log('-> Skickar 0x27', 'cmd');
+                await sendCommand([0x27]);
+                await sleep(50); // Ökat paus något för Android-stabilitet
 
-    window.deleteCurrentSession = () => {
-        if (currentSessionIdx === -1) return;
-        if (confirm("Är du säker på att du vill radera detta träningspass? Det kan inte ångras.")) {
-            // Ta bort passet från historiken
-            history.sessions.splice(currentSessionIdx, 1);
-            saveHistoryFile();
-            
-            // Stäng modalen och uppdatera vyn
-            document.getElementById('singleModal').classList.remove('open');
-            renderStats(); 
+                log('-> Skickar 0x18', 'cmd');
+                await sendCommand([0x18]);
+                await sleep(100); 
+
+                log('-> Skickar 0x0400', 'cmd');
+                await sendCommand([0x04, 0x00]);
+                await sleep(50);
+
+                log('-> Skickar 0x251f01', 'cmd');
+                await sendCommand([0x25, 0x1f, 0x01]);
+                await sleep(50);
+                
+                // Fallback Start
+                log('-> Skickar 0x01 (Main Start)', 'cmd');
+                await sendCommand([0x01]);
+
+                log('✅ Startkommandon skickade!', 'success');
+
+            } catch (error) {
+                log(`Start misslyckades: ${error.message}`, 'error');
+            }
         }
-    };
 
-    [ui.fYear, ui.fMonth].forEach(el => el.onchange = renderStats);
+        async function sendCommand(bytes) {
+            const data = new Uint8Array(bytes);
+            if (cmdCharacteristic.properties.writeWithoutResponse) {
+                await cmdCharacteristic.writeValueWithoutResponse(data);
+            } else {
+                await cmdCharacteristic.writeValue(data);
+            }
+        }
 
-    document.getElementById('exportBtn').onclick = () => { 
-        const now = new Date();
-        const y = now.getFullYear();
-        const m = String(now.getMonth() + 1).padStart(2, '0');
-        const d = String(now.getDate()).padStart(2, '0');
-        const h = String(now.getHours()).padStart(2, '0');
-        const min = String(now.getMinutes()).padStart(2, '0');
-        
-        const b = new Blob([JSON.stringify(history)],{type:'application/json'}); 
-        const a = document.createElement('a'); 
-        a.href=URL.createObjectURL(b); 
-        a.download = `gymstick_${y}-${m}-${d}_${h}${min}.json`; 
-        a.click(); 
-    };
-    document.getElementById('importFile').onchange = (e) => { const r = new FileReader(); r.onload = (ev) => { try { history = JSON.parse(ev.target.result); if(history.settings) settings = history.settings; saveHistoryFile(); alert("Uppladdad!"); initConfigGrid(); if(history.sessions.length > 0) { graphState.data = history.sessions[history.sessions.length-1].data; drawCombinedGraph(ui.chart, graphState.data, true); } updateHistoryUI(); } catch(x){console.log(x); alert("Fel");} }; r.readAsText(e.target.files[0]); };
+        function handleIncomingData(event) {
+            const dataView = event.target.value;
+            const bytes = new Uint8Array(dataView.buffer);
+            
+            packetCount++;
+            document.getElementById('packet-counter').innerText = packetCount;
 
-    ui.statsBtn.onclick = () => { ui.statsModal.classList.add('open'); renderStats(); };
-    ui.btnDeleteAll.onclick = () => { deleteConfirmCount++; if(deleteConfirmCount===1) ui.btnDeleteAll.textContent="SÄKER?"; else if(deleteConfirmCount===2) ui.btnDeleteAll.textContent="VERKLIGEN?"; else { localStorage.clear(); history={sessions:[],totalDist:0,totalTime:0,settings:settings}; renderStats(); updateHistoryUI(); ui.btnDeleteAll.textContent="RADERAT"; setTimeout(()=>{ui.btnDeleteAll.textContent="RADERA ALLT";deleteConfirmCount=0;},2000); } };
-    let deleteConfirmCount = 0;
+            // Beräkna Hz
+            const now = performance.now();
+            const delta = now - lastPacketTime;
+            lastPacketTime = now;
+            if (delta > 0 && packetCount % 5 === 0) {
+                const hz = (1000 / delta).toFixed(1);
+                document.getElementById('hz-indicator').innerText = hz + ' Hz';
+            }
 
-    const PC_WINS = [1, 2, 5, 10, 20, 30, 60, 120, 300, 600, 900, 1200, 1800, 3600, 5400, 7200, 10800];
-    window.showPowerCurve = () => {
-        const records = {};
-        history.sessions.forEach(sess => {
-            const data = sess.data; if(!data || data.length < 2) return;
-            PC_WINS.forEach(win => {
-                let maxAvg = 0;
-                for(let i=0; i < data.length - win; i++) { let sum = 0; for(let k=0; k<win; k++) sum += data[i+k].w; const avg = sum/win; if(avg > maxAvg) maxAvg = avg; }
-                if(!records[win] || maxAvg > records[win]) records[win] = maxAvg;
-            });
-        });
-        ui.powerBody.innerHTML = PC_WINS.map(w => {
-            let lbl = w+" s"; if(w>=60) lbl = (w/60)+" min"; if(w>=3600) lbl = (w/3600)+" h"; if(w===5400) lbl = "1 h 30 min";
-            const rec = records[w] ? Math.round(records[w]) : "-";
-            return `<tr><td>${lbl}</td><td>-</td><td>${rec}</td></tr>`;
-        }).join('');
-        ui.powerModal.classList.add('open');
-    }
+            // Logga rådata sällan
+            let hex = Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join('');
+            if(packetCount <= 5 || packetCount % 50 === 0) {
+                log(`RX: ${hex}`, 'data'); 
+            }
 
-</script>
+            // Avkoda Avstånd (Söker efter Float32)
+            let meters = null;
+            if (dataView.byteLength >= 6) {
+                const f2 = dataView.getFloat32(2, true);
+                if (f2 > 0.05 && f2 < 10.0) meters = f2;
+            }
+            if (meters === null && dataView.byteLength >= 7) {
+                const f3 = dataView.getFloat32(3, true);
+                if (f3 > 0.05 && f3 < 10.0) meters = f3;
+            }
 
+            if (meters !== null) {
+                document.getElementById('dist-main').innerText = meters.toFixed(3);
+                
+                chart.data.labels.push('');
+                chart.data.datasets[0].data.push(meters);
+                if (chart.data.labels.length > 50) {
+                    chart.data.labels.shift();
+                    chart.data.datasets[0].data.shift();
+                }
+                chart.update();
+            }
+        }
+
+        function onDisconnect() {
+            log('Enhet frånkopplad.', 'error');
+            isConnected = false;
+            updateUIState(false);
+            bleDevice = null;
+        }
+
+        function updateUIState(connected) {
+            const btnConnect = document.getElementById('btn-connect');
+            const btnStart = document.getElementById('btn-start');
+            const badge = document.getElementById('status-badge');
+
+            if (connected) {
+                btnConnect.innerHTML = '<i class="fa-solid fa-xmark"></i> Koppla från';
+                btnConnect.className = 'py-3 rounded-xl bg-red-900 text-red-300 font-bold text-sm border border-red-700 active:bg-red-800 transition-all flex justify-center items-center gap-2';
+                
+                btnStart.disabled = false;
+                btnStart.className = 'py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all flex justify-center items-center gap-2';
+                
+                badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-blue-400"></span> Ansluten';
+                badge.className = 'px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center gap-1.5';
+            } else {
+                btnConnect.innerHTML = '<i class="fa-brands fa-bluetooth"></i> 1. Anslut';
+                btnConnect.className = 'py-3 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-600/20 transition-all flex justify-center items-center gap-2';
+                
+                btnStart.disabled = true;
+                btnStart.className = 'py-3 rounded-xl bg-slate-800 text-slate-500 font-bold text-sm border border-slate-700 transition-all flex justify-center items-center gap-2';
+                
+                badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Väntar';
+                badge.className = 'px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center gap-1.5';
+                
+                document.getElementById('dist-main').innerText = '-.---';
+            }
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
 </body>
 </html>
